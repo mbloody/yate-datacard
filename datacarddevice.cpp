@@ -213,15 +213,15 @@ bool CardDevice::disconnect()
     m_audio_fd = -1;
 
     m_connected	= false;
-//	pvt->initialized	= 0;
-//	pvt->gsm_registered	= 0;
+//    initialized = 0;
+//    gsm_registered = 0;
 
-//	pvt->incoming		= 0;
-//	pvt->outgoing		= 0;
-//	pvt->needring		= 0;
-//	pvt->needchup		= 0;
+//    incoming = 0;
+//    outgoing = 0;
+//    needring = 0;
+//    needchup = 0;
 	
-//	pvt->gsm_reg_status	= -1;
+//    gsm_reg_status = -1;
 
 //	pvt->manufacturer[0]	= '\0';
 //	pvt->model[0]		= '\0';
@@ -234,7 +234,7 @@ bool CardDevice::disconnect()
 
 //	rb_init (&pvt->d_read_rb, pvt->d_read_buf, sizeof (pvt->d_read_buf));
 
-//	at_fifo_queue_flush (pvt);
+	m_atQueue.clear();
 
 	Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
 	return m_connected;

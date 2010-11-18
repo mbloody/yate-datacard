@@ -17,7 +17,7 @@
  * \param res -- the expected response
  */
 
-int at_fifo_queue_add (pvt_t* pvt, at_cmd_t cmd, at_res_t res)
+int at_fifo_queue_add(pvt_t* pvt, at_cmd_t cmd, at_res_t res)
 {
     return at_fifo_queue_add_ptr (pvt, cmd, res, NULL);
 }
@@ -32,23 +32,16 @@ int at_fifo_queue_add (pvt_t* pvt, at_cmd_t cmd, at_res_t res)
 
 int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
 {
-	at_queue_t* e;
-
-	if (!(e = ast_calloc (1, sizeof(*e))))
-	{
-		return -1;
-	}
-
+	at_queue_t* e = new at_queue_t();
+	
 	e->cmd		= cmd;
 	e->res		= res;
 	e->ptype	= 0;
 	e->param.data	= data;
 
-	AST_LIST_INSERT_TAIL (&pvt->at_queue, e, entry);
+	m_atQueue.append(e)
 
-	ast_debug (4, "[%s] add command '%s' expected response '%s'\n", pvt->id,
-							 at_cmd2str (e->cmd), at_res2str (e->res));
-
+	Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_ctr(), at_cmd2str (e->cmd), at_res2str (e->res));
 	return 0;
 }
 
@@ -60,24 +53,18 @@ int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
  * \param num -- numeric data
  */
 
-int at_fifo_queue_add_num (pvt_t* pvt, at_cmd_t cmd, at_res_t res, int num)
+int at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
 {
-	at_queue_t* e;
-
-	if (!(e = ast_calloc (1, sizeof(*e))))
-	{
-		return -1;
-	}
+	at_queue_t* e = new at_queue_t();
 
 	e->cmd		= cmd;
 	e->res		= res;
 	e->ptype	= 1;
 	e->param.num	= num;
 
-	AST_LIST_INSERT_TAIL (&pvt->at_queue, e, entry);
+	m_atQueue.append(e)
 
-	ast_debug (4, "[%s] add command '%s' expected response '%s'\n", pvt->id,
-							 at_cmd2str (e->cmd), at_res2str (e->res));
+	Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_str(), at_cmd2str(e->cmd), at_res2str(e->res));
 
 	return 0;
 }
@@ -86,7 +73,7 @@ int at_fifo_queue_add_num (pvt_t* pvt, at_cmd_t cmd, at_res_t res, int num)
  * \brief Remove an item from the front of the queue, and free it
  * \param pvt -- pvt structure
  */
-
+/*
 void at_fifo_queue_rem (pvt_t* pvt)
 {
 	at_queue_t* e = AST_LIST_REMOVE_HEAD (&pvt->at_queue, entry);
@@ -104,13 +91,13 @@ void at_fifo_queue_rem (pvt_t* pvt)
 		ast_free (e);
 	}
 }
-
+*/
 /*!
  * \brief Remove all itmes from the queue and free them
  * \param pvt -- pvt structure
  */
 
-void at_fifo_queue_flush (pvt_t* pvt)
+void at_fifo_queue_flush ()
 {
     m_atQueue.clear();
 }
@@ -120,8 +107,9 @@ void at_fifo_queue_flush (pvt_t* pvt)
  * \param pvt -- pvt structure
  * \return a pointer to the head of the given queue
  */
-
+/*
 at_queue_t* at_fifo_queue_head (pvt_t* pvt)
 {
 	return AST_LIST_FIRST (&pvt->at_queue);
 }
+*/

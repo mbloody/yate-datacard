@@ -158,7 +158,7 @@ public:
 	char			d_send_buf[2*1024];
 	size_t			d_send_size;
 	char			d_read_buf[2*1024];
-//	ringbuffer_t		d_read_rb;
+	RingBuffer		d_read_rb;
 	struct iovec		d_read_iov[2];
 	unsigned int		d_read_result:1;
 	char			d_parse_buf[1024];
@@ -175,13 +175,13 @@ public:
 	int			linksubmode;
 	String m_provider_name;
 	String m_manufacturer;
-	char			model[32];
-	char			firmware[32];
-	char			imei[17];
-	char			imsi[17];
+	String m_model;
+	String m_firmware;
+	String m_imei;
+	String m_imsi;
 	String m_number;
-	char			location_area_code[8];
-	char			cell_id[8];
+	String m_location_area_code;
+	String m_cell_id;
 
 	/* flags */
 	bool			m_connected;			/* do we have an connection to a device */
@@ -248,7 +248,7 @@ public:
     int  at_response_rssi (char*, size_t);
     int  at_response_smmemfull ();
     int  at_response_sms_prompt ();
-
+    int  at_response_busy ();
 
     const char*  at_cmd2str  (at_cmd_t);
     const char*  at_res2str  (at_res_t);
@@ -307,14 +307,14 @@ public:
     int  at_send_ccwa_disable ();
     int  at_send_cfun  (int, int);
     int  at_send_cmee  (int);
-
+    int  at_send_cpms ();
 
     ObjList m_atQueue;
-//    int	at_fifo_queue_add(at_cmd_t, at_res_t);
-//    int	at_fifo_queue_add_ptr(at_cmd_t, at_res_t, void*);
-//    int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
+    int	at_fifo_queue_add(at_cmd_t, at_res_t);
+    int	at_fifo_queue_add_ptr(at_cmd_t, at_res_t, void*);
+    int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
 //    void at_fifo_queue_rem();
-//    void at_fifo_queue_flush();
+    void at_fifo_queue_flush();
 //    at_queue_t*	at_fifo_queue_head	(pvt_t*);
 
 };
