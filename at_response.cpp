@@ -8,6 +8,8 @@
 */
 
 #include "datacarddevice.h"
+#include <stdio.h>
+
 /*!                             
  * \brief Do response
  * \param pvt -- pvt structure
@@ -141,7 +143,8 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 				return -1;
 
 			case RES_UNKNOWN:
-				if ((e = at_fifo_queue_head()))
+//				if ((e = at_fifo_queue_head()))
+				if ((e =  static_cast<at_queue_t*>(m_atQueue.get())))
 				{
 					switch (e->cmd)
 					{
@@ -193,7 +196,8 @@ int CardDevice::at_response_ok()
 {
 	at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_CMGR))
+//	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_CMGR))
+	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_CMGR))
 	{
 		switch (e->cmd)
 		{
@@ -203,7 +207,7 @@ int CardDevice::at_response_ok()
 				{
 					if (reset_datacard == 1)
 					{
-						if (at_send_atz() || at_fifo_queue_add (CMD_AT_Z, RES_OK))
+						if (at_send_atz() || at_fifo_queue_add(CMD_AT_Z, RES_OK))
 						{
 							Debug(DebugAll, "[%s] Error reset datacard\n", c_str());
 							goto e_return;
@@ -509,17 +513,17 @@ int CardDevice::at_response_ok()
 					goto e_return;
 				}
 
-				if (a_timer)
-				{
-					ast_timer_set_rate (a_timer, 50);
-				}
+//				if (a_timer)
+//				{
+//					ast_timer_set_rate (a_timer, 50);
+//				}
 
 				break;
 
 			case CMD_AT_CLIR:
 				Debug(DebugAll, "[%s] CLIR sent successfully\n", c_str());
 
-				if (e->ptype != 0 || at_send_atd((char*)e->param.data) || at_fifo_queue_add (CMD_AT_D, RES_OK))
+				if (e->ptype != 0 || at_send_atd((char*)(e->param.data)) || at_fifo_queue_add (CMD_AT_D, RES_OK))
 				{
 					Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
 					goto e_return;
@@ -535,10 +539,10 @@ int CardDevice::at_response_ok()
 					goto e_return;
 				}
 
-				if (a_timer)
-				{
-					ast_timer_set_rate (a_timer, 50);
-				}
+//				if (a_timer)
+//				{
+//					ast_timer_set_rate (a_timer, 50);
+//				}
 
 				break;
 
@@ -635,7 +639,9 @@ int CardDevice::at_response_error()
 {
 	at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
+//	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
+	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_ERROR ||
+
 			e->res == RES_CMS_ERROR || e->res == RES_CMGR || e->res == RES_SMS_PROMPT))
 	{
 		switch (e->cmd)
@@ -772,14 +778,15 @@ int CardDevice::at_response_error()
 
 			case CMD_AT_A:
 				Debug(DebugAll, "[%s] Answer failed\n", c_str());
-				channel_queue_hangup (0);
+//TODO:
+//				channel_queue_hangup (0);
 				break;
 
 			case CMD_AT_CLIR:
 				Debug(DebugAll, "[%s] Setting CLIR failed\n", c_str());
 
 				/* continue dialing */
-				if (e->ptype != 0 || at_send_atd (e->param.data) || at_fifo_queue_add (CMD_AT_D, RES_OK))
+				if (e->ptype != 0 || at_send_atd((char*)e->param.data) || at_fifo_queue_add (CMD_AT_D, RES_OK))
 				{
 					Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
 					goto e_return;
@@ -790,7 +797,8 @@ int CardDevice::at_response_error()
 				Debug(DebugAll, "[%s] Dial failed\n", c_str());
 				outgoing = 0;
 				needchup = 0;
-				channel_queue_control (AST_CONTROL_CONGESTION);
+//TODO:
+//				channel_queue_control (AST_CONTROL_CONGESTION);
 				break;
 
 			case CMD_AT_DDSETEX:
@@ -904,7 +912,8 @@ int CardDevice::at_response_orig (char* str, size_t len)
 	int call_index = 1;
 	int call_type  = 0;
 
-	channel_queue_control (AST_CONTROL_PROGRESS);
+//TODO:
+//	channel_queue_control (AST_CONTROL_PROGRESS);
 
 	/*
 	 * parse ORIG info in the following format:
@@ -964,7 +973,8 @@ int CardDevice::at_response_cend (char* str, size_t len)
 	Debug(DebugAll, "[%s] Line disconnected\n", c_str());
 
 	needchup = 0;
-
+//TODO:
+/*
 	if (owner)
 	{
 		Debug(DebugAll, "[%s] hanging up owner\n", c_str());
@@ -975,7 +985,7 @@ int CardDevice::at_response_cend (char* str, size_t len)
 			return -1;
 		}
 	}
-
+*/
 	incoming = 0;
 	outgoing = 0;
 	needring = 0;
@@ -990,8 +1000,10 @@ int CardDevice::at_response_cend (char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_conn (pvt_t* pvt)
+int CardDevice::at_response_conn ()
 {
+//TODO:
+/*
 	if (outgoing)
 	{
 		Debug(DebugAll, "[%s] Remote end answered\n", c_str());
@@ -1001,7 +1013,7 @@ int CardDevice::at_response_conn (pvt_t* pvt)
 	{
 		ast_setstate (owner, AST_STATE_UP);
 	}
-
+*/
 	return 0;
 }
 
@@ -1016,6 +1028,9 @@ int CardDevice::at_response_conn (pvt_t* pvt)
 
 int CardDevice::at_response_clip(char* str, size_t len)
 {
+//TODO:
+//
+/*
 	struct ast_channel*	channel;
 	char*			clip;
 
@@ -1051,7 +1066,7 @@ int CardDevice::at_response_clip(char* str, size_t len)
 			return -1;
 		}
 	}
-
+*/
 	return 0;
 }
 
@@ -1135,6 +1150,9 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 
 int CardDevice::at_response_cmgr(char* str, size_t len)
 {
+//TODO:
+//
+/*
 	at_queue_t*	e;
 	ssize_t		res;
 	char		sms_utf8_str[4096];
@@ -1143,7 +1161,8 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	char*		text = NULL;
 	char		text_base64[16384];
 
-	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
+//	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
+	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_CMGR)
 	{
 		if (auto_delete_sms && e->ptype == 1)
 		{
@@ -1223,7 +1242,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	{
 		Debug(DebugAll, "[%s] Received unexpected '+CMGR'\n", c_str());
 	}
-
+*/
 	return 0;
 }
 
@@ -1238,9 +1257,10 @@ int CardDevice::at_response_sms_prompt()
 {
 	at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+//	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_SMS_PROMPT)
 	{
-		if (e->ptype != 0 || !e->param.data || at_send_sms_text (e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
+		if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
 		{
 			Debug(DebugAll, "[%s] Error sending sms message\n", c_str());
 			return -1;
@@ -1272,6 +1292,9 @@ int CardDevice::at_response_sms_prompt()
 
 int CardDevice::at_response_cusd (char* str, size_t len)
 {
+//TODO:
+//
+/*
 	ssize_t		res;
 	char*		cusd;
 	unsigned char	dcs;
@@ -1336,7 +1359,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 		}
 	}
 #endif
-
+*/
 	return 0;
 }
 
@@ -1350,7 +1373,8 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 int CardDevice::at_response_busy ()
 {
 	needchup = 1;
-	channel_queue_control (AST_CONTROL_BUSY);
+//TODO:
+//	channel_queue_control (AST_CONTROL_BUSY);
 
 	return 0;
 }
@@ -1367,7 +1391,8 @@ int CardDevice::at_response_no_dialtone()
 	Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'\n", c_str());
 
 	needchup = 1;
-	channel_queue_control (AST_CONTROL_CONGESTION);
+//TODO:
+//	channel_queue_control (AST_CONTROL_CONGESTION);
 
 	return 0;
 }
@@ -1384,7 +1409,8 @@ int CardDevice::at_response_no_carrier()
 	Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'\n", c_str());
 
 	needchup = 1;
-	channel_queue_control (AST_CONTROL_CONGESTION);
+//TODO:
+//	channel_queue_control (AST_CONTROL_CONGESTION);
 
 	return 0;
 }
@@ -1534,7 +1560,7 @@ int CardDevice::at_response_creg (char* str, size_t len)
  * \retval -1 error
  */
 
-static inline int CardDevice::at_response_cgmi(char* str, size_t len)
+int CardDevice::at_response_cgmi(char* str, size_t len)
 {
 	m_manufacturer.assign(str,len);
 	return 0;

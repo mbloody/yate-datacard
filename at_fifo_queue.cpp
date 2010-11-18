@@ -17,9 +17,9 @@
  * \param res -- the expected response
  */
 
-int at_fifo_queue_add(pvt_t* pvt, at_cmd_t cmd, at_res_t res)
+int CardDevice::at_fifo_queue_add(at_cmd_t cmd, at_res_t res)
 {
-    return at_fifo_queue_add_ptr (pvt, cmd, res, NULL);
+    return at_fifo_queue_add_ptr (cmd, res, NULL);
 }
 
 /*!
@@ -30,7 +30,7 @@ int at_fifo_queue_add(pvt_t* pvt, at_cmd_t cmd, at_res_t res)
  * \param data -- pointer data associated with this entry, it will be freed when the message is freed
  */
 
-int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
+int CardDevice::at_fifo_queue_add_ptr (at_cmd_t cmd, at_res_t res, void* data)
 {
 	at_queue_t* e = new at_queue_t();
 	
@@ -39,9 +39,9 @@ int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
 	e->ptype	= 0;
 	e->param.data	= data;
 
-	m_atQueue.append(e)
+	m_atQueue.append(e);
 
-	Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_ctr(), at_cmd2str (e->cmd), at_res2str (e->res));
+	Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_str(), at_cmd2str (e->cmd), at_res2str (e->res));
 	return 0;
 }
 
@@ -53,7 +53,7 @@ int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
  * \param num -- numeric data
  */
 
-int at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
+int CardDevice::at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
 {
 	at_queue_t* e = new at_queue_t();
 
@@ -62,7 +62,7 @@ int at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
 	e->ptype	= 1;
 	e->param.num	= num;
 
-	m_atQueue.append(e)
+	m_atQueue.append(e);
 
 	Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_str(), at_cmd2str(e->cmd), at_res2str(e->res));
 
@@ -73,31 +73,30 @@ int at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
  * \brief Remove an item from the front of the queue, and free it
  * \param pvt -- pvt structure
  */
-/*
-void at_fifo_queue_rem (pvt_t* pvt)
+
+void CardDevice::at_fifo_queue_rem()
 {
-	at_queue_t* e = AST_LIST_REMOVE_HEAD (&pvt->at_queue, entry);
+	at_queue_t* e = static_cast<at_queue_t*>(m_atQueue.get());
 
 	if (e)
 	{
-		ast_debug (4, "[%s] remove command '%s' expected response '%s'\n", pvt->id,
-							at_cmd2str (e->cmd), at_res2str (e->res));
+		Debug(DebugAll,"[%s] remove command '%s' expected response '%s'\n", c_str(), at_cmd2str (e->cmd), at_res2str (e->res));
 
 		if (e->ptype == 0 && e->param.data)
 		{
-			ast_free (e->param.data);
+			delete [] e->param.data;
 		}
 
-		ast_free (e);
+		m_atQueue.remove(e);
 	}
 }
-*/
+
 /*!
  * \brief Remove all itmes from the queue and free them
  * \param pvt -- pvt structure
  */
 
-void at_fifo_queue_flush ()
+void CardDevice::at_fifo_queue_flush ()
 {
     m_atQueue.clear();
 }

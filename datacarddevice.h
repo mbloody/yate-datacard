@@ -307,13 +307,13 @@ public:
     int  at_send_ccwa_disable ();
     int  at_send_cfun  (int, int);
     int  at_send_cmee  (int);
-    int  at_send_cpms ();
+    int  at_send_cpms();
 
     ObjList m_atQueue;
     int	at_fifo_queue_add(at_cmd_t, at_res_t);
     int	at_fifo_queue_add_ptr(at_cmd_t, at_res_t, void*);
     int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
-//    void at_fifo_queue_rem();
+    void at_fifo_queue_rem();
     void at_fifo_queue_flush();
 //    at_queue_t*	at_fifo_queue_head	(pvt_t*);
 

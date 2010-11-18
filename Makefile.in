@@ -16,7 +16,7 @@ CFLAGS := -O3 @YATE_INC@
 LDFLAGS:= @YATE_LIB@  -ldl -lpthread
 MODSTRIP:= @YATE_STR@
 
-OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o
+OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o
 
 PROGS:= datacard.yate 
 INCFILES := 
@@ -137,7 +137,7 @@ codecs.cpp : clcodec.h clproto.h cldata.h cl_log.h
 	    
 	
 datacard,yate : datacard.h     
-datacard.yate : OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o
+datacard.yate : OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o
 datacard.yate : $(OBJS)
 
 %.yate: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)

@@ -334,13 +334,13 @@ int CardDevice::at_send_cpin_test ()
  * \param pvt -- pvt structure
  */
 
-/*
-:TODO
-int CardDevice::at_send_cpms ()
+
+
+int CardDevice::at_send_cpms()
 {
 	return at_write_full("AT+CPMS=\"ME\",\"ME\",\"ME\"\r", 23);
 }
-*/
+
 /*!
  * \brief Send the AT+CREG? command
  * \param pvt -- pvt structure
