@@ -1,6 +1,7 @@
 #ifndef DATACARDDEVICE_H
 #define DATACARDDEVICE_H
 #include <yatephone.h>
+#include "ringbuffer.h"
 
 
 #ifndef MIN
@@ -152,7 +153,7 @@ public:
 //	struct ast_timer*	a_timer;
 
 	char			a_write_buf[FRAME_SIZE * 5];
-//	ringbuffer_t		a_write_rb;
+	RingBuffer		a_write_rb;
 //	char			a_read_buf[FRAME_SIZE + AST_FRIENDLY_OFFSET];
 //	struct ast_frame	a_read_frame;
 
