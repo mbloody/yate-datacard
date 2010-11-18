@@ -51,89 +51,89 @@ void MonitorThread::run()
 {
 //    at_res_t	at_res;
 //    at_queue_t*	e;
-    int t;
-    int res;
+//    int t;
+//    int res;
 //    struct iovec iov[2];
-    int iovcnt;
-    size_t size;
-    size_t i = 0;
+//    int iovcnt;
+//    size_t size;
+//    size_t i = 0;
 
     /* start datacard initilization with the AT request */
-    ast_mutex_lock (&pvt->lock);
+//    ast_mutex_lock (&pvt->lock);
 
-    pvt->timeout = 10000;
+//    pvt->timeout = 10000;
 
-    if (at_send_at (pvt) || at_fifo_queue_add (pvt, CMD_AT, RES_OK))
-    {
-	ast_log (LOG_ERROR, "[%s] Error sending AT\n", pvt->id);
-	goto e_cleanup;
-    }
+//    if (at_send_at (pvt) || at_fifo_queue_add (pvt, CMD_AT, RES_OK))
+//    {
+//	ast_log (LOG_ERROR, "[%s] Error sending AT\n", pvt->id);
+//	goto e_cleanup;
+//    }
 
-    ast_mutex_unlock (&pvt->lock);
+//    ast_mutex_unlock (&pvt->lock);
 
-    while (!check_unloading ())
-    {
-	ast_mutex_lock (&pvt->lock);
+//    while (!check_unloading ())
+//    {
+//	ast_mutex_lock (&pvt->lock);
 
-	if (device_status (pvt->data_fd) || device_status (pvt->audio_fd))
-	{
-		ast_log (LOG_ERROR, "Lost connection to Datacard %s\n", pvt->id);
-		goto e_cleanup;
-	}
-	t = pvt->timeout;
+//	if (device_status (pvt->data_fd) || device_status (pvt->audio_fd))
+//	{
+//		ast_log (LOG_ERROR, "Lost connection to Datacard %s\n", pvt->id);
+//		goto e_cleanup;
+//	}
+//	t = pvt->timeout;
 
-	ast_mutex_unlock (&pvt->lock);
+//	ast_mutex_unlock (&pvt->lock);
 
 
-	if (!at_wait (pvt, &t))
-	{
-	    ast_mutex_lock (&pvt->lock);
-	    if (!pvt->initialized)
-	    {
-		ast_debug (1, "[%s] timeout waiting for data, disconnecting\n", pvt->id);
+//	if (!at_wait (pvt, &t))
+//	{
+//	    ast_mutex_lock (&pvt->lock);
+//	    if (!pvt->initialized)
+//	    {
+//		ast_debug (1, "[%s] timeout waiting for data, disconnecting\n", pvt->id);
 
-		if ((e = at_fifo_queue_head (pvt)))
-		{
-		    ast_debug (1, "[%s] timeout while waiting '%s' in response to '%s'\n", pvt->id,	at_res2str (e->res), at_cmd2str (e->cmd));
-		}
+//		if ((e = at_fifo_queue_head (pvt)))
+//		{
+//		    ast_debug (1, "[%s] timeout while waiting '%s' in response to '%s'\n", pvt->id,	at_res2str (e->res), at_cmd2str (e->cmd));
+//		}
 
-		goto e_cleanup;
-	    }
-	    else
-	    {
-		ast_mutex_unlock (&pvt->lock);
-		continue;
-	    }
-	}
-	ast_mutex_lock (&pvt->lock);
+//		goto e_cleanup;
+//	    }
+//	    else
+//	    {
+//		ast_mutex_unlock (&pvt->lock);
+//		continue;
+//	    }
+//	}
+//	ast_mutex_lock (&pvt->lock);
 
-	if (at_read (pvt))
-	{
-		goto e_cleanup;
-	}
-	while ((iovcnt = at_read_result_iov (pvt)) > 0)
-	{
-	    at_res = at_read_result_classification (pvt, iovcnt);
+//	if (at_read (pvt))
+//	{
+//		goto e_cleanup;
+//	}
+//	while ((iovcnt = at_read_result_iov (pvt)) > 0)
+//	{
+//	    at_res = at_read_result_classification (pvt, iovcnt);
 	    
-	    if (at_response (pvt, iovcnt, at_res))
-	    {
-		goto e_cleanup;
-	    }
-	}
-	ast_mutex_unlock (&pvt->lock);
-    }
+//	    if (at_response (pvt, iovcnt, at_res))
+//	    {
+//		goto e_cleanup;
+//	    }
+//	}
+//	ast_mutex_unlock (&pvt->lock);
+//    }
 
-    ast_mutex_lock (&pvt->lock);
+//    ast_mutex_lock (&pvt->lock);
 
-e_cleanup:
-    if (!pvt->initialized)
-    {
-    	ast_verb (3, "Error initializing Datacard %s\n", pvt->id);
-    }
+//e_cleanup:
+//    if (!pvt->initialized)
+//    {
+//    	ast_verb (3, "Error initializing Datacard %s\n", pvt->id);
+//    }
 
-    disconnect_datacard (pvt);
+//    disconnect_datacard (pvt);
 
-    ast_mutex_unlock (&pvt->lock);
+//    ast_mutex_unlock (&pvt->lock);
 
 }
 
@@ -150,7 +150,9 @@ CardDevice::CardDevice(String name):String(name), m_mutex(true), m_connected(fal
 }
 bool CardDevice::startMonitor() 
 { 
-    return true;
+    MonitorThread* m_monitor = new MonitorThread(this);
+    return m_monitor->startup();
+//    return true;
 }
 
 bool CardDevice::tryConnect()

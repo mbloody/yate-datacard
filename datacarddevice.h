@@ -141,7 +141,7 @@ public:
 //	AST_LIST_HEAD_NOLOCK (at_queue, at_queue_t) at_queue;	/* queue for response we are expecting */
 //	pthread_t		monitor_thread;			/* monitor thread handle */
 //	Thread monitor_thread;
-    MonitorThread m_monitor;
+    MonitorThread* m_monitor;
     Mutex m_mutex;
     
     int m_audio_fd;			/* audio descriptor */
