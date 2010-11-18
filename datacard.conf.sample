@@ -1,0 +1,6 @@
+[general]
+
+[datacard0]
+audio=/dev/ttyUSB2
+data=/dev/ttyUSB3
+

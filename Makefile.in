@@ -1,0 +1,161 @@
+# Makefile
+# This file holds the make rules for a Yate module
+
+# override DESTDIR at install time to prefix the install directory
+DESTDIR :=
+
+# override DEBUG at compile time to enable full debug or remove it all
+DEBUG :=
+
+CC  := @CC@ -Wall
+CXX := @CXX@ -Wall
+SED := sed
+DEFS :=
+INCLUDES := -I@top_srcdir@ -I.
+CFLAGS := -O3 @YATE_INC@
+LDFLAGS:= @YATE_LIB@  -ldl -lpthread
+MODSTRIP:= @YATE_STR@
+
+OBJS:= datacarddevice.o
+
+PROGS:= datacard.yate 
+INCFILES := 
+
+MKDEPS := ./config.status
+CLEANS = $(PROGS) core $(OBJS)
+COMPILE = $(CXX) $(DEFS) $(DEBUG) $(INCLUDES) $(CFLAGS)
+MODCOMP = $(COMPILE) $(MODFLAGS) $(MODSTRIP) $(LDFLAGS)
+LINK = $(CXX) $(LDFLAGS)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+confdir:= @YATE_CFG@
+moddir := @YATE_MOD@
+scrdir := @YATE_SCR@
+skndir := @YATE_SKN@
+
+# include optional local make rules
+-include YateLocal.mak
+
+.PHONY: all debug ddebug xdebug ndebug
+all: $(PROGS)
+
+debug:
+	$(MAKE) all DEBUG=-g3 MODSTRIP=
+
+ddebug:
+	$(MAKE) all DEBUG='-g3 -DDEBUG' MODSTRIP=
+
+xdebug:
+	$(MAKE) all DEBUG='-g3 -DXDEBUG' MODSTRIP=
+
+ndebug:
+	$(MAKE) all DEBUG='-g0 -DNDEBUG'
+
+.PHONY: clean distclean cvsclean clean-config-files
+clean:
+	@-$(RM) $(CLEANS) 2>/dev/null
+
+check-topdir:
+	@test -f configure || (echo "Must make this target in the top source directory"; exit 1)
+
+clean-config-files: check-topdir
+	-rm -rf auto*.cache
+	-rm -f @CONFIGURE_FILES@
+
+distclean: check-topdir clean clean-config-files
+
+cvsclean: distclean
+	-rm -f configure
+
+.PHONY: strip install uninstall
+
+strip: all
+	-strip --strip-debug --discard-locals $(PROGS)
+
+install: all
+	@mkdir -p "$(DESTDIR)$(moddir)/" && \
+	for i in $(PROGS) ; do \
+	    install -D "$$i" "$(DESTDIR)$(moddir)/$$i" ; \
+	done
+	@mkdir -p "$(DESTDIR)$(confdir)/" && \
+	lst="`ls -1 @srcdir@/*.conf @srcdir@/*.sample @srcdir@/*.default @srcdir@/*.sql 2>/dev/null | sed 's/\.sample//g; s/\.default//g; s/[^ ]*\*\.[^ ]*//g' | sort | uniq`" ; \
+	for s in $$lst; do \
+	    d="$(DESTDIR)$(confdir)/`echo $$s | sed 's,.*/,,'`" ; \
+	    if [ -f "$$d" ]; then \
+		echo "Not overwriting existing $$d" ; \
+	    else \
+		if [ ! -f "$$s" ]; then \
+		    test -f "$$s.default" && s="$$s.default" ; \
+		    test -f "$$s.sample" && s="$$s.sample" ; \
+		fi ; \
+		install -m 0644 "$$s" "$$d" ; \
+	    fi ; \
+	done
+
+uninstall:
+	@-for i in $(PROGS) ; do \
+	    rm "$(DESTDIR)$(moddir)/$$i" ; \
+	done
+	@-rmdir "$(DESTDIR)$(moddir)"
+	@-rmdir "$(DESTDIR)$(confdir)" || echo "Remove conf files by hand if you want so"
+
+.PHONY: snapshot tarball rpm
+snapshot tarball: check-topdir clean
+	@if [ $@ = snapshot ]; then ver="`date '+CVS-%Y%m%d'`"; else ver="@PACKAGE_VERSION@-@PACKAGE_RELEASE@"; fi ; \
+	wd=`pwd|sed 's,^.*/,,'`; \
+	mkdir -p tarballs; cd ..; \
+	echo $$wd/tar-exclude >$$wd/tar-exclude; \
+	find $$wd -name Makefile >>$$wd/tar-exclude; \
+	find $$wd -name YateLocal.mak >>$$wd/tar-exclude; \
+	find $$wd -name '*.conf' >>$$wd/tar-exclude; \
+	find $$wd -name '*.cache' >>$$wd/tar-exclude; \
+	find $$wd -name '*~' >>$$wd/tar-exclude; \
+	find $$wd -name '.*.swp' >>$$wd/tar-exclude; \
+	if [ $@ = tarball ]; then \
+	    find $$wd -name CVS >>$$wd/tar-exclude; \
+	    find $$wd -name .cvsignore >>$$wd/tar-exclude; \
+	else \
+	    find $$wd -name '*.spec' >>$$wd/tar-exclude; \
+	fi ; \
+	tar czf $$wd/tarballs/$$wd-$$ver.tar.gz \
+	--exclude $$wd/tarballs \
+	--exclude $$wd/config.status \
+	--exclude $$wd/config.log \
+	-X $$wd/tar-exclude \
+	$$wd; \
+	rm $$wd/tar-exclude
+
+rpm: tarball
+	rpmbuild -tb tarballs/@PACKAGE_TARNAME@-@PACKAGE_VERSION@-@PACKAGE_RELEASE@.tar.gz
+
+%.o: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
+	$(COMPILE) -c $<
+
+codecs.cpp : clcodec.h clproto.h cldata.h cl_log.h
+	    
+	
+datacard,yate : datacard.h     
+datacard.yate : OBJS:= datacarddevice.o
+datacard.yate : $(OBJS)
+
+%.yate: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
+	$(MODCOMP) -o $@ $(LOCALFLAGS)  $(OBJS) $< $(LOCALLIBS)
+
+@srcdir@/configure: @srcdir@/configure.in
+	cd @srcdir@ && autoconf
+
+$(MKDEPS): @srcdir@/configure
+	$(MKDEPS) --recheck
+
+Makefile: $(MKDEPS) @srcdir@/Makefile.in
+	$(MKDEPS) --file=$@
+
+.PHONY: help
+help:
+	@echo -e 'Usual make targets:\n\
+	    all install uninstall\n\
+	    clean distclean cvsclean (avoid this one!)\n\
+	    debug ddebug xdebug (carefull!)\n\
+	    snapshot tarball rpm'

@@ -1,0 +1,32 @@
+		YATE - Yet Another Telephony Engine
+		-----------------------------------
+
+  The YATE project aims to be a fully featured software PBX.
+  
+  It was created to alow developers and users to have more functionality and
+  scalability. To reach this goal YATE is built from two kinds of components: 
+    1. The main engine - telengine.
+    2. Modules - routing modules
+               - drivers
+               - script language bindings
+	       - billing modules
+  
+  Its license is GPL with exceptions (in case of linking with proprietary
+  software). We have chosen this license to help the growth of this project.
+
+
+Building YATE Modules
+---------------------
+
+These are generic instructions for building a Yate module. For specific
+modules their developers may add extra information.
+
+YATE have been tested on Linux and Windows and was ported to FreeBSD.
+Please report bugs at bugs@voip.null.ro
+
+To build and install a Yate module the quick way is:
+  ./configure
+  make
+  make install
+
+Yate must be already installed.
