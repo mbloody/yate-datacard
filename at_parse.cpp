@@ -12,8 +12,12 @@
  * \param cmd -- the command to process
  * \return a string describing the given command
  */
+#include "datacarddevice.h"
+#include <stdlib.h>
+#include <stdio.h>
 
-static const char* at_cmd2str (at_cmd_t cmd)
+
+const char* CardDevice::at_cmd2str (at_cmd_t cmd)
 {
 	switch (cmd)
 	{
@@ -145,7 +149,7 @@ static const char* at_cmd2str (at_cmd_t cmd)
  * \return a string describing the given response
  */
 
-static const char* at_res2str (at_res_t res)
+const char* CardDevice::at_res2str (at_res_t res)
 {
 	switch (res)
 	{
@@ -252,7 +256,7 @@ static const char* at_res2str (at_res_t res)
  * \return NULL on error (parse error) or a pointer to the caller id inforamtion in str on success
  */
 
-static inline char* at_parse_clip (pvt_t* pvt, char* str, size_t len)
+char* CardDevice::at_parse_clip (char* str, size_t len)
 {
 	size_t	i;
 	int	state;
@@ -306,7 +310,7 @@ static inline char* at_parse_clip (pvt_t* pvt, char* str, size_t len)
  * \return NULL on error (parse error) or a pointer to the subscriber number
  */
 
-static inline char* at_parse_cnum (pvt_t* pvt, char* str, size_t len)
+char* CardDevice::at_parse_cnum (char* str, size_t len)
 {
 	size_t	i;
 	int	state;
@@ -374,7 +378,7 @@ static inline char* at_parse_cnum (pvt_t* pvt, char* str, size_t len)
  * \return NULL on error (parse error) or a pointer to the provider name
  */
 
-static inline char* at_parse_cops (pvt_t* pvt, char* str, size_t len)
+char* CardDevice::at_parse_cops (char* str, size_t len)
 {
 	size_t	i;
 	int	state;
@@ -433,7 +437,7 @@ static inline char* at_parse_cops (pvt_t* pvt, char* str, size_t len)
  * \retval -1 parse error
  */
 
-static inline int at_parse_creg (pvt_t* pvt, char* str, size_t len, int* gsm_reg, int* gsm_reg_status, char** lac, char** ci)
+int CardDevice::at_parse_creg (char* str, size_t len, int* gsm_reg, int* gsm_reg_status, char** lac, char** ci)
 {
 	size_t	i;
 	int	state;
@@ -567,7 +571,7 @@ static inline int at_parse_creg (pvt_t* pvt, char* str, size_t len, int* gsm_reg
  * \return -1 on error (parse error) or the index of the new sms message
  */
 
-static inline int at_parse_cmti (pvt_t* pvt, char* str, size_t len)
+int CardDevice::at_parse_cmti (char* str, size_t len)
 {
 	int index = -1;
 
@@ -578,7 +582,7 @@ static inline int at_parse_cmti (pvt_t* pvt, char* str, size_t len)
 
 	if (!sscanf (str, "+CMTI: %*[^,],%d", &index))
 	{
-		ast_debug(2, "[%s] Error parsing CMTI event '%s'\n", pvt->id, str);
+	    Debug(DebugAll, "[%s] Error parsing CMTI event '%s'\n", c_str(), str);
 		return -1;
 	}
 
@@ -597,7 +601,7 @@ static inline int at_parse_cmti (pvt_t* pvt, char* str, size_t len)
  * \retval -1 parse error
  */
 
-static inline int at_parse_cmgr (pvt_t* pvt, char* str, size_t len, char** number, char** text)
+int CardDevice::at_parse_cmgr (char* str, size_t len, char** number, char** text)
 {
 	size_t	i;
 	int	state;
@@ -676,7 +680,7 @@ static inline int at_parse_cmgr (pvt_t* pvt, char* str, size_t len, char** numbe
  * \retval -1 parse error
  */
 
-static inline int at_parse_cusd (pvt_t* pvt, char* str, size_t len, char** cusd, unsigned char* dcs)
+int CardDevice::at_parse_cusd (char* str, size_t len, char** cusd, unsigned char* dcs)
 {
 	size_t	i;
 	int	state;
@@ -754,7 +758,7 @@ static inline int at_parse_cusd (pvt_t* pvt, char* str, size_t len, char** cusd,
  * \return -1 on error (parse error) or card lock
  */
 
-static inline int at_parse_cpin (pvt_t* pvt, char* str, size_t len)
+int CardDevice::at_parse_cpin (char* str, size_t len)
 {
 	if (memmem (str, len, "READY", 5))
 	{
@@ -762,16 +766,16 @@ static inline int at_parse_cpin (pvt_t* pvt, char* str, size_t len)
 	}
 	if (memmem (str, len, "SIM PIN", 7))
 	{
-		ast_log (LOG_ERROR, "Datacard %s needs PIN code!\n", pvt->id);
+		Debug(DebugAll, "Datacard %s needs PIN code!\n", c_str());
 		return 1;
 	}
 	if (memmem (str, len, "SIM PUK", 7))
 	{
-		ast_log (LOG_ERROR, "Datacard %s needs PUK code!\n", pvt->id);
+		Debug(DebugAll, "Datacard %s needs PUK code!\n", c_str());
 		return 2;
 	}
 
-	ast_log (LOG_ERROR, "[%s] Error parsing +CPIN message: %s\n", pvt->id, str);
+	Debug(DebugAll, "[%s] Error parsing +CPIN message: %s\n", c_str(), str);
 
 	return -1;
 }
@@ -785,7 +789,7 @@ static inline int at_parse_cpin (pvt_t* pvt, char* str, size_t len)
  * \retval -1 error
  */
 
-static inline int at_parse_csq (pvt_t* pvt, char* str, size_t len, int* rssi)
+int CardDevice::at_parse_csq (char* str, size_t len, int* rssi)
 {
 	/*
 	 * parse +CSQ response in the following format:
@@ -796,7 +800,7 @@ static inline int at_parse_csq (pvt_t* pvt, char* str, size_t len, int* rssi)
 
 	if (!sscanf (str, "+CSQ: %2d,", rssi))
 	{
-		ast_debug (2, "[%s] Error parsing +CSQ result '%s'\n", pvt->id, str);
+		Debug(DebugAll, "[%s] Error parsing +CSQ result '%s'\n", c_str(), str);
 		return -1;
 	}
 
@@ -811,7 +815,7 @@ static inline int at_parse_csq (pvt_t* pvt, char* str, size_t len, int* rssi)
  * \return -1 on error (parse error) or the rssi value
  */
 
-static inline int at_parse_rssi (pvt_t* pvt, char* str, size_t len)
+int CardDevice::at_parse_rssi (char* str, size_t len)
 {
 	int rssi = -1;
 
@@ -822,7 +826,7 @@ static inline int at_parse_rssi (pvt_t* pvt, char* str, size_t len)
 
 	if (!sscanf (str, "^RSSI:%d", &rssi))
 	{
-		ast_debug (2, "[%s] Error parsing RSSI event '%s'\n", pvt->id, str);
+		Debug(DebugAll, "[%s] Error parsing RSSI event '%s'\n", c_str(), str);
 		return -1;
 	}
 
@@ -837,7 +841,7 @@ static inline int at_parse_rssi (pvt_t* pvt, char* str, size_t len)
  * \return -1 on error (parse error) or the the link mode value
  */
 
-static inline int at_parse_mode (pvt_t* pvt, char* str, size_t len, int* mode, int* submode)
+int CardDevice::at_parse_mode (char* str, size_t len, int* mode, int* submode)
 {
 	/*
 	 * parse RSSI info in the following format:
@@ -849,7 +853,7 @@ static inline int at_parse_mode (pvt_t* pvt, char* str, size_t len, int* mode, i
 
 	if (!sscanf (str, "^MODE:%d,%d", mode, submode))
 	{
-		ast_debug (2, "[%s] Error parsing MODE event '%.*s'\n", pvt->id, (int) len, str);
+		Debug(DebugAll, "[%s] Error parsing MODE event '%.*s'\n", c_str(), (int) len, str);
 		return -1;
 	}
 
