@@ -143,10 +143,25 @@ void MonitorThread::cleanup()
 
 
 
-CardDevice::CardDevice(String name):String(name), m_mutex(true), m_connected(false)
+CardDevice::CardDevice(String name):String(name), m_mutex(true), m_monitor(0), m_connected(false)
 {
     m_data_fd = -1;
     m_audio_fd = -1;
+    
+    /* set some defaults */
+    timeout = 10000;
+    cusd_use_ucs2_decoding =  1;
+    gsm_reg_status = -1;
+
+    m_provider_name = "NONE";
+    m_number = "Unknown";
+
+    reset_datacard =  1;
+    u2diag = -1;
+    callingpres = -1;
+    
+    m_atQueue.clear();
+
 }
 bool CardDevice::startMonitor() 
 { 

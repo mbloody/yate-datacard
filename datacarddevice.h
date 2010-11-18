@@ -93,22 +93,20 @@ typedef enum {
 	RES_SRVST,
 } at_res_t;
 
-typedef struct at_queue_t
+class at_queue_t : public GenObject
 {
-//	AST_LIST_ENTRY (at_queue_t) entry;
+public:
+    at_cmd_t		cmd;
+    at_res_t		res;
 
-	at_cmd_t		cmd;
-	at_res_t		res;
+    int			ptype;
 
-	int			ptype;
-
-	union
-	{
-		void*		data;
-		int		num;
-	} param;
-}
-at_queue_t;
+    union
+    {
+    	void*		data;
+	int		num;
+    } param;
+};
 
 class CardDevice;
 class MonitorThread : public Thread
@@ -175,13 +173,13 @@ public:
 	int			rssi;
 	int			linkmode;
 	int			linksubmode;
-	char			provider_name[32];
-	char			manufacturer[32];
+	String m_provider_name;
+	String m_manufacturer;
 	char			model[32];
 	char			firmware[32];
 	char			imei[17];
 	char			imsi[17];
-	char			number[128];
+	String m_number;
 	char			location_area_code[8];
 	char			cell_id[8];
 
@@ -310,13 +308,14 @@ public:
     int  at_send_cfun  (int, int);
     int  at_send_cmee  (int);
 
-/*
-static inline int		at_fifo_queue_add	(pvt_t*, at_cmd_t, at_res_t);
-static int			at_fifo_queue_add_ptr	(pvt_t*, at_cmd_t, at_res_t, void*);
-static int			at_fifo_queue_add_num	(pvt_t*, at_cmd_t, at_res_t, int);
-static inline void		at_fifo_queue_rem	(pvt_t*);
-static inline void		at_fifo_queue_flush	(pvt_t*);
-static inline at_queue_t*	at_fifo_queue_head	(pvt_t*);*/
+
+    ObjList m_atQueue;
+//    int	at_fifo_queue_add(at_cmd_t, at_res_t);
+//    int	at_fifo_queue_add_ptr(at_cmd_t, at_res_t, void*);
+//    int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
+//    void at_fifo_queue_rem();
+//    void at_fifo_queue_flush();
+//    at_queue_t*	at_fifo_queue_head	(pvt_t*);
 
 };
 

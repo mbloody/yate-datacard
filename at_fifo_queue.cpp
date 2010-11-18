@@ -7,6 +7,9 @@
    Dmitry Vagin <dmitry2004@yandex.ru>
 */
 
+#include "datacarddevice.h"
+
+
 /*!
  * \brief Add an item to the back of the queue
  * \param pvt -- pvt structure
@@ -14,9 +17,9 @@
  * \param res -- the expected response
  */
 
-static inline int at_fifo_queue_add (pvt_t* pvt, at_cmd_t cmd, at_res_t res)
+int at_fifo_queue_add (pvt_t* pvt, at_cmd_t cmd, at_res_t res)
 {
-	return at_fifo_queue_add_ptr (pvt, cmd, res, NULL);
+    return at_fifo_queue_add_ptr (pvt, cmd, res, NULL);
 }
 
 /*!
@@ -27,7 +30,7 @@ static inline int at_fifo_queue_add (pvt_t* pvt, at_cmd_t cmd, at_res_t res)
  * \param data -- pointer data associated with this entry, it will be freed when the message is freed
  */
 
-static int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
+int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* data)
 {
 	at_queue_t* e;
 
@@ -57,7 +60,7 @@ static int at_fifo_queue_add_ptr (pvt_t* pvt, at_cmd_t cmd, at_res_t res, void* 
  * \param num -- numeric data
  */
 
-static int at_fifo_queue_add_num (pvt_t* pvt, at_cmd_t cmd, at_res_t res, int num)
+int at_fifo_queue_add_num (pvt_t* pvt, at_cmd_t cmd, at_res_t res, int num)
 {
 	at_queue_t* e;
 
@@ -84,7 +87,7 @@ static int at_fifo_queue_add_num (pvt_t* pvt, at_cmd_t cmd, at_res_t res, int nu
  * \param pvt -- pvt structure
  */
 
-static inline void at_fifo_queue_rem (pvt_t* pvt)
+void at_fifo_queue_rem (pvt_t* pvt)
 {
 	at_queue_t* e = AST_LIST_REMOVE_HEAD (&pvt->at_queue, entry);
 
@@ -107,14 +110,9 @@ static inline void at_fifo_queue_rem (pvt_t* pvt)
  * \param pvt -- pvt structure
  */
 
-static inline void at_fifo_queue_flush (pvt_t* pvt)
+void at_fifo_queue_flush (pvt_t* pvt)
 {
-	at_queue_t* e;
-
-	while ((e = at_fifo_queue_head (pvt)))
-	{
-		at_fifo_queue_rem (pvt);
-	}
+    m_atQueue.clear();
 }
 
 /*!
@@ -123,7 +121,7 @@ static inline void at_fifo_queue_flush (pvt_t* pvt)
  * \return a pointer to the head of the given queue
  */
 
-static inline at_queue_t* at_fifo_queue_head (pvt_t* pvt)
+at_queue_t* at_fifo_queue_head (pvt_t* pvt)
 {
 	return AST_LIST_FIRST (&pvt->at_queue);
 }
