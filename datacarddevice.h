@@ -1,6 +1,6 @@
-#include <yatephone.h>
 #ifndef DATACARDDEVICE_H
 #define DATACARDDEVICE_H
+#include <yatephone.h>
 
 
 #ifndef MIN
@@ -213,6 +213,110 @@ public:
 	unsigned int		reset_datacard:1;
 	unsigned int		usecallingpres:1;
 	unsigned int		disablesms:1;
+	
+	// AT command methods.
+    int at_wait (int*);
+    int at_read ();
+    int at_read_result_iov();
+    at_res_t at_read_result_classification (int);
+    
+    int at_response (int, at_res_t);
+    int t_response_busy ();
+    int at_response_cend (char*, size_t);
+    int at_response_cgmi (char*, size_t);
+    int at_response_cgmm (char*, size_t);
+    int at_response_cgmr (char*, size_t);
+    int at_response_cgsn (char*, size_t);
+    int  at_response_cimi (char*, size_t);
+    int  at_response_clip (char*, size_t);
+    int  at_response_cmgr (char*, size_t);
+    int  at_response_cmti (char*, size_t);
+    int  at_response_cnum (char*, size_t);
+    int  at_response_conn ();
+    int  at_response_cops (char*, size_t);
+    int  at_response_cpin (char*, size_t);
+    int  at_response_creg (char*, size_t);
+    int  at_response_csq  (char*, size_t);
+    int  at_response_cssi (char*, size_t);
+    int  at_response_cusd (char*, size_t);
+    int  at_response_error ();
+    int  at_response_mode (char*, size_t);
+    int  at_response_no_carrier ();
+    int  at_response_no_dialtone ();
+    int  at_response_ok  ();
+    int  at_response_orig (char*, size_t);
+    int  at_response_ring ();
+    int  at_response_rssi (char*, size_t);
+    int  at_response_smmemfull ();
+    int  at_response_sms_prompt ();
+
+
+    const char*  at_cmd2str  (at_cmd_t);
+    const char*  at_res2str  (at_res_t);
+
+    char*   at_parse_clip  (char*, size_t);
+    int at_parse_cmgr (char*, size_t, char**, char**);
+    int   at_parse_cmti  (char*, size_t);
+
+    char*  at_parse_cnum  (char*, size_t);
+    char*  at_parse_cops  (char*, size_t);
+    int  at_parse_creg  (char*, size_t, int*, int*, char**, char**);
+    int  at_parse_cpin  (char*, size_t);
+    int  at_parse_csq  (char*, size_t, int*);
+    int  at_parse_cusd  (char*, size_t, char**, unsigned char*);
+    int  at_parse_mode  (char*, size_t, int*, int*);
+    int  at_parse_rssi  (char*, size_t);
+
+
+    int at_write  (char*);
+    int at_write_full  (char*, size_t);
+
+    int  at_send_at  ();
+    int  at_send_ata  ();
+    int  at_send_atd  (const char* number);
+    int  at_send_ate0  ();
+    int  at_send_atz  ();
+    int  at_send_cgmi  ();
+    int  at_send_cgmm  ();
+    int  at_send_cgmr  ();
+    int  at_send_cgsn  ();
+    int  at_send_chup  ();
+    int  at_send_cimi  ();
+    int  at_send_clip  (int status);
+    int  at_send_clir  (int mode);
+    int  at_send_clvl  (int level);
+    int  at_send_cmgd  (int index);
+    int  at_send_cmgf  (int mode);
+    int  at_send_cmgr  (int index);
+    int  at_send_cmgs  (const char* number);
+    int  at_send_cnmi  ();
+    int  at_send_cnum  ();
+    int  at_send_cops  ();
+    int  at_send_cops_init (int mode, int format);
+    int  at_send_cpin_test ();
+    int  at_send_creg  ();
+    int  at_send_creg_init (int level);
+    int  at_send_cscs  (const char* encoding);
+    int  at_send_csq  ();
+    int  at_send_cssn  (int cssi, int cssu);
+    int  at_send_cusd  (const char* code);
+    int  at_send_cvoice_test ();
+    int  at_send_ddsetex  ();
+    int  at_send_dtmf  (char digit);
+    int  at_send_sms_text (const char* message);
+    int  at_send_u2diag  (int mode);
+    int  at_send_ccwa_disable ();
+    int  at_send_cfun  (int, int);
+    int  at_send_cmee  (int);
+
+/*
+static inline int		at_fifo_queue_add	(pvt_t*, at_cmd_t, at_res_t);
+static int			at_fifo_queue_add_ptr	(pvt_t*, at_cmd_t, at_res_t, void*);
+static int			at_fifo_queue_add_num	(pvt_t*, at_cmd_t, at_res_t, int);
+static inline void		at_fifo_queue_rem	(pvt_t*);
+static inline void		at_fifo_queue_flush	(pvt_t*);
+static inline at_queue_t*	at_fifo_queue_head	(pvt_t*);*/
+
 };
 
 
@@ -253,113 +357,6 @@ static struct ast_jb_conf jbconf_global;
 //static int			opentty			(char*);
 //static int			device_status		(int);
 //static int			disconnect_datacard	(pvt_t*);
-
-/*
-static inline int		at_wait			(pvt_t*, int*);
-static inline int		at_read			(pvt_t*);
-static int			at_read_result_iov	(pvt_t*);
-static inline at_res_t		at_read_result_classification (pvt_t*, int);
-
-
-static inline int		at_response		(pvt_t*, int, at_res_t);
-static inline int		at_response_busy	(pvt_t*);
-static inline int		at_response_cend	(pvt_t*, char*, size_t);
-static inline int		at_response_cgmi	(pvt_t*, char*, size_t);
-static inline int		at_response_cgmm	(pvt_t*, char*, size_t);
-static inline int		at_response_cgmr	(pvt_t*, char*, size_t);
-static inline int		at_response_cgsn	(pvt_t*, char*, size_t);
-static inline int		at_response_cimi	(pvt_t*, char*, size_t);
-static inline int		at_response_clip	(pvt_t*, char*, size_t);
-static inline int		at_response_cmgr	(pvt_t*, char*, size_t);
-static inline int		at_response_cmti	(pvt_t*, char*, size_t);
-static inline int		at_response_cnum	(pvt_t*, char*, size_t);
-static inline int		at_response_conn	(pvt_t*);
-static inline int		at_response_cops	(pvt_t*, char*, size_t);
-static inline int		at_response_cpin	(pvt_t*, char*, size_t);
-static inline int		at_response_creg	(pvt_t*, char*, size_t);
-static inline int		at_response_csq		(pvt_t*, char*, size_t);
-static inline int		at_response_cssi	(pvt_t*, char*, size_t);
-static inline int		at_response_cusd	(pvt_t*, char*, size_t);
-static inline int		at_response_error	(pvt_t*);
-static inline int		at_response_mode	(pvt_t*, char*, size_t);
-static inline int		at_response_no_carrier	(pvt_t*);
-static inline int		at_response_no_dialtone	(pvt_t*);
-static inline int		at_response_ok		(pvt_t*);
-static inline int		at_response_orig	(pvt_t*, char*, size_t);
-static inline int		at_response_ring	(pvt_t*);
-static inline int		at_response_rssi	(pvt_t*, char*, size_t);
-static inline int		at_response_smmemfull	(pvt_t*);
-static inline int		at_response_sms_prompt	(pvt_t*);
-
-
-static const char*		at_cmd2str		(at_cmd_t);
-static const char*		at_res2str		(at_res_t);
-
-static char*			at_parse_clip		(pvt_t*, char*, size_t);
-static int			at_parse_cmgr		(pvt_t*, char*, size_t, char**, char**);
-static int			at_parse_cmti		(pvt_t*, char*, size_t);
-
-static inline char*		at_parse_cnum		(pvt_t*, char*, size_t);
-static inline char*		at_parse_cops		(pvt_t*, char*, size_t);
-static inline int		at_parse_creg		(pvt_t*, char*, size_t, int*, int*, char**, char**);
-static inline int		at_parse_cpin		(pvt_t*, char*, size_t);
-static inline int		at_parse_csq		(pvt_t*, char*, size_t, int*);
-static inline int		at_parse_cusd		(pvt_t*, char*, size_t, char**, unsigned char*);
-static inline int		at_parse_mode		(pvt_t*, char*, size_t, int*, int*);
-static inline int		at_parse_rssi		(pvt_t*, char*, size_t);
-
-
-static inline int		at_write		(pvt_t*, char*);
-static int			at_write_full		(pvt_t*, char*, size_t);
-
-static inline int		at_send_at		(pvt_t*);
-static inline int		at_send_ata		(pvt_t*);
-static inline int		at_send_atd		(pvt_t*, const char* number);
-static inline int		at_send_ate0		(pvt_t*);
-static inline int		at_send_atz		(pvt_t*);
-static inline int		at_send_cgmi		(pvt_t*);
-static inline int		at_send_cgmm		(pvt_t*);
-static inline int		at_send_cgmr		(pvt_t*);
-static inline int		at_send_cgsn		(pvt_t*);
-static inline int		at_send_chup		(pvt_t*);
-static inline int		at_send_cimi		(pvt_t*);
-static inline int		at_send_clip		(pvt_t*, int status);
-static inline int		at_send_clir		(pvt_t*, int mode);
-static inline int		at_send_clvl		(pvt_t*, int level);
-static inline int		at_send_cmgd		(pvt_t*, int index);
-static inline int		at_send_cmgf		(pvt_t*, int mode);
-static inline int		at_send_cmgr		(pvt_t*, int index);
-static inline int		at_send_cmgs		(pvt_t*, const char* number);
-static inline int		at_send_cnmi		(pvt_t*);
-static inline int		at_send_cnum		(pvt_t*);
-static inline int		at_send_cops		(pvt_t*);
-static inline int		at_send_cops_init	(pvt_t*, int mode, int format);
-static inline int		at_send_cpin_test	(pvt_t*);
-static inline int		at_send_creg		(pvt_t*);
-static inline int		at_send_creg_init	(pvt_t*, int level);
-static inline int		at_send_cscs		(pvt_t*, const char* encoding);
-static inline int		at_send_csq		(pvt_t*);
-static inline int		at_send_cssn		(pvt_t*, int cssi, int cssu);
-static inline int		at_send_cusd		(pvt_t*, const char* code);
-static inline int		at_send_cvoice_test	(pvt_t*);
-static inline int		at_send_ddsetex		(pvt_t*);
-static inline int		at_send_dtmf		(pvt_t*, char digit);
-static inline int		at_send_sms_text	(pvt_t*, const char* message);
-static inline int		at_send_u2diag		(pvt_t*, int mode);
-static inline int		at_send_ccwa_disable	(pvt_t*);
-static inline int		at_send_cfun		(pvt_t*, int, int);
-static inline int		at_send_cmee		(pvt_t*, int);
-
-
-static inline int		at_fifo_queue_add	(pvt_t*, at_cmd_t, at_res_t);
-static int			at_fifo_queue_add_ptr	(pvt_t*, at_cmd_t, at_res_t, void*);
-static int			at_fifo_queue_add_num	(pvt_t*, at_cmd_t, at_res_t, int);
-static inline void		at_fifo_queue_rem	(pvt_t*);
-static inline void		at_fifo_queue_flush	(pvt_t*);
-static inline at_queue_t*	at_fifo_queue_head	(pvt_t*);
-*/
-
-
 
 #endif
 
