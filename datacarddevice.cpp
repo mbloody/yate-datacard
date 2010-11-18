@@ -49,79 +49,99 @@ MonitorThread::~MonitorThread()
 
 void MonitorThread::run()
 {
-//    at_res_t	at_res;
-//    at_queue_t*	e;
-//    int t;
-//    int res;
-//    struct iovec iov[2];
-//    int iovcnt;
-//    size_t size;
-//    size_t i = 0;
+    at_res_t	at_res;
+    at_queue_t*	e;
+    int t;
+    int res;
+    struct iovec iov[2];
+    int iovcnt;
+    size_t size;
+    size_t i = 0;
 
     /* start datacard initilization with the AT request */
-//    ast_mutex_lock (&pvt->lock);
+    if (!m_device) 
+        return;
+    
+    m_device->m_mutex.lock();
 
-//    pvt->timeout = 10000;
+    m_device->timeout = 10000;
 
-//    if (at_send_at (pvt) || at_fifo_queue_add (pvt, CMD_AT, RES_OK))
-//    {
-//	ast_log (LOG_ERROR, "[%s] Error sending AT\n", pvt->id);
-//	goto e_cleanup;
-//    }
+    if (m_device->at_send_at() || m_device->at_fifo_queue_add(CMD_AT, RES_OK))
+    {
+        Debug(DebugAll, "[%s] Error sending AT\n", m_device->c_str());
+        m_device->disconnect();
+        m_device->m_mutex.unlock();
+        return;
+    }
 
-//    ast_mutex_unlock (&pvt->lock);
+    m_device->m_mutex.unlock();
 
-//    while (!check_unloading ())
-//    {
-//	ast_mutex_lock (&pvt->lock);
+    // Main loop
+    while (m_device->isRunning())
+    {
+        m_device->m_mutex.lock();
 
-//	if (device_status (pvt->data_fd) || device_status (pvt->audio_fd))
-//	{
-//		ast_log (LOG_ERROR, "Lost connection to Datacard %s\n", pvt->id);
+        if (m_device->dataStatus() || m_device->audioStatus())
+        {
+            Debug(DebugAll, "Lost connection to Datacard %s\n", m_device->c_str());
 //		goto e_cleanup;
-//	}
-//	t = pvt->timeout;
+            m_device->disconnect();
+            m_device->m_mutex.unlock();
+            return;
+        }
+        t = m_device->timeout;
 
-//	ast_mutex_unlock (&pvt->lock);
+        m_device->m_mutex.unlock();
 
 
-//	if (!at_wait (pvt, &t))
-//	{
-//	    ast_mutex_lock (&pvt->lock);
-//	    if (!pvt->initialized)
-//	    {
-//		ast_debug (1, "[%s] timeout waiting for data, disconnecting\n", pvt->id);
+        if (!m_device->at_wait(&t))
+        {
+            m_device->m_mutex.lock();
+            if (!m_device->initialized)
+            {
+                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting\n", m_device->c_str());
 
-//		if ((e = at_fifo_queue_head (pvt)))
-//		{
-//		    ast_debug (1, "[%s] timeout while waiting '%s' in response to '%s'\n", pvt->id,	at_res2str (e->res), at_cmd2str (e->cmd));
-//		}
+                if ((e = static_cast<at_queue_t*>(m_device->m_atQueue.get())))
+                {
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'\n", m_device->c_str(), m_device->at_res2str (e->res), m_device->at_cmd2str (e->cmd));
+                }
 
 //		goto e_cleanup;
-//	    }
-//	    else
-//	    {
-//		ast_mutex_unlock (&pvt->lock);
-//		continue;
-//	    }
-//	}
-//	ast_mutex_lock (&pvt->lock);
+                Debug(DebugAll, "Error initializing Datacard %s\n", m_device->c_str());
+                m_device->disconnect();
+                m_device->m_mutex.unlock();
+                return;
+            }
+            else
+            {
+                m_device->m_mutex.unlock();
+                continue;
+            }
+        }
+    
+        m_device->m_mutex.lock();
 
-//	if (at_read (pvt))
-//	{
+        if (m_device->at_read())
+        {
 //		goto e_cleanup;
-//	}
-//	while ((iovcnt = at_read_result_iov (pvt)) > 0)
-//	{
-//	    at_res = at_read_result_classification (pvt, iovcnt);
+            m_device->disconnect();
+            m_device->m_mutex.unlock();
+            return;
+        }
+        while ((iovcnt = m_device->at_read_result_iov()) > 0)
+        {
+            at_res = m_device->at_read_result_classification(iovcnt);
 	    
-//	    if (at_response (pvt, iovcnt, at_res))
-//	    {
+            if (m_device->at_response(iovcnt, at_res))
+            {
 //		goto e_cleanup;
-//	    }
-//	}
-//	ast_mutex_unlock (&pvt->lock);
-//    }
+                m_device->disconnect();
+                m_device->m_mutex.unlock();
+                return;
+            }
+        }
+        m_device->m_mutex.unlock();
+    } // End of Main loop
 
 //    ast_mutex_lock (&pvt->lock);
 
@@ -165,6 +185,8 @@ CardDevice::CardDevice(String name):String(name), m_mutex(true), m_monitor(0), m
 }
 bool CardDevice::startMonitor() 
 { 
+    //TODO: Running flag
+    m_running = true;
     MonitorThread* m_monitor = new MonitorThread(this);
     return m_monitor->startup();
 //    return true;
@@ -246,4 +268,23 @@ int CardDevice::devStatus(int fd)
     if (fd < 0)
 	return -1;
     return tcgetattr(fd, &t);
+}
+
+//TODO: Do we need syncronization?
+bool CardDevice::isRunning() const
+{
+    bool running;
+    
+    // m_mutex.lock();
+    running = m_running;
+    // m_mutex.unlock();
+    
+    return running;
+}
+
+void CardDevice::stopRunning()
+{
+    // m_mutex.lock();
+    m_running = false;
+    // m_mutex.unlock();
 }

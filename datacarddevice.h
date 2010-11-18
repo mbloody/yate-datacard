@@ -198,7 +198,13 @@ public:
 	unsigned int		group_last_used:1;		/* mark the last used device */
 	unsigned int		prov_last_used:1;		/* mark the last used device */
 	unsigned int		sim_last_used:1;		/* mark the last used device */
-
+	
+	// TODO: Running flag. Do we need to stop every MonitorThread or set one 
+	// flag on module level? Do we need syncronization?
+	bool m_running;
+	bool isRunning() const;
+	void stopRunning();
+	    
 	/* Config */
 	String			audio_tty;			/* tty for audio connection */
 	String			data_tty;			/* tty for AT commands */
@@ -212,7 +218,7 @@ public:
 	unsigned int		reset_datacard:1;
 	unsigned int		usecallingpres:1;
 	unsigned int		disablesms:1;
-	
+		
 	// AT command methods.
     int at_wait (int*);
     int at_read ();
