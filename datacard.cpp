@@ -14,10 +14,21 @@ public:
     virtual void onReceiveUSSD(CardDevice* dev, String ussd)
     {
 	Debug(DebugAll, "onReceiveUSSD Got USSD response: '%s'\n", ussd.c_str());
+	Message* m = new Message("datacard.ussd");
+	m->addParam("type","incoming");
+	m->addParam("protocol","datacard");
+	m->addParam("text",ussd);
+	Engine::enqueue(m);
     }
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
     {
 	Debug(DebugAll, "onReceiveSMS Got SMS from %s: '%s'\n", caller.c_str(), sms.c_str());
+	Message* m = new Message("datacard.sms");
+	m->addParam("type","incoming");
+	m->addParam("protocol","datacard");
+	m->addParam("caller",caller);
+	m->addParam("text",sms);
+	Engine::enqueue(m);
     }
 };
 
