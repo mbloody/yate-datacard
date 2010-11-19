@@ -1151,7 +1151,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 {
 //TODO:
 //
-/*
+
 	at_queue_t*	e;
 	ssize_t		res;
 	char		sms_utf8_str[4096];
@@ -1161,7 +1161,6 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	char		text_base64[16384];
 
 	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
-//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_CMGR)
 	{
 		if (auto_delete_sms && e->ptype == 1)
 		{
@@ -1173,7 +1172,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 
 		at_fifo_queue_rem();
 
-		if (at_parse_cmgr (str, len, &from_number, &text))
+		if (at_parse_cmgr(str, len, &from_number, &text))
 		{
 			Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting\n", c_str());
 			return -1;
@@ -1205,15 +1204,17 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 				Debug(DebugAll, "[%s] Error parsing SMS from_number (convert UCS-2 to UTF-8): %s\n", c_str(), from_number);
 			}
 		}
+		
+		String from(text_base64);
+		String to(text);
+		
+//		decodeBase64(String(text), String(text_base64));
+		decodeBase64(to, from);
+//		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
+		Debug(DebugAll, "[%s] Got SMS from %s: '%s'\n", c_str(), from_number, text);
+		m_endpoint->onReceiveSMS(this, from_number, text);
 
-		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
-		ast_verb (1, "[%s] Got SMS from %s: '%s'\n", c_str(), from_number, text);
-
-#ifdef __MANAGER__
-		manager_event_new_sms (from_number, text);
-		manager_event_new_sms_base64(from_number, text_base64);
-#endif
-
+/*
 #ifdef __MANAGER__
 		struct ast_channel* channel;
 
@@ -1231,6 +1232,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			}
 		}
 #endif
+*/
 	}
 	else if (e)
 	{
@@ -1241,7 +1243,6 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	{
 		Debug(DebugAll, "[%s] Received unexpected '+CMGR'\n", c_str());
 	}
-*/
 	return 0;
 }
 
@@ -1293,7 +1294,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 {
 //TODO:
 //
-/*
+
 	ssize_t		res;
 	char*		cusd;
 	unsigned char	dcs;
@@ -1334,13 +1335,15 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 	}
 
 	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
-	ast_base64encode (text_base64, cusd, strlen(cusd), sizeof(text_base64));
+//	ast_base64encode (text_base64, cusd, strlen(cusd), sizeof(text_base64));
+	String from(text_base64);
+	String to(cusd);
+	decodeBase64(to, from);
+	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
+	m_endpoint->onReceiveUSSD(this, cusd);
+//
 
-#ifdef __MANAGER__
-	manager_event_new_ussd (cusd);
-	manager_event_new_ussd_base64 (text_base64);
-#endif
-
+/*
 #ifdef __MANAGER__
 	struct ast_channel* channel;
 

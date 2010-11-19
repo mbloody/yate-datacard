@@ -5,19 +5,22 @@ using namespace TelEngine;
 namespace { // anonymous
 
 static Configuration s_cfg;
-static ObjList s_devices;
-static Mutex s_devicesMutex;
-static bool s_run = true;
-static int discovery_interval = DEF_DISCOVERY_INT;
 
-class DiscoveryThread: public Thread
+class YDevEndPoint : public DevicesEndPoint
 {
 public:
-    DiscoveryThread();
-    ~DiscoveryThread();
-    virtual void run();
-    virtual void cleanup();       
+    YDevEndPoint(int interval):DevicesEndPoint(interval){}
+    ~YDevEndPoint(){}
+    virtual void onReceiveUSSD(CardDevice* dev, String ussd)
+    {
+	Debug(DebugAll, "onReceiveUSSD Got USSD response: '%s'\n", ussd.c_str());
+    }
+    virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
+    {
+	Debug(DebugAll, "onReceiveSMS Got SMS from %s: '%s'\n", caller.c_str(), sms.c_str());
+    }
 };
+
 
 class DatacardDriver : public Driver
 {
@@ -26,8 +29,9 @@ public:
     ~DatacardDriver();
     virtual void initialize();
     virtual bool msgExecute(Message& msg, String& dest);
-    CardDevice* loadDevice(String name,NamedList* data);
-    
+
+private:
+    YDevEndPoint* m_endpoint;
 };
 
 INIT_PLUGIN(DatacardDriver);
@@ -49,44 +53,6 @@ public:
     inline void setTargetid(const char* targetid)
 	{ m_targetid = targetid; }
 };
-
-
-//DiscoveryThread
-DiscoveryThread::DiscoveryThread()
-{
-}
-
-DiscoveryThread::~DiscoveryThread()
-{
-}
-
-void DiscoveryThread::run()
-{
-    while(s_run)
-    {
-	CardDevice* dev = 0;
-	s_devicesMutex.lock();
-        const ObjList *devicesIter = &s_devices;
-	while (devicesIter)
-	{
-		GenObject* obj = devicesIter->get();
-		devicesIter = devicesIter->next();
-		if (!obj) continue;	
-    		dev = static_cast<CardDevice*>(obj);
-    		dev->tryConnect();
-	}
-	s_devicesMutex.unlock();
-	
-	if (s_run)
-	{
-	    Thread::sleep(discovery_interval);
-        }
-    }
-}
-void DiscoveryThread::cleanup()
-{
-}
-
 
 
 
@@ -115,40 +81,16 @@ DatacardDriver::DatacardDriver()
 
 DatacardDriver::~DatacardDriver()
 {
-    CardDevice* dev = 0;
-    s_devicesMutex.lock();
-    const ObjList *devicesIter = &s_devices;
-    while (devicesIter)
-    {
-	GenObject* obj = devicesIter->get();
-	devicesIter = devicesIter->next();
-	if (!obj) continue;	
-	dev = static_cast<CardDevice*>(obj);
-	dev->disconnect();
-    }
-    s_devicesMutex.unlock();
-
     Output("Unloading module DatacardChannel");
+    m_endpoint->cleanDevices();
 }
-
-CardDevice* DatacardDriver::loadDevice(String name, NamedList* data)
-{
-    String audio_tty = data->getValue("audio");
-    String data_tty = data->getValue("data");
-    
-    CardDevice * dev = new CardDevice(name);
-    dev->data_tty = data_tty;
-    dev->audio_tty = audio_tty;
-    dev->d_read_rb.rb_init(dev->d_read_buf, sizeof(dev->d_read_buf));
-    return dev;
-}
-
 
 void DatacardDriver::initialize()
 {
     Output("Initializing module DatacardChannel");
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
+    m_endpoint = new YDevEndPoint(DEF_DISCOVERY_INT);
 //    String preferred = s_cfg.getValue("formats","preferred");
 //    bool def = s_cfg.getBoolValue("formats","default",true);
     String name;
@@ -161,16 +103,9 @@ void DatacardDriver::initialize()
 	name  = *sect;
 	if (!name.startsWith("datacard"))
 	    continue;
-	CardDevice* dev = loadDevice(name, sect);
-	if(dev)
-	{
-	    s_devicesMutex.lock();
-	    s_devices.append(dev);
-	    s_devicesMutex.unlock();
-	}
+	m_endpoint->appendDevice(name, sect);
     }
-    DiscoveryThread* dt = new DiscoveryThread();
-    dt->startup();
+    m_endpoint->startup();
     setup();
     Output("DatacardChannel initialized");
 }

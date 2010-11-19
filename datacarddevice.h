@@ -109,6 +109,9 @@ public:
 };
 
 class CardDevice;
+class DevicesEndPoint;
+
+
 class MonitorThread : public Thread
 {
 public:
@@ -123,7 +126,7 @@ private:
 class CardDevice: public String
 {
 public:
-    CardDevice(String name);
+    CardDevice(String name, DevicesEndPoint* ep);
     bool tryConnect();
     bool disconnect();
     
@@ -323,7 +326,83 @@ public:
     void at_fifo_queue_flush();
     at_queue_t* at_fifo_queue_head();
 
+
+    DevicesEndPoint* m_endpoint;
+    
+// Decode a Base64 string to a block
+static inline bool decodeBase64(DataBlock& buf, const String& str)
+{
+    Base64 b((void*)str.c_str(),str.length(),false);
+    bool ok = b.decode(buf,false);
+    b.clear(false);
+    return ok;
+}
+
+// Decode a Base64 string to another string
+// Check if decoded data has valid UTF8 characters
+static bool decodeBase64(String& buf, const String& str)
+{
+    DataBlock d;
+    if (!decodeBase64(d,str))
+	return false;
+    buf.assign((const char*)d.data(),d.length());
+    if (-1 != buf.lenUtf8())
+	return true;
+    return false;
+}
+
+ssize_t convert_string (const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
+ssize_t hexstr_to_ucs2char (const char* in, size_t in_length, char* out, size_t out_size);
+ssize_t ucs2char_to_hexstr (const char* in, size_t in_length, char* out, size_t out_size);
+ssize_t hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char* out, size_t out_size);
+ssize_t utf8_to_hexstr_ucs2 (const char* in, size_t in_length, char* out, size_t out_size);
+ssize_t char_to_hexstr_7bit (const char* in, size_t in_length, char* out, size_t out_size);
+ssize_t hexstr_7bit_to_char (const char* in, size_t in_length, char* out, size_t out_size);
+    
 };
+
+
+class DevicesEndPoint : public Thread
+{
+public:
+    
+    DevicesEndPoint(int interval);
+    virtual ~DevicesEndPoint();
+    
+    
+    virtual void run();
+    virtual void cleanup();
+    
+    virtual void onReceiveUSSD(CardDevice* dev, String ussd);
+    virtual void onReceiveSMS(CardDevice* dev, String caller, String sms);
+    
+    bool sendSMS(CardDevice* dev, String sms);
+    bool sendUSSD(CardDevice* dev, const String &ussd);
+    
+    CardDevice* appendDevice(String name, NamedList* data);
+    CardDevice* findDevice(String name);
+    void cleanDevices();
+
+private:
+    Mutex m_mutex;
+    ObjList m_devices;
+    int m_interval;
+    bool m_run;
+};
+
+/*
+class Connection
+{
+public:
+    virtual void onRinging();
+    virtual void onAnswered();
+    virtual void onHangup(int reason);
+    
+    bool Answer();
+    bool Hangup();
+
+};
+*/
 
 
 

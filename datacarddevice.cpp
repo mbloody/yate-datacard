@@ -164,7 +164,7 @@ void MonitorThread::cleanup()
 
 
 
-CardDevice::CardDevice(String name):String(name), m_mutex(true), m_monitor(0), m_connected(false)
+CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_mutex(true), m_monitor(0), m_connected(false)
 {
     m_data_fd = -1;
     m_audio_fd = -1;
@@ -222,6 +222,9 @@ bool CardDevice::disconnect()
     	Debug("disconnect",DebugAll,"[%s] Datacard not connected\n", safe());	
     	return m_connected;
     }
+    if(isRunning()) 
+	stopRunning();
+
 //    if (pvt->owner)
 //    {
 //    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner\n", pvt->id);
@@ -289,3 +292,99 @@ void CardDevice::stopRunning()
     m_running = false;
     // m_mutex.unlock();
 }
+
+
+//EndPoint
+
+DevicesEndPoint::DevicesEndPoint(int interval):Thread("DeviceEndPoint"),m_mutex(true),m_interval(interval),m_run(true)
+{
+    m_devices.clear();
+}
+DevicesEndPoint::~DevicesEndPoint()
+{
+}
+
+void DevicesEndPoint::run()
+{
+    while(m_run)
+    {
+	CardDevice* dev = 0;
+	m_mutex.lock();
+        const ObjList *devicesIter = &m_devices;
+	while (devicesIter)
+	{
+		GenObject* obj = devicesIter->get();
+		devicesIter = devicesIter->next();
+		if (!obj) continue;	
+    		dev = static_cast<CardDevice*>(obj);
+    		dev->tryConnect();
+	}
+	m_mutex.unlock();
+	
+	if (m_run)
+	{
+	    Thread::sleep(m_interval);
+        }
+    }
+}
+
+void DevicesEndPoint::cleanup()
+{
+}    
+
+void DevicesEndPoint::onReceiveUSSD(CardDevice* dev, String ussd)
+{
+}
+
+void DevicesEndPoint::onReceiveSMS(CardDevice* dev, String caller, String sms)
+{
+}
+
+bool DevicesEndPoint::sendSMS(CardDevice* dev, String sms)
+{
+
+}
+
+bool DevicesEndPoint::sendUSSD(CardDevice* dev, const String &ussd)
+{
+}
+
+CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
+{
+    String audio_tty = data->getValue("audio");
+    String data_tty = data->getValue("data");
+    
+    CardDevice * dev = new CardDevice(name, this);
+    dev->data_tty = data_tty;
+    dev->audio_tty = audio_tty;
+    dev->d_read_rb.rb_init(dev->d_read_buf, sizeof(dev->d_read_buf));
+    m_mutex.lock();
+    m_devices.append(dev);
+    m_mutex.unlock();
+    return dev;
+}
+
+CardDevice* DevicesEndPoint::findDevice(String name)
+{
+}
+
+void DevicesEndPoint::cleanDevices()
+{
+
+    CardDevice* dev = 0;
+    m_mutex.lock();
+    const ObjList *devicesIter = &m_devices;
+    while (devicesIter)
+    {
+	GenObject* obj = devicesIter->get();
+	devicesIter = devicesIter->next();
+	if (!obj) continue;	
+	dev = static_cast<CardDevice*>(obj);
+	dev->disconnect();
+    }
+    m_mutex.unlock();
+    m_run = false;
+}
+
+    
+
