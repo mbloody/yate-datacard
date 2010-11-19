@@ -17,6 +17,7 @@ public:
 	Message* m = new Message("datacard.ussd");
 	m->addParam("type","incoming");
 	m->addParam("protocol","datacard");
+	m->addParam("line",*dev);
 	m->addParam("text",ussd);
 	Engine::enqueue(m);
     }
@@ -26,10 +27,29 @@ public:
 	Message* m = new Message("datacard.sms");
 	m->addParam("type","incoming");
 	m->addParam("protocol","datacard");
+	m->addParam("line",*dev);
 	m->addParam("caller",caller);
 	m->addParam("text",sms);
 	Engine::enqueue(m);
     }
+};
+
+class SMSHandler : public MessageHandler
+{
+public:
+    SMSHandler(YDevEndPoint* ep) : MessageHandler("datacard.sms"), m_ep(ep) { }
+    virtual bool received(Message& msg);
+private:
+    YDevEndPoint* m_ep;
+};
+
+class USSDHandler : public MessageHandler
+{
+public:
+    USSDHandler(YDevEndPoint* ep) : MessageHandler("datacard.ussd"), m_ep(ep) { }
+    virtual bool received(Message& msg);
+private:
+    YDevEndPoint* m_ep;
 };
 
 
@@ -66,6 +86,36 @@ public:
 };
 
 
+bool SMSHandler::received(Message &msg)
+{
+    String type(msg.getValue("type"));
+    String protocol(msg.getValue("protocol"));
+    if(type != "outgoing" || protocol != "datacard")
+	return false;
+    String line(msg.getValue("line"));
+    CardDevice* dev = m_ep->findDevice(line);
+    if(!dev)
+	return false;
+    String text(msg.getValue("text"));
+    return m_ep->sendSMS(dev, text);
+//    bool sendUSSD(CardDevice* dev, const String &ussd);
+
+}
+
+bool USSDHandler::received(Message &msg)
+{
+    String type(msg.getValue("type"));
+    String protocol(msg.getValue("protocol"));
+    if(type != "outgoing" || protocol != "datacard")
+	return false;
+    String line(msg.getValue("line"));
+    CardDevice* dev = m_ep->findDevice(line);
+    if(!dev)
+	return false;
+    String text(msg.getValue("text"));
+    return m_ep->sendUSSD(dev, text);
+}
+
 
 void DatacardChannel::disconnected(bool final, const char *reason)
 {
@@ -99,6 +149,7 @@ DatacardDriver::~DatacardDriver()
 void DatacardDriver::initialize()
 {
     Output("Initializing module DatacardChannel");
+//TODO: make reload    
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
     m_endpoint = new YDevEndPoint(DEF_DISCOVERY_INT);
@@ -118,6 +169,8 @@ void DatacardDriver::initialize()
     }
     m_endpoint->startup();
     setup();
+    Engine::install(new SMSHandler(m_endpoint));
+    Engine::install(new USSDHandler(m_endpoint));
     Output("DatacardChannel initialized");
 }
 
