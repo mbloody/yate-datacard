@@ -217,32 +217,29 @@ int CardDevice::at_send_cmgr (int index)
 
 int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 {
-    //TODO:
-    return 0;
-/*	ssize_t	res;
+	ssize_t	res;
 	char*	p;
 
 	memmove (d_send_buf, "AT+CMGS=\"", 9);
 	p = d_send_buf + 9;
 
-//	if (use_ucs2_encoding)
+	if (use_ucs2_encoding)
 	{
 		res = utf8_to_hexstr_ucs2 (number, strlen (number), p, sizeof (d_send_buf) - 9 - 3);
 		if (res <= 0)
 		{
-			ast_log (LOG_ERROR, "[%s] Error converting SMS number to UCS-2: %s\n", id, number);
+			Debug(DebugAll, "[%s] Error converting SMS number to UCS-2: %s\n", c_str(), number);
 			return -1;
 		}
 		p += res;
 		memmove (p, "\"\r", 3);
 	}
-//	else
+	else
 	{
-//		snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGS=\"%s\"\r", number);
+		snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGS=\"%s\"\r", number);
 	}
 
 	return at_write(d_send_buf);
-*/
 }
 
 /*!
@@ -253,9 +250,6 @@ int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 
 int CardDevice::at_send_sms_text (const char* msg)
 {
-    //TODO:
-    return 0;
-/*
 	ssize_t	res;
 
 	if (use_ucs2_encoding)
@@ -263,7 +257,7 @@ int CardDevice::at_send_sms_text (const char* msg)
 		res = utf8_to_hexstr_ucs2 (msg, strlen (msg), d_send_buf, 280 + 1);
 		if (res < 0)
 		{
-			ast_log (LOG_ERROR, "[%s] Error converting SMS to UCS-2: '%s'\n", id, msg);
+			Debug(DebugAll, "[%s] Error converting SMS to UCS-2: '%s'\n", c_str(), msg);
 			res = 0;
 		}
 		d_send_buf[res] = 0x1a;
@@ -273,9 +267,8 @@ int CardDevice::at_send_sms_text (const char* msg)
 	{
 		d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "%.160s\x1a", msg);
 	}
-
+	
 	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
-*/
 }
 
 /*!
@@ -406,9 +399,6 @@ int CardDevice::at_send_cssn (int cssi, int cssu)
 
 int CardDevice::at_send_cusd (const char* code)
 {
-    //TODO:
-    return 0;
-/*
 	ssize_t		res;
 	char*		p;
 
@@ -420,7 +410,7 @@ int CardDevice::at_send_cusd (const char* code)
 		res = char_to_hexstr_7bit (code, strlen (code), p, sizeof (d_send_buf) - 11 - 6);
 		if (res <= 0)
 		{
-			ast_log (LOG_ERROR, "[%s] Error converting USSD code to PDU: %s\n", id, code);
+			Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code);
 			return -1;
 		}
 	}
@@ -429,7 +419,7 @@ int CardDevice::at_send_cusd (const char* code)
 		res = utf8_to_hexstr_ucs2 (code, strlen (code), p, sizeof (d_send_buf) - 11 - 6);
 		if (res <= 0)
 		{
-			ast_log (LOG_ERROR, "[%s] error converting USSD code to UCS-2: %s\n", id, code);
+			Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code);
 			return -1;
 		}
 	}
@@ -444,7 +434,6 @@ int CardDevice::at_send_cusd (const char* code)
 	d_send_size = p - d_send_buf + 6;
 
 	return at_write_full(d_send_buf, d_send_size);
-*/
 }
 
 /*!

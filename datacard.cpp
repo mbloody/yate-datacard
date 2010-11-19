@@ -96,10 +96,9 @@ bool SMSHandler::received(Message &msg)
     CardDevice* dev = m_ep->findDevice(line);
     if(!dev)
 	return false;
+    String called(msg.getValue("called"));
     String text(msg.getValue("text"));
-    return m_ep->sendSMS(dev, text);
-//    bool sendUSSD(CardDevice* dev, const String &ussd);
-
+    return m_ep->sendSMS(dev, called, text);
 }
 
 bool USSDHandler::received(Message &msg)

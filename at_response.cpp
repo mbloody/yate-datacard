@@ -1205,11 +1205,11 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			}
 		}
 		
-		String from(text_base64);
-		String to(text);
+//		String from(text_base64);
+//		String to(text);
 		
 //		decodeBase64(String(text), String(text_base64));
-		decodeBase64(to, from);
+//		decodeBase64(to, from);
 //		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
 		Debug(DebugAll, "[%s] Got SMS from %s: '%s'\n", c_str(), from_number, text);
 		m_endpoint->onReceiveSMS(this, from_number, text);
@@ -1257,9 +1257,11 @@ int CardDevice::at_response_sms_prompt()
 {
 	at_queue_t* e;
 
+    Debug(DebugAll, "[%s] 1\n", c_str());
 	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
 //	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_SMS_PROMPT)
 	{
+	    Debug(DebugAll, "[%s] 2\n", c_str());
 		if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
 		{
 			Debug(DebugAll, "[%s] Error sending sms message\n", c_str());
@@ -1336,9 +1338,9 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 
 	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
 //	ast_base64encode (text_base64, cusd, strlen(cusd), sizeof(text_base64));
-	String from(text_base64);
-	String to(cusd);
-	decodeBase64(to, from);
+//	String from(text_base64);
+//	String to(cusd);
+//	decodeBase64(to, from);
 	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
 	m_endpoint->onReceiveUSSD(this, cusd);
 //

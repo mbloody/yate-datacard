@@ -1,6 +1,7 @@
 #include "datacarddevice.h"
 #include <termios.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 using namespace TelEngine;
 
@@ -293,6 +294,66 @@ void CardDevice::stopRunning()
     // m_mutex.unlock();
 }
 
+// SMS and USSD
+bool CardDevice::sendSMS(const String &called, const String &sms)
+{
+    Debug(DebugAll, "[%s] sendSMS: %s\n", c_str(), sms.c_str());
+    
+    Lock lock(m_mutex);
+    
+    // TODO: Check called & sms
+    // Check if msg will be desrtoyed
+    char *msg;
+
+    if (m_connected && initialized && gsm_registered)
+    {
+        if (has_sms)
+        {
+            msg = strdup(sms.safe());
+            if (at_send_cmgs(called.safe()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
+            {
+                free(msg);
+                Debug(DebugAll, "[%s] Error sending SMS message\n", c_str());
+                return false;
+		    }
+	    }
+        else
+        {
+            Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent\n", c_str());
+            return false;
+        }
+    }
+    else
+    {
+        Debug(DebugAll, "Device %s not connected / initialized / registered\n", c_str());
+        return false;
+    }
+    return true;
+}
+
+bool CardDevice::sendUSSD(const String &ussd)
+{
+    Debug(DebugAll, "[%s] sendUSSD: %s\n", c_str(), ussd.c_str());
+
+    Lock lock(m_mutex);
+    
+    if (m_connected && initialized && gsm_registered)
+    {
+        if (at_send_cusd(ussd.c_str()) || at_fifo_queue_add(CMD_AT_CUSD, RES_OK))
+        {
+            Debug(DebugAll, "[%s] Error sending USSD command\n", c_str());
+            return false;
+        }
+    }
+    else
+    {
+        Debug(DebugAll, "Device %s not connected / initialized / registered\n", c_str());
+        return false;
+    }
+    return true;
+}
+
+
 
 //EndPoint
 
@@ -340,13 +401,24 @@ void DevicesEndPoint::onReceiveSMS(CardDevice* dev, String caller, String sms)
 {
 }
 
-bool DevicesEndPoint::sendSMS(CardDevice* dev, String sms)
+bool DevicesEndPoint::sendSMS(CardDevice* dev, const String &called, const String &sms)
 {
-
+    if (!dev)
+    {
+        Debug(DebugAll, "DevicesEndPoint::sendSMS() error: dev is NULL\n");
+        return false;
+    }
+    return dev->sendSMS(called, sms);
 }
 
 bool DevicesEndPoint::sendUSSD(CardDevice* dev, const String &ussd)
 {
+    if (!dev)
+    {
+        Debug(DebugAll, "DevicesEndPoint::sendUSSD() error: dev is NULL\n");
+        return false;
+    }
+    return dev->sendUSSD(ussd);
 }
 
 CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
@@ -364,8 +436,10 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     return dev;
 }
 
-CardDevice* DevicesEndPoint::findDevice(String name)
+CardDevice* DevicesEndPoint::findDevice(const String &name)
 {
+    Lock lock(m_mutex);
+    return static_cast<CardDevice*>(m_devices[name]);
 }
 
 void DevicesEndPoint::cleanDevices()

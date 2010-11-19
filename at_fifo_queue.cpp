@@ -8,6 +8,7 @@
 */
 
 #include "datacarddevice.h"
+#include <stdlib.h>
 
 
 /*!
@@ -84,7 +85,7 @@ void CardDevice::at_fifo_queue_rem()
 
 		if (e->ptype == 0 && e->param.data)
 		{
-			delete [] e->param.data;
+			free(e->param.data);
 		}
 
 		m_atQueue.remove(e);
