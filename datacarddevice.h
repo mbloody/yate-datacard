@@ -321,15 +321,12 @@ public:
     int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
     void at_fifo_queue_rem();
     void at_fifo_queue_flush();
-//    at_queue_t*	at_fifo_queue_head	(pvt_t*);
+    at_queue_t* at_fifo_queue_head();
 
 };
 
 
-//static AST_RWLIST_HEAD_STATIC (devices, pvt_t);
 
-static int			discovery_interval = DEF_DISCOVERY_INT;	/* The device discovery interval */
-//static pthread_t		discovery_thread   = AST_PTHREADT_NULL;	/* The discovery thread */
 
 //AST_MUTEX_DEFINE_STATIC (unload_mtx);
 //static int			unloading_flag = 0;
@@ -360,9 +357,7 @@ static struct ast_jb_conf jbconf_global;
 //static char	silence_frame[FRAME_SIZE];
 
 
-//static int			opentty			(char*);
 //static int			device_status		(int);
-//static int			disconnect_datacard	(pvt_t*);
 
 #endif
 

@@ -8,7 +8,7 @@ static Configuration s_cfg;
 static ObjList s_devices;
 static Mutex s_devicesMutex;
 static bool s_run = true;
-
+static int discovery_interval = DEF_DISCOVERY_INT;
 
 class DiscoveryThread: public Thread
 {

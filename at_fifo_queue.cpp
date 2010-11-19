@@ -106,9 +106,9 @@ void CardDevice::at_fifo_queue_flush ()
  * \param pvt -- pvt structure
  * \return a pointer to the head of the given queue
  */
-/*
-at_queue_t* at_fifo_queue_head (pvt_t* pvt)
+
+at_queue_t* CardDevice::at_fifo_queue_head ()
 {
-	return AST_LIST_FIRST (&pvt->at_queue);
+	return static_cast<at_queue_t*>(m_atQueue.get());
 }
-*/
+

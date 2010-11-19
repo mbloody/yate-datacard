@@ -143,8 +143,8 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 				return -1;
 
 			case RES_UNKNOWN:
-//				if ((e = at_fifo_queue_head()))
-				if ((e =  static_cast<at_queue_t*>(m_atQueue.get())))
+				if ((e = at_fifo_queue_head()))
+//				if ((e =  static_cast<at_queue_t*>(m_atQueue.get())))
 				{
 					switch (e->cmd)
 					{
@@ -196,8 +196,8 @@ int CardDevice::at_response_ok()
 {
 	at_queue_t* e;
 
-//	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_CMGR))
-	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_CMGR))
+	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_CMGR))
+//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_CMGR))
 	{
 		switch (e->cmd)
 		{
@@ -639,9 +639,8 @@ int CardDevice::at_response_error()
 {
 	at_queue_t* e;
 
-//	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
-	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_ERROR ||
-
+	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
+//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_ERROR ||
 			e->res == RES_CMS_ERROR || e->res == RES_CMGR || e->res == RES_SMS_PROMPT))
 	{
 		switch (e->cmd)
@@ -1161,8 +1160,8 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	char*		text = NULL;
 	char		text_base64[16384];
 
-//	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
-	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_CMGR)
+	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
+//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_CMGR)
 	{
 		if (auto_delete_sms && e->ptype == 1)
 		{
@@ -1257,8 +1256,8 @@ int CardDevice::at_response_sms_prompt()
 {
 	at_queue_t* e;
 
-//	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
-	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_SMS_PROMPT)
+	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_SMS_PROMPT)
 	{
 		if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
 		{

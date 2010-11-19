@@ -101,7 +101,8 @@ void MonitorThread::run()
             {
                 Debug(DebugAll, "[%s] timeout waiting for data, disconnecting\n", m_device->c_str());
 
-                if ((e = static_cast<at_queue_t*>(m_device->m_atQueue.get())))
+//                if ((e = static_cast<at_queue_t*>(m_device->m_atQueue.get())))
+		if ((e = m_device->at_fifo_queue_head()))
                 {
                     Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'\n", m_device->c_str(), m_device->at_res2str (e->res), m_device->at_cmd2str (e->cmd));
                 }

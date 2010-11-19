@@ -19,6 +19,7 @@
 #include <poll.h>
 
 
+#if 0
 // Old Asterisk implementation. Found at 
 // https://issues.asterisk.org/file_download.php?file_id=6792&type=bug
 int ast_fdisset(struct pollfd *pfds, int fd, int max, int *start)
@@ -95,12 +96,46 @@ int ast_waitfor_n_fd(int *fds, int n, int *ms, int *exception)
 
  	return winner;
 }
- 
+#endif
+
 int CardDevice::at_wait (int* ms)
 {
+
+    struct pollfd fds;
+    fds.fd = m_data_fd;
+    fds.events = POLLIN | POLLPRI ;
+    fds.revents = 0;
+
+    int res = poll(&fds, 1, *ms);
+    if (res < 0) {
+        /* Simulate a timeout if we were interrupted */
+        if (errno != EINTR)
+            *ms = -1;
+        else
+            *ms = 0;
+	return 0;
+    }
+    else if(res == 0)
+    {
+	*ms = -1;
+	return 0;
+    }
+    {
+	if((fds.revents & POLLIN))
+	{
+	    return fds.fd;
+	}	
+	if (fds.revents & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
+	{
+	    return fds.fd;
+	}
+    }
+
+#if 0
 	int exception, outfd;
 
 	outfd = ast_waitfor_n_fd (&m_data_fd, 1, ms, &exception);
+	
 
 	if (outfd < 0)
 	{
@@ -108,6 +143,7 @@ int CardDevice::at_wait (int* ms)
 	}
 
 	return outfd;
+#endif
 }
 
 int CardDevice::at_read ()
