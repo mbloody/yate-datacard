@@ -334,6 +334,7 @@ int RingBuffer::rb_write_iov (struct iovec* iov)
 	size_t free;
 
 	free = rb_free ();
+		
 	if (free > 0)
 	{
 		if ((m_write + free) > m_size)

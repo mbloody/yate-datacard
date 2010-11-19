@@ -139,6 +139,7 @@ CardDevice* DatacardDriver::loadDevice(String name, NamedList* data)
     CardDevice * dev = new CardDevice(name);
     dev->data_tty = data_tty;
     dev->audio_tty = audio_tty;
+    dev->d_read_rb.rb_init(dev->d_read_buf, sizeof(dev->d_read_buf));
     return dev;
 }
 
