@@ -973,18 +973,17 @@ int CardDevice::at_response_cend (char* str, size_t len)
 
 	needchup = 0;
 //TODO:
-/*
-	if (owner)
+
+	if (m_conn)
 	{
 		Debug(DebugAll, "[%s] hanging up owner\n", c_str());
 
-		if (channel_queue_hangup (cc_cause))
+		if (m_conn->onHangup(cc_cause) == false)
 		{
 			Debug(DebugAll, "[%s] Error queueing hangup...\n", c_str());
 			return -1;
 		}
 	}
-*/
 	incoming = 0;
 	outgoing = 0;
 	needring = 0;
@@ -1029,8 +1028,8 @@ int CardDevice::at_response_clip(char* str, size_t len)
 {
 //TODO:
 //
-/*
-	struct ast_channel*	channel;
+
+//	struct ast_channel*	channel;
 	char*			clip;
 
 	if (initialized && needring == 0)
@@ -1041,8 +1040,8 @@ int CardDevice::at_response_clip(char* str, size_t len)
 		{
 			Debug(DebugAll, "[%s] Error parsing CLIP: %s\n", c_str(), str);
 		}
-
-		if (!(channel = channel_new (AST_STATE_RING, clip)))
+//		if (!(channel = channel_new (AST_STATE_RING, clip)))
+		if(incomingCall(String(clip)) == false)
 		{
 			Debug(DebugAll, "[%s] Unable to allocate channel for incoming call\n", c_str());
 
@@ -1050,13 +1049,12 @@ int CardDevice::at_response_clip(char* str, size_t len)
 			{
 				Debug(DebugAll, "[%s] Error sending AT+CHUP command\n", c_str());
 			}
-
 			return -1;
 		}
 
 		needchup = 1;
 		needring = 1;
-
+/*
 		if (ast_pbx_start (channel))
 		{
 			Debug(DebugAll, "[%s] Unable to start pbx on incoming call\n", c_str());
@@ -1064,8 +1062,9 @@ int CardDevice::at_response_clip(char* str, size_t len)
 
 			return -1;
 		}
-	}
 */
+	}
+
 	return 0;
 }
 

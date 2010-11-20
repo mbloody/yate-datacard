@@ -32,6 +32,7 @@ public:
 	m->addParam("text",sms);
 	Engine::enqueue(m);
     }
+    virtual Connection* createConnection(CardDevice* dev, void* usrData);
 };
 
 class SMSHandler : public MessageHandler
@@ -67,11 +68,11 @@ private:
 
 INIT_PLUGIN(DatacardDriver);
 
-class DatacardChannel :  public Channel
+class DatacardChannel :  public Channel, public Connection
 {
 public:
-    DatacardChannel(const char* addr = 0, const NamedList* exeMsg = 0) :
-      Channel(__plugin, 0, (exeMsg != 0))
+    DatacardChannel(CardDevice* dev, const char* addr = 0, const NamedList* exeMsg = 0) :
+      Channel(__plugin, 0, (exeMsg != 0)), Connection(dev)
     {
 	m_address = addr;
 	Message* s = message("chan.startup",exeMsg);
@@ -83,7 +84,18 @@ public:
     virtual void disconnected(bool final, const char *reason);
     inline void setTargetid(const char* targetid)
 	{ m_targetid = targetid; }
+	
+    virtual bool onRinging();
+    virtual bool onAnswered();
+    virtual bool onHangup(int reason);
 };
+
+
+Connection* YDevEndPoint::createConnection(CardDevice* dev, void* usrData)
+{
+    DatacardChannel* channel = new DatacardChannel(dev);
+    return channel;
+}
 
 
 bool SMSHandler::received(Message &msg)
@@ -127,6 +139,24 @@ DatacardChannel::~DatacardChannel()
     Debug(this,DebugAll,"DatacardChannel::~DatacardChannel() src=%p cons=%p",getSource(),getConsumer());
     Engine::enqueue(message("chan.hangup"));
 }
+
+bool DatacardChannel::onRinging()
+{
+    Debug(this,DebugAll,"DatacardChannel::onRinging()");
+    return true;
+}
+bool DatacardChannel::onAnswered()
+{
+    Debug(this,DebugAll,"DatacardChannel::onAnswered()");
+    return true;
+}
+bool DatacardChannel::onHangup(int reason)
+{
+    Debug(this,DebugAll,"DatacardChannel::onHangup(%d)",reason);
+    deref();
+    return true;    
+}
+
 
 bool DatacardDriver::msgExecute(Message& msg, String& dest)
 {

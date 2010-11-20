@@ -110,7 +110,7 @@ public:
 
 class CardDevice;
 class DevicesEndPoint;
-
+class Connection;
 
 class MonitorThread : public Thread
 {
@@ -150,6 +150,7 @@ public:
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
+    Connection* m_conn;
 //	struct ast_channel*	owner;				/* Channel we belong to, possibly NULL */
 //	struct ast_dsp*		dsp;
 //	struct ast_timer*	a_timer;
@@ -327,19 +328,37 @@ public:
     void at_fifo_queue_flush();
     at_queue_t* at_fifo_queue_head();
 
-ssize_t convert_string (const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
-ssize_t hexstr_to_ucs2char (const char* in, size_t in_length, char* out, size_t out_size);
-ssize_t ucs2char_to_hexstr (const char* in, size_t in_length, char* out, size_t out_size);
-ssize_t hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char* out, size_t out_size);
-ssize_t utf8_to_hexstr_ucs2 (const char* in, size_t in_length, char* out, size_t out_size);
-ssize_t char_to_hexstr_7bit (const char* in, size_t in_length, char* out, size_t out_size);
-ssize_t hexstr_7bit_to_char (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t convert_string (const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
+    ssize_t hexstr_to_ucs2char (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t ucs2char_to_hexstr (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t utf8_to_hexstr_ucs2 (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t char_to_hexstr_7bit (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t hexstr_7bit_to_char (const char* in, size_t in_length, char* out, size_t out_size);
 
 // SMS and USSD
-bool sendSMS(const String &called, const String &sms);
-bool sendUSSD(const String &ussd);   
+    bool sendSMS(const String &called, const String &sms);
+    bool sendUSSD(const String &ussd);   
+    
+private:
+    bool incomingCall(const String &caller);
 };
 
+
+class Connection
+{
+public:
+    Connection(CardDevice* dev);
+    virtual bool onRinging();
+    virtual bool onAnswered();
+    virtual bool onHangup(int reason);
+    
+    bool Answer();
+    bool Hangup();
+    
+protected:
+    CardDevice* m_dev;
+};
 
 class DevicesEndPoint : public Thread
 {
@@ -361,6 +380,9 @@ public:
     CardDevice* appendDevice(String name, NamedList* data);
     CardDevice* findDevice(const String &name);
     void cleanDevices();
+    
+    virtual Connection* createConnection(CardDevice* dev, void* usrData = 0);
+    void MakeCall(CardDevice* dev, const String &called);
 
 private:
     Mutex m_mutex;
@@ -369,19 +391,8 @@ private:
     bool m_run;
 };
 
-/*
-class Connection
-{
-public:
-    virtual void onRinging();
-    virtual void onAnswered();
-    virtual void onHangup(int reason);
-    
-    bool Answer();
-    bool Hangup();
 
-};
-*/
+
 
 
 

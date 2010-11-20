@@ -165,7 +165,7 @@ void MonitorThread::cleanup()
 
 
 
-CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_mutex(true), m_monitor(0), m_connected(false)
+CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_conn(0), m_endpoint(ep), m_mutex(true), m_monitor(0), m_connected(false)
 {
     m_data_fd = -1;
     m_audio_fd = -1;
@@ -354,6 +354,17 @@ bool CardDevice::sendUSSD(const String &ussd)
 }
 
 
+bool CardDevice::incomingCall(const String &caller)
+{
+    m_conn = m_endpoint->createConnection(this);
+    if(!m_conn)
+    {
+        Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL\n");
+	return false;
+    }
+    return true;
+}
+
 
 //EndPoint
 
@@ -444,7 +455,6 @@ CardDevice* DevicesEndPoint::findDevice(const String &name)
 
 void DevicesEndPoint::cleanDevices()
 {
-
     CardDevice* dev = 0;
     m_mutex.lock();
     const ObjList *devicesIter = &m_devices;
@@ -460,5 +470,37 @@ void DevicesEndPoint::cleanDevices()
     m_run = false;
 }
 
+Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
+{
+    return 0;
+}
+void DevicesEndPoint::MakeCall(CardDevice* dev, const String &called)
+{
+}
+
+Connection::Connection(CardDevice* dev):m_dev(dev)
+{
+}
+
+bool Connection::onRinging()
+{
+    return true;
+}
+bool Connection::onAnswered()
+{
+    return true;
+}
+bool Connection::onHangup(int reason)
+{
+    return true;
+}
     
+bool Connection::Answer()
+{
+    return true;
+}
+bool Connection::Hangup()
+{
+    return true;
+}
 
