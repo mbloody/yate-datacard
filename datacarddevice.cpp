@@ -2,6 +2,8 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <poll.h>
+
 
 using namespace TelEngine;
 
@@ -165,6 +167,100 @@ void MonitorThread::cleanup()
 
 
 
+//MediaThread
+
+MediaThread::MediaThread(CardDevice* dev):m_device(dev)
+{
+}
+MediaThread::~MediaThread()
+{
+}
+
+void MediaThread::run()
+{
+    int res;
+    struct pollfd pfd;
+    int in_pos = 0;
+    int out_pos = 0;
+    char c = 1;
+    int sending;
+    char buf[1024];
+    int len;
+
+    if (!m_device) 
+        return;
+
+    // Main loop
+    while (m_device->isRunning())
+    {
+//        m_device->m_mutex.lock();
+
+//        if (m_device->dataStatus() || m_device->audioStatus())
+//        {
+//            Debug(DebugAll, "Lost connection to Datacard %s\n", m_device->c_str());
+//		goto e_cleanup;
+//            m_device->disconnect();
+//            m_device->m_mutex.unlock();
+//            return;
+//        }
+//        m_device->m_mutex.unlock();
+
+
+        m_device->m_mutex.lock();
+
+	pfd.fd = m_device->m_audio_fd;
+	pfd.events = POLLIN;
+
+        m_device->m_mutex.unlock();
+
+	res = poll(&pfd, 1, 50);
+
+	if (res == -1 && errno != EINTR) 
+	{
+	    Debug(DebugAll, "poll() error\n");
+	    break;
+	}
+
+	if (res == 0)
+	    continue;
+
+        m_device->m_mutex.lock();
+
+	if (pfd.revents & POLLIN) 
+	{
+//	    Debug(DebugAll, "POLLIN\n");
+
+	    len = read(pfd.fd, buf, FRAME_SIZE);
+
+	    if (len) 
+	    {
+		write(pfd.fd, buf, len);
+	    }
+
+	} 
+	m_device->m_mutex.unlock();
+//	else if (pfd.revents) 
+//	{
+//
+//	    Debug(DebugAll, "Connection error\n");
+//	} 
+//	else 
+//	{
+//	    ast_log(LOG_NOTICE, "Unhandled poll output\n");
+//	}
+
+
+    } // End of Main loop
+    
+    
+}
+
+void MediaThread::cleanup()
+{
+}
+
+
+
 CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_mutex(true), m_conn(0), m_connected(false)
 {
     m_data_fd = -1;
@@ -206,7 +302,9 @@ bool CardDevice::startMonitor()
 { 
     //TODO: Running flag
     m_running = true;
-    MonitorThread* m_monitor = new MonitorThread(this);
+    m_media = new MediaThread(this);
+    m_media->startup();
+    m_monitor = new MonitorThread(this);
     return m_monitor->startup();
 //    return true;
 }

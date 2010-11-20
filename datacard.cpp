@@ -6,6 +6,7 @@ namespace { // anonymous
 
 static Configuration s_cfg;
 
+
 class YDevEndPoint : public DevicesEndPoint
 {
 public:
@@ -53,6 +54,30 @@ private:
     YDevEndPoint* m_ep;
 };
 
+/*
+class DatacardChannel;
+
+class DatacardConsumer : public DataConsumer
+{
+public:
+    DatacardConsumer(DatacardChannel* conn, const char* formatText);
+    ~DatacardConsumer();
+    virtual unsigned long Consume(const DataBlock &data, unsigned long tStamp, unsigned long flags);
+private:
+    DatacardChannel* m_connection;
+};
+
+
+class DatacardSource : public DataSource
+{
+public:
+    DatacardSource(DatacardChannel* conn, u_int32_t format, const char* formatText);
+    ~YIAXSource();
+    void Forward(const DataBlock &data, unsigned long tStamp = 0);
+private:
+    DatacardChannel* m_connection;
+};
+*/
 
 class DatacardDriver : public Driver
 {
@@ -145,6 +170,7 @@ void DatacardChannel::disconnected(bool final, const char *reason)
 DatacardChannel::~DatacardChannel()
 {
     Debug(this,DebugAll,"DatacardChannel::~DatacardChannel() src=%p cons=%p",getSource(),getConsumer());
+    sendHangup();
     Engine::enqueue(message("chan.hangup"));
 }
 

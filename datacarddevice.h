@@ -123,6 +123,18 @@ private:
     CardDevice* m_device;
 };
 
+
+class MediaThread : public Thread
+{
+public:
+    MediaThread(CardDevice* dev);
+    ~MediaThread();
+    virtual void run();
+    virtual void cleanup();
+private:
+    CardDevice* m_device;
+};
+
 class CardDevice: public String
 {
 public:
@@ -151,6 +163,8 @@ public:
     Connection* m_conn;
 
 
+    MediaThread* m_media;
+
     
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
@@ -161,9 +175,9 @@ public:
 
 	char			a_write_buf[FRAME_SIZE * 5];
 	RingBuffer		a_write_rb;
-//	char			a_read_buf[FRAME_SIZE + AST_FRIENDLY_OFFSET];
-//	struct ast_frame	a_read_frame;
-
+	char			a_read_buf[FRAME_SIZE * 5];
+	RingBuffer		a_read_rb;
+	
 	char			d_send_buf[2*1024];
 	size_t			d_send_size;
 	char			d_read_buf[2*1024];
