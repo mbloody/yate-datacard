@@ -81,10 +81,16 @@ public:
 	Engine::enqueue(s);
     };
     ~DatacardChannel();
+    
+    
+    virtual bool msgAnswered(Message& msg);
+    
+    
     virtual void disconnected(bool final, const char *reason);
     inline void setTargetid(const char* targetid)
 	{ m_targetid = targetid; }
-	
+
+    virtual bool onIncoming(const String &caller);
     virtual bool onRinging();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
@@ -94,6 +100,8 @@ public:
 Connection* YDevEndPoint::createConnection(CardDevice* dev, void* usrData)
 {
     DatacardChannel* channel = new DatacardChannel(dev);
+    if(channel)
+	channel->initChan();
     return channel;
 }
 
@@ -140,6 +148,32 @@ DatacardChannel::~DatacardChannel()
     Engine::enqueue(message("chan.hangup"));
 }
 
+
+bool DatacardChannel::msgAnswered(Message& msg)
+{
+    return sendAnswer();
+}
+
+bool DatacardChannel::onIncoming(const String &caller)
+{
+    Debug(this,DebugAll,"DatacardChannel::onIncoming(%s)", caller.c_str());
+    
+    Message *m = message("call.preroute",false,true);
+    m->setParam("callername",caller);
+    m->setParam("caller",caller);
+//    called = s_cfg.getValue("incoming","called");
+    m->setParam("called","123");
+//    m->addParam("formats",m_remoteFormats);
+    m_dev->getStatus(m);
+ 
+    if (startRouter(m))
+	return true;
+    Debug(this,DebugWarn,"Error starting routing thread! [%p]",this);
+    return false;
+    
+//    return true;
+}
+
 bool DatacardChannel::onRinging()
 {
     Debug(this,DebugAll,"DatacardChannel::onRinging()");
@@ -153,7 +187,8 @@ bool DatacardChannel::onAnswered()
 bool DatacardChannel::onHangup(int reason)
 {
     Debug(this,DebugAll,"DatacardChannel::onHangup(%d)",reason);
-    deref();
+    disconnect();
+//    deref();
     return true;    
 }
 

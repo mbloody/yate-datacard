@@ -175,14 +175,31 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     cusd_use_ucs2_decoding =  1;
     gsm_reg_status = -1;
 
+    m_manufacturer.clear();
+    m_model.clear();
+    m_firmware.clear();
+    m_imei.clear();
+    m_imsi.clear();
+
     m_provider_name = "NONE";
     m_number = "Unknown";
 
     reset_datacard =  1;
     u2diag = -1;
     callingpres = -1;
+
+    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
     
     m_atQueue.clear();
+    
+///
+    initialized = 0;
+    gsm_registered = 0;
+    
+    incoming = 0;
+    outgoing = 0;
+    needring = 0;
+    needchup = 0;
 
 }
 bool CardDevice::startMonitor() 
@@ -226,12 +243,12 @@ bool CardDevice::disconnect()
     if(isRunning()) 
 	stopRunning();
 
-//    if (pvt->owner)
-//    {
-//    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner\n", pvt->id);
-//		pvt->needchup = 0;
-//		channel_queue_hangup (pvt, 0);
-//    }
+    if(m_conn)
+    {
+    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner\n", c_str());
+	needchup = 0;
+	Hangup(0);
+    }
 
     close(m_data_fd);
     close(m_audio_fd);
@@ -240,31 +257,31 @@ bool CardDevice::disconnect()
     m_audio_fd = -1;
 
     m_connected	= false;
-//    initialized = 0;
-//    gsm_registered = 0;
+    initialized = 0;
+    gsm_registered = 0;
 
-//    incoming = 0;
-//    outgoing = 0;
-//    needring = 0;
-//    needchup = 0;
+    incoming = 0;
+    outgoing = 0;
+    needring = 0;
+    needchup = 0;
 	
-//    gsm_reg_status = -1;
+    gsm_reg_status = -1;
 
-//	pvt->manufacturer[0]	= '\0';
-//	pvt->model[0]		= '\0';
-//	pvt->firmware[0]	= '\0';
-//	pvt->imei[0]		= '\0';
-//	pvt->imsi[0]		= '\0';
+    m_manufacturer.clear();
+    m_model.clear();
+    m_firmware.clear();
+    m_imei.clear();
+    m_imsi.clear();
 
-//	ast_copy_string (pvt->provider_name,	"NONE",		sizeof (pvt->provider_name));
-//	ast_copy_string (pvt->number,		"Unknown",	sizeof (pvt->number));
+    m_provider_name = "NONE";
+    m_number = "Unknown";
 
-//	rb_init (&pvt->d_read_rb, pvt->d_read_buf, sizeof (pvt->d_read_buf));
+    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
-	m_atQueue.clear();
+    m_atQueue.clear();
 
-	Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
-	return m_connected;
+    Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
+    return m_connected;
 }
 
 int CardDevice::devStatus(int fd)
@@ -293,6 +310,54 @@ void CardDevice::stopRunning()
     m_running = false;
     // m_mutex.unlock();
 }
+
+
+bool CardDevice::getStatus(NamedList * list)
+{
+    m_mutex.lock();
+    list->addParam("device",c_str());
+    
+//		ast_cli (a->fd, "  Group                   : %d\n", pvt->group);
+//		ast_cli (a->fd, "  GSM Registration Status : %s\n",
+//			(pvt->gsm_reg_status == 0) ? "Not registered, not searching" :
+//			(pvt->gsm_reg_status == 1) ? "Registered, home network" :
+//			(pvt->gsm_reg_status == 2) ? "Not registered, but searching" :
+//			(pvt->gsm_reg_status == 3) ? "Registration denied" :
+//			(pvt->gsm_reg_status == 5) ? "Registered, roaming" : "Unknown"
+//		);
+//		ast_cli (a->fd, "  State                   : %s\n",
+//			(!pvt->connected) ? "Not connected" :
+//			(!pvt->initialized) ? "Not initialized" :
+//			(!pvt->gsm_registered) ? "GSM not registered" :
+//			(pvt->outgoing || pvt->incoming) ? "Busy" :
+//			(pvt->outgoing_sms || pvt->incoming_sms) ? "SMS" : "Free"
+//		);
+//		ast_cli (a->fd, "  Voice                   : %s\n", (pvt->has_voice) ? "Yes" : "No");
+//		ast_cli (a->fd, "  SMS                     : %s\n", (pvt->has_sms) ? "Yes" : "No");
+//		ast_cli (a->fd, "  RSSI                    : %d\n", pvt->rssi);
+//		ast_cli (a->fd, "  Mode                    : %d\n", pvt->linkmode);
+//		ast_cli (a->fd, "  Submode                 : %d\n", pvt->linksubmode);
+    list->addParam("prividername", m_provider_name);
+    list->addParam("manufacturer", m_manufacturer);
+    list->addParam("model", m_model);
+    list->addParam("firmware", m_firmware);
+    list->addParam("imei", m_imei);
+    list->addParam("imsi", m_imsi);
+    list->addParam("number", m_number);
+
+//    ast_cli (a->fd, "  Use CallingPres         : %s\n", pvt->usecallingpres ? "Yes" : "No");
+//    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
+//    ast_cli (a->fd, "  Use UCS-2 encoding      : %s\n", pvt->use_ucs2_encoding ? "Yes" : "No");
+//    ast_cli (a->fd, "  USSD use 7 bit encoding : %s\n", pvt->cusd_use_7bit_encoding ? "Yes" : "No");
+//    ast_cli (a->fd, "  USSD use UCS-2 decoding : %s\n", pvt->cusd_use_ucs2_decoding ? "Yes" : "No");
+    list->addParam("lar", m_location_area_code);
+    list->addParam("cellid", m_cell_id);
+//    ast_cli (a->fd, "  Auto delete SMS         : %s\n", pvt->auto_delete_sms ? "Yes" : "No");
+//    ast_cli (a->fd, "  Disable SMS             : %s\n\n", pvt->disablesms ? "Yes" : "No");
+    m_mutex.unlock();
+    return true;
+}
+
 
 // SMS and USSD
 bool CardDevice::sendSMS(const String &called, const String &sms)
@@ -362,7 +427,20 @@ bool CardDevice::incomingCall(const String &caller)
         Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL\n");
 	return false;
     }
-    return true;
+    return m_conn->onIncoming(caller);
+}
+
+bool CardDevice::Hangup(int error, int reason)
+{
+    Lock lock(m_mutex);
+    Connection* tmp = m_conn;
+    if(!tmp)
+    {
+        Debug(DebugAll, "CardDevice::Hangup error: m_conn is NULL\n");
+	return false;
+    }
+    m_conn = 0;
+    return tmp->onHangup(reason);
 }
 
 
@@ -440,7 +518,6 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     CardDevice * dev = new CardDevice(name, this);
     dev->data_tty = data_tty;
     dev->audio_tty = audio_tty;
-    dev->d_read_rb.rb_init(dev->d_read_buf, sizeof(dev->d_read_buf));
     m_mutex.lock();
     m_devices.append(dev);
     m_mutex.unlock();
@@ -482,10 +559,16 @@ Connection::Connection(CardDevice* dev):m_dev(dev)
 {
 }
 
+bool Connection::onIncoming(const String &caller)
+{
+    return true;
+}
+
 bool Connection::onRinging()
 {
     return true;
 }
+
 bool Connection::onAnswered()
 {
     return true;

@@ -136,6 +136,8 @@ public:
     int audioStatus()
     { return devStatus(m_audio_fd);}
 
+    bool getStatus(NamedList * list);
+
 //private:
     bool startMonitor();
     int devStatus(int fd);
@@ -344,6 +346,7 @@ public:
     
 private:
     bool incomingCall(const String &caller);
+    bool Hangup(int error, int reason = 0);
 };
 
 
@@ -351,6 +354,7 @@ class Connection
 {
 public:
     Connection(CardDevice* dev);
+    virtual bool onIncoming(const String &caller);
     virtual bool onRinging();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
