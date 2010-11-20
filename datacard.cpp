@@ -235,6 +235,8 @@ bool DatacardChannel::onIncoming(const String &caller)
     m->setParam("caller",caller);
 //    called = s_cfg.getValue("incoming","called");
     m->setParam("called","123");
+//TODO: enable tonedetect, must be configure????
+    m->setParam("tonedetect_in","true");
 //    m->addParam("formats",m_remoteFormats);
     m_dev->getStatus(m);
  

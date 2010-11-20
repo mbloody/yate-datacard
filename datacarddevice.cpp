@@ -179,10 +179,10 @@ MediaThread::~MediaThread()
 void MediaThread::run()
 {
     struct pollfd pfd;
-    int in_pos = 0;
-    int out_pos = 0;
-    char c = 1;
-    int sending;
+//    int in_pos = 0;
+//    int out_pos = 0;
+//    char c = 1;
+//    int sending;
     char buf[1024];
     int len;
 
