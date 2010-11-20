@@ -126,7 +126,8 @@ public:
     
     
     virtual bool msgAnswered(Message& msg);
-    
+    virtual bool msgTone(Message& msg, const char* tone);
+
     
     virtual void disconnected(bool final, const char *reason);
     inline void setTargetid(const char* targetid)
@@ -224,6 +225,11 @@ DatacardChannel::~DatacardChannel()
 bool DatacardChannel::msgAnswered(Message& msg)
 {
     return sendAnswer();
+}
+
+bool DatacardChannel::msgTone(Message& msg, const char* tone)
+{
+    return sendDTMF(*tone);               
 }
 
 bool DatacardChannel::onIncoming(const String &caller)
