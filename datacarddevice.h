@@ -169,174 +169,172 @@ public:
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
-//	struct ast_channel*	owner;				/* Channel we belong to, possibly NULL */
-//	struct ast_dsp*		dsp;
 //	struct ast_timer*	a_timer;
 
-	char			a_write_buf[FRAME_SIZE * 5];
-	RingBuffer		a_write_rb;
-	char			a_read_buf[FRAME_SIZE * 5];
-	RingBuffer		a_read_rb;
+    char a_write_buf[FRAME_SIZE * 5];
+    RingBuffer a_write_rb;
+    char a_read_buf[FRAME_SIZE * 5];
+    RingBuffer a_read_rb;
 	
-	char			d_send_buf[2*1024];
-	size_t			d_send_size;
-	char			d_read_buf[2*1024];
-	RingBuffer		d_read_rb;
-	struct iovec		d_read_iov[2];
-	unsigned int		d_read_result:1;
-	char			d_parse_buf[1024];
-	int			timeout;			/* used to set the timeout for data */
+    char d_send_buf[2*1024];
+    size_t d_send_size;
+    char d_read_buf[2*1024];
+    RingBuffer d_read_rb;
+    struct iovec d_read_iov[2];
+    unsigned int d_read_result:1;
+    char d_parse_buf[1024];
+    int timeout;			/* used to set the timeout for data */
 
-	unsigned int		has_sms:1;
-	unsigned int		has_voice:1;
-	unsigned int		use_ucs2_encoding:1;
-	unsigned int		cusd_use_7bit_encoding:1;
-	unsigned int		cusd_use_ucs2_decoding:1;
-	int			gsm_reg_status;
-	int			rssi;
-	int			linkmode;
-	int			linksubmode;
-	String m_provider_name;
-	String m_manufacturer;
-	String m_model;
-	String m_firmware;
-	String m_imei;
-	String m_imsi;
-	String m_number;
-	String m_location_area_code;
-	String m_cell_id;
+    unsigned int has_sms:1;
+    unsigned int has_voice:1;
+    unsigned int use_ucs2_encoding:1;
+    unsigned int cusd_use_7bit_encoding:1;
+    unsigned int cusd_use_ucs2_decoding:1;
+    int gsm_reg_status;
+    int rssi;
+    int linkmode;
+    int linksubmode;
+    String m_provider_name;
+    String m_manufacturer;
+    String m_model;
+    String m_firmware;
+    String m_imei;
+    String m_imsi;
+    String m_number;
+    String m_location_area_code;
+    String m_cell_id;
 
-	/* flags */
-	bool			m_connected;			/* do we have an connection to a device */
-	unsigned int		initialized:1;			/* whether a service level connection exists or not */
-	unsigned int		gsm_registered:1;		/* do we have an registration to a GSM */
-	unsigned int		outgoing:1;			/* outgoing call */
-	unsigned int		incoming:1;			/* incoming call */
-	unsigned int		outgoing_sms:1;			/* outgoing sms */
-	unsigned int		incoming_sms:1;			/* incoming sms */
-	unsigned int		needchup:1;			/* we need to send a CHUP */
-	unsigned int		needring:1;			/* we need to send a RING */
-	unsigned int		answered:1;			/* we sent/received an answer */
-	unsigned int		volume_synchronized:1;		/* we have synchronized the volume */
-	unsigned int		group_last_used:1;		/* mark the last used device */
-	unsigned int		prov_last_used:1;		/* mark the last used device */
-	unsigned int		sim_last_used:1;		/* mark the last used device */
+    /* flags */
+    bool m_connected;			/* do we have an connection to a device */
+    unsigned int initialized:1;			/* whether a service level connection exists or not */
+    unsigned int gsm_registered:1;		/* do we have an registration to a GSM */
+    unsigned int outgoing:1;			/* outgoing call */
+    unsigned int incoming:1;			/* incoming call */
+    unsigned int outgoing_sms:1;			/* outgoing sms */
+    unsigned int incoming_sms:1;			/* incoming sms */
+    unsigned int needchup:1;			/* we need to send a CHUP */
+    unsigned int needring:1;			/* we need to send a RING */
+    unsigned int answered:1;			/* we sent/received an answer */
+    unsigned int volume_synchronized:1;		/* we have synchronized the volume */
+    unsigned int group_last_used:1;		/* mark the last used device */
+    unsigned int prov_last_used:1;		/* mark the last used device */
+    unsigned int sim_last_used:1;		/* mark the last used device */
 	
-	// TODO: Running flag. Do we need to stop every MonitorThread or set one 
-	// flag on module level? Do we need syncronization?
-	bool m_running;
-	bool isRunning() const;
-	void stopRunning();
+    // TODO: Running flag. Do we need to stop every MonitorThread or set one 
+    // flag on module level? Do we need syncronization?
+    bool m_running;
+    bool isRunning() const;
+    void stopRunning();
 	    
 	/* Config */
-	String			audio_tty;			/* tty for audio connection */
-	String			data_tty;			/* tty for AT commands */
-//	char			context[AST_MAX_CONTEXT];	/* the context for incoming calls */
-	int			group;				/* group number for group dialling */
-	int			rxgain;				/* increase the incoming volume */
-	int			txgain;				/* increase the outgoint volume */
-	int			u2diag;
-	int			callingpres;			/* calling presentation */
-	unsigned int		auto_delete_sms:1;
-	unsigned int		reset_datacard:1;
-	unsigned int		usecallingpres:1;
-	unsigned int		disablesms:1;
+    String			audio_tty;			/* tty for audio connection */
+    String			data_tty;			/* tty for AT commands */
+//    char			context[AST_MAX_CONTEXT];	/* the context for incoming calls */
+//    int group;				/* group number for group dialling */
+    int rxgain;				/* increase the incoming volume */
+    int txgain;				/* increase the outgoint volume */
+    int u2diag;
+    int callingpres;			/* calling presentation */
+    bool m_auto_delete_sms;
+    bool m_reset_datacard;
+    bool m_usecallingpres;
+    bool m_disablesms;
 		
-	// AT command methods.
-    int at_wait (int*);
-    int at_read ();
+    // AT command methods.
+    int at_wait(int*);
+    int at_read();
     int at_read_result_iov();
-    at_res_t at_read_result_classification (int);
+    at_res_t at_read_result_classification(int);
     
-    int at_response (int, at_res_t);
-    int t_response_busy ();
-    int at_response_cend (char*, size_t);
-    int at_response_cgmi (char*, size_t);
-    int at_response_cgmm (char*, size_t);
-    int at_response_cgmr (char*, size_t);
-    int at_response_cgsn (char*, size_t);
-    int  at_response_cimi (char*, size_t);
-    int  at_response_clip (char*, size_t);
-    int  at_response_cmgr (char*, size_t);
-    int  at_response_cmti (char*, size_t);
-    int  at_response_cnum (char*, size_t);
-    int  at_response_conn ();
-    int  at_response_cops (char*, size_t);
-    int  at_response_cpin (char*, size_t);
-    int  at_response_creg (char*, size_t);
-    int  at_response_csq  (char*, size_t);
-    int  at_response_cssi (char*, size_t);
-    int  at_response_cusd (char*, size_t);
-    int  at_response_error ();
-    int  at_response_mode (char*, size_t);
-    int  at_response_no_carrier ();
-    int  at_response_no_dialtone ();
-    int  at_response_ok  ();
-    int  at_response_orig (char*, size_t);
-    int  at_response_ring ();
-    int  at_response_rssi (char*, size_t);
-    int  at_response_smmemfull ();
-    int  at_response_sms_prompt ();
-    int  at_response_busy ();
+    int at_response(int, at_res_t);
+    int t_response_busy();
+    int at_response_cend(char*, size_t);
+    int at_response_cgmi(char*, size_t);
+    int at_response_cgmm(char*, size_t);
+    int at_response_cgmr(char*, size_t);
+    int at_response_cgsn(char*, size_t);
+    int at_response_cimi(char*, size_t);
+    int at_response_clip(char*, size_t);
+    int at_response_cmgr(char*, size_t);
+    int at_response_cmti(char*, size_t);
+    int at_response_cnum(char*, size_t);
+    int at_response_conn();
+    int at_response_cops(char*, size_t);
+    int at_response_cpin(char*, size_t);
+    int at_response_creg(char*, size_t);
+    int at_response_csq(char*, size_t);
+    int at_response_cssi(char*, size_t);
+    int at_response_cusd(char*, size_t);
+    int at_response_error();
+    int at_response_mode(char*, size_t);
+    int at_response_no_carrier();
+    int at_response_no_dialtone();
+    int at_response_ok();
+    int at_response_orig(char*, size_t);
+    int at_response_ring();
+    int at_response_rssi(char*, size_t);
+    int at_response_smmemfull();
+    int at_response_sms_prompt();
+    int at_response_busy();
 
-    const char*  at_cmd2str  (at_cmd_t);
-    const char*  at_res2str  (at_res_t);
+    const char* at_cmd2str(at_cmd_t);
+    const char* at_res2str(at_res_t);
 
-    char*   at_parse_clip  (char*, size_t);
-    int at_parse_cmgr (char*, size_t, char**, char**);
-    int   at_parse_cmti  (char*, size_t);
+    char* at_parse_clip(char*, size_t);
+    int at_parse_cmgr(char*, size_t, char**, char**);
+    int at_parse_cmti(char*, size_t);
 
-    char*  at_parse_cnum  (char*, size_t);
-    char*  at_parse_cops  (char*, size_t);
-    int  at_parse_creg  (char*, size_t, int*, int*, char**, char**);
-    int  at_parse_cpin  (char*, size_t);
-    int  at_parse_csq  (char*, size_t, int*);
-    int  at_parse_cusd  (char*, size_t, char**, unsigned char*);
-    int  at_parse_mode  (char*, size_t, int*, int*);
-    int  at_parse_rssi  (char*, size_t);
+    char* at_parse_cnum(char*, size_t);
+    char* at_parse_cops(char*, size_t);
+    int at_parse_creg(char*, size_t, int*, int*, char**, char**);
+    int at_parse_cpin(char*, size_t);
+    int at_parse_csq(char*, size_t, int*);
+    int at_parse_cusd(char*, size_t, char**, unsigned char*);
+    int at_parse_mode(char*, size_t, int*, int*);
+    int at_parse_rssi(char*, size_t);
 
 
-    int at_write  (char*);
-    int at_write_full  (char*, size_t);
+    int at_write(char*);
+    int at_write_full(char*, size_t);
 
-    int  at_send_at  ();
-    int  at_send_ata  ();
-    int  at_send_atd  (const char* number);
-    int  at_send_ate0  ();
-    int  at_send_atz  ();
-    int  at_send_cgmi  ();
-    int  at_send_cgmm  ();
-    int  at_send_cgmr  ();
-    int  at_send_cgsn  ();
-    int  at_send_chup  ();
-    int  at_send_cimi  ();
-    int  at_send_clip  (int status);
-    int  at_send_clir  (int mode);
-    int  at_send_clvl  (int level);
-    int  at_send_cmgd  (int index);
-    int  at_send_cmgf  (int mode);
-    int  at_send_cmgr  (int index);
-    int  at_send_cmgs  (const char* number);
-    int  at_send_cnmi  ();
-    int  at_send_cnum  ();
-    int  at_send_cops  ();
-    int  at_send_cops_init (int mode, int format);
-    int  at_send_cpin_test ();
-    int  at_send_creg  ();
-    int  at_send_creg_init (int level);
-    int  at_send_cscs  (const char* encoding);
-    int  at_send_csq  ();
-    int  at_send_cssn  (int cssi, int cssu);
-    int  at_send_cusd  (const char* code);
-    int  at_send_cvoice_test ();
-    int  at_send_ddsetex  ();
-    int  at_send_dtmf  (char digit);
-    int  at_send_sms_text (const char* message);
-    int  at_send_u2diag  (int mode);
-    int  at_send_ccwa_disable ();
-    int  at_send_cfun  (int, int);
-    int  at_send_cmee  (int);
-    int  at_send_cpms();
+    int at_send_at();
+    int at_send_ata();
+    int at_send_atd(const char* number);
+    int at_send_ate0();
+    int at_send_atz();
+    int at_send_cgmi();
+    int at_send_cgmm();
+    int at_send_cgmr();
+    int at_send_cgsn();
+    int at_send_chup();
+    int at_send_cimi();
+    int at_send_clip(int status);
+    int at_send_clir(int mode);
+    int at_send_clvl(int level);
+    int at_send_cmgd(int index);
+    int at_send_cmgf(int mode);
+    int at_send_cmgr(int index);
+    int at_send_cmgs(const char* number);
+    int at_send_cnmi();
+    int at_send_cnum();
+    int at_send_cops();
+    int at_send_cops_init(int mode, int format);
+    int at_send_cpin_test();
+    int at_send_creg();
+    int at_send_creg_init(int level);
+    int at_send_cscs(const char* encoding);
+    int at_send_csq();
+    int at_send_cssn(int cssi, int cssu);
+    int at_send_cusd(const char* code);
+    int at_send_cvoice_test();
+    int at_send_ddsetex();
+    int at_send_dtmf(char digit);
+    int at_send_sms_text(const char* message);
+    int at_send_u2diag(int mode);
+    int at_send_ccwa_disable();
+    int at_send_cfun(int, int);
+    int at_send_cmee(int);
+    int at_send_cpms();
 
     ObjList m_atQueue;
     int	at_fifo_queue_add(at_cmd_t, at_res_t);
@@ -346,13 +344,13 @@ public:
     void at_fifo_queue_flush();
     at_queue_t* at_fifo_queue_head();
 
-    ssize_t convert_string (const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
-    ssize_t hexstr_to_ucs2char (const char* in, size_t in_length, char* out, size_t out_size);
-    ssize_t ucs2char_to_hexstr (const char* in, size_t in_length, char* out, size_t out_size);
-    ssize_t hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char* out, size_t out_size);
-    ssize_t utf8_to_hexstr_ucs2 (const char* in, size_t in_length, char* out, size_t out_size);
-    ssize_t char_to_hexstr_7bit (const char* in, size_t in_length, char* out, size_t out_size);
-    ssize_t hexstr_7bit_to_char (const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
+    ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t ucs2char_to_hexstr(const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t hexstr_ucs2_to_utf8(const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t utf8_to_hexstr_ucs2(const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t char_to_hexstr_7bit(const char* in, size_t in_length, char* out, size_t out_size);
+    ssize_t hexstr_7bit_to_char(const char* in, size_t in_length, char* out, size_t out_size);
 
 // SMS and USSD
     bool sendSMS(const String &called, const String &sms);

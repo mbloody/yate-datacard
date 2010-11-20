@@ -179,10 +179,6 @@ MediaThread::~MediaThread()
 void MediaThread::run()
 {
     struct pollfd pfd;
-//    int in_pos = 0;
-//    int out_pos = 0;
-//    char c = 1;
-//    int sending;
     char buf[1024];
     int len;
 
@@ -297,8 +293,10 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
 {
     m_data_fd = -1;
     m_audio_fd = -1;
+
+    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
+
     
-    /* set some defaults */
     timeout = 10000;
     cusd_use_ucs2_decoding =  1;
     gsm_reg_status = -1;
@@ -312,11 +310,10 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_provider_name = "NONE";
     m_number = "Unknown";
 
-    reset_datacard =  1;
+    m_reset_datacard = true;
     u2diag = -1;
     callingpres = -1;
 
-    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
     
     m_atQueue.clear();
     
@@ -596,7 +593,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     Debug(DebugAll, "[%s] Calling '%s'\n", c_str(), called.c_str());
 
-    if (usecallingpres)
+    if (m_usecallingpres)
     {
     	Hangup(0);
     	return false;
@@ -738,6 +735,33 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     CardDevice * dev = new CardDevice(name, this);
     dev->data_tty = data_tty;
     dev->audio_tty = audio_tty;
+
+    dev->rxgain = data->getIntValue("rxgain",0);
+    dev->txgain = data->getIntValue("txgain",0);
+    dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
+    dev->m_reset_datacard = data->getBoolValue("resetdatacard",true);
+    dev->u2diag = data->getIntValue("u2diag",-1);
+    if (dev->u2diag == 0)
+	dev->u2diag = -1;
+    dev->m_usecallingpres = data->getBoolValue("usecallingpres",false);
+
+//TODO:	
+//		else if (!strcasecmp (v->name, "callingpres"))
+//		{
+//			dev->callingpres = ast_parse_caller_presentation (v->value);
+//			if (dev->callingpres == -1)
+//			{
+//				errno = 0;
+//				dev->callingpres = (int) strtol (v->value, (char**) NULL, 10);	/* callingpres is set to -1 if invalid */
+//				if (pvt->callingpres == 0 && errno == EINVAL)
+//				{
+//					dev->callingpres = -1;
+//				}
+//			}
+//		}
+    dev->callingpres = -1;
+    dev->m_disablesms = data->getBoolValue("disablesms",false);  
+    
     m_mutex.lock();
     m_devices.append(dev);
     m_mutex.unlock();

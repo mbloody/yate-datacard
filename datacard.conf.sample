@@ -3,4 +3,13 @@
 [datacard0]
 audio=/dev/ttyUSB2
 data=/dev/ttyUSB3
+;rxgain=0
+;txgain=0
+;autodeletesms=yes
+;resetdatacard=yes
+;disablesms=no
+;u2diag=-1
+;usecallingpres=no
+;callingpres=allowed_passed_screen
+                                                                
 

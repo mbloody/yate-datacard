@@ -205,7 +205,7 @@ int CardDevice::at_response_ok()
 			case CMD_AT:
 				if (!initialized)
 				{
-					if (reset_datacard == 1)
+					if (m_reset_datacard == 1)
 					{
 						if (at_send_atz() || at_fifo_queue_add(CMD_AT_Z, RES_OK))
 						{
@@ -1119,7 +1119,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 	{
 		Debug(DebugAll, "[%s] Incoming SMS message\n", c_str());
 
-		if (disablesms)
+		if (m_disablesms)
 		{
 			Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.\n", c_str());
 		}
@@ -1167,7 +1167,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 
 	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
 	{
-		if (auto_delete_sms && e->ptype == 1)
+		if (m_auto_delete_sms && e->ptype == 1)
 		{
 			if (at_send_cmgd (e->param.num) || at_fifo_queue_add (CMD_AT_CMGD, RES_OK))
 			{
