@@ -120,17 +120,18 @@ int CardDevice::at_wait (int* ms)
 	*ms = -1;
 	return 0;
     }
+    if((fds.revents & POLLIN))
     {
-	if((fds.revents & POLLIN))
-	{
-	    return fds.fd;
-	}	
-	if (fds.revents & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
-	{
-	    return fds.fd;
-	}
+        //incoming data
+        return fds.fd;
+    }	
+    if (fds.revents & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
+    {
+        //exeption
+        return fds.fd;
     }
-
+    return fds.fd;
+    
 #if 0
 	int exception, outfd;
 

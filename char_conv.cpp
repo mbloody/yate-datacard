@@ -107,7 +107,7 @@ ssize_t CardDevice::hexstr_ucs2_to_utf8 (const char* in, size_t in_length, char*
 		return res;
 	}
 
-	res = convert_string (buf, res, out, out_size, "UCS-2BE", "UTF-8");
+	res = convert_string (buf, res, out, out_size, (char*)"UCS-2BE", (char*)"UTF-8");
 
 	return res;
 }
@@ -122,7 +122,7 @@ ssize_t CardDevice::utf8_to_hexstr_ucs2 (const char* in, size_t in_length, char*
 		return -1;
 	}
 
-	res = convert_string (in, in_length, buf, out_size, "UTF-8", "UCS-2BE");
+	res = convert_string (in, in_length, buf, out_size, (char*)"UTF-8", (char*)"UCS-2BE");
 	if (res < 0)
 	{
 		return res;

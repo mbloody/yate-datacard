@@ -146,11 +146,13 @@ public:
     DevicesEndPoint* m_endpoint;
     MonitorThread* m_monitor;
     Mutex m_mutex;
+    Connection* m_conn;
+
+
     
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
-    Connection* m_conn;
 //	struct ast_channel*	owner;				/* Channel we belong to, possibly NULL */
 //	struct ast_dsp*		dsp;
 //	struct ast_timer*	a_timer;
@@ -353,8 +355,11 @@ public:
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
     
-    bool Answer();
-    bool Hangup();
+    bool sendAnswer();
+    bool sendHangup();
+
+    bool sendDTMF(char digit);
+
     
 protected:
     CardDevice* m_dev;

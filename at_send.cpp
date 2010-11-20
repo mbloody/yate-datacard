@@ -76,7 +76,7 @@ int CardDevice::at_write_full (char* buf, size_t count)
 
 int CardDevice::at_send_at()
 {
-	return at_write_full("AT\r", 3);
+	return at_write_full((char*)"AT\r", 3);
 }
 
 /*!
@@ -86,7 +86,7 @@ int CardDevice::at_send_at()
 
 int CardDevice::at_send_ata()
 {
-	return at_write_full("ATA\r", 4);
+	return at_write_full((char*)"ATA\r", 4);
 }
 
 /*!
@@ -96,7 +96,7 @@ int CardDevice::at_send_ata()
 
 int CardDevice::at_send_cgmi()
 {
-	return at_write_full("AT+CGMI\r", 8);
+	return at_write_full((char*)"AT+CGMI\r", 8);
 }
 
 /*!
@@ -106,7 +106,7 @@ int CardDevice::at_send_cgmi()
 
 int CardDevice::at_send_cgmm ()
 {
-	return at_write_full("AT+CGMM\r", 8);
+	return at_write_full((char*)"AT+CGMM\r", 8);
 }
 
 /*!
@@ -116,7 +116,7 @@ int CardDevice::at_send_cgmm ()
 
 int CardDevice::at_send_cgmr ()
 {
-	return at_write_full("AT+CGMR\r", 8);
+	return at_write_full((char*)"AT+CGMR\r", 8);
 }
 
 /*!
@@ -126,7 +126,7 @@ int CardDevice::at_send_cgmr ()
 
 int CardDevice::at_send_cgsn ()
 {
-	return at_write_full("AT+CGSN\r", 8);
+	return at_write_full((char*)"AT+CGSN\r", 8);
 }
 
 /*!
@@ -136,7 +136,7 @@ int CardDevice::at_send_cgsn ()
 
 int CardDevice::at_send_chup ()
 {
-	return at_write_full("AT+CHUP\r", 8);
+	return at_write_full((char*)"AT+CHUP\r", 8);
 }
 
 /*!
@@ -146,7 +146,7 @@ int CardDevice::at_send_chup ()
 
 int CardDevice::at_send_cimi ()
 {
-	return at_write_full("AT+CIMI\r", 8);
+	return at_write_full((char*)"AT+CIMI\r", 8);
 }
 
 /*!
@@ -278,7 +278,7 @@ int CardDevice::at_send_sms_text (const char* msg)
 
 int CardDevice::at_send_cnmi ()
 {
-	return at_write_full("AT+CNMI=2,1,0,0,0\r", 18);
+	return at_write_full((char*)"AT+CNMI=2,1,0,0,0\r", 18);
 }
 
 /*!
@@ -288,7 +288,7 @@ int CardDevice::at_send_cnmi ()
 
 int CardDevice::at_send_cnum ()
 {
-	return at_write_full("AT+CNUM\r", 8);
+	return at_write_full((char*)"AT+CNUM\r", 8);
 }
 
 /*!
@@ -298,7 +298,7 @@ int CardDevice::at_send_cnum ()
 
 int CardDevice::at_send_cops ()
 {
-	return at_write_full("AT+COPS?\r", 9);
+	return at_write_full((char*)"AT+COPS?\r", 9);
 }
 
 /*!
@@ -319,7 +319,7 @@ int CardDevice::at_send_cops_init (int mode, int format)
 
 int CardDevice::at_send_cpin_test ()
 {
-	return at_write_full("AT+CPIN?\r", 9);
+	return at_write_full((char*)"AT+CPIN?\r", 9);
 }
 
 /*!
@@ -331,7 +331,7 @@ int CardDevice::at_send_cpin_test ()
 
 int CardDevice::at_send_cpms()
 {
-	return at_write_full("AT+CPMS=\"ME\",\"ME\",\"ME\"\r", 23);
+	return at_write_full((char*)"AT+CPMS=\"ME\",\"ME\",\"ME\"\r", 23);
 }
 
 /*!
@@ -341,7 +341,7 @@ int CardDevice::at_send_cpms()
 
 int CardDevice::at_send_creg()
 {
-	return at_write_full("AT+CREG?\r", 9);
+	return at_write_full((char*)"AT+CREG?\r", 9);
 }
 
 /*!
@@ -375,7 +375,7 @@ int CardDevice::at_send_cscs (const char* encoding)
 
 int CardDevice::at_send_csq()
 {
-	return at_write_full("AT+CSQ\r", 7);
+	return at_write_full((char*)"AT+CSQ\r", 7);
 }
 
 /*!
@@ -443,7 +443,7 @@ int CardDevice::at_send_cusd (const char* code)
 
 int CardDevice::at_send_cvoice_test()
 {
-	return at_write_full("AT^CVOICE?\r", 11);
+	return at_write_full((char*)"AT^CVOICE?\r", 11);
 }
 
 /*!
@@ -464,7 +464,7 @@ int CardDevice::at_send_atd (const char* number)
 
 int CardDevice::at_send_ddsetex()
 {
-	return at_write_full("AT^DDSETEX=2\r", 13);
+	return at_write_full((char*)"AT^DDSETEX=2\r", 13);
 }
 
 /*!
@@ -505,7 +505,7 @@ int CardDevice::at_send_dtmf (char digit)
 
 int CardDevice::at_send_ate0()
 {
-	return at_write_full("ATE0\r", 5);
+	return at_write_full((char*)"ATE0\r", 5);
 }
 
 /*!
@@ -527,7 +527,7 @@ int CardDevice::at_send_u2diag (int mode)
 
 int CardDevice::at_send_atz()
 {
-	return at_write_full("ATZ\r", 4);
+	return at_write_full((char*)"ATZ\r", 4);
 }
 
 /*!
@@ -549,7 +549,7 @@ int CardDevice::at_send_clir (int mode)
 
 int CardDevice::at_send_ccwa_disable()
 {
-	return at_write_full("AT+CCWA=0,0,1\r", 14);
+	return at_write_full((char*)"AT+CCWA=0,0,1\r", 14);
 }
 
 /*!

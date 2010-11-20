@@ -53,11 +53,11 @@ void MonitorThread::run()
     at_res_t	at_res;
     at_queue_t*	e;
     int t;
-    int res;
-    struct iovec iov[2];
+//    int res;
+//    struct iovec iov[2];
     int iovcnt;
-    size_t size;
-    size_t i = 0;
+//    size_t size;
+//    size_t i = 0;
 
     /* start datacard initilization with the AT request */
     if (!m_device) 
@@ -165,7 +165,7 @@ void MonitorThread::cleanup()
 
 
 
-CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_conn(0), m_endpoint(ep), m_mutex(true), m_monitor(0), m_connected(false)
+CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_mutex(true), m_conn(0), m_connected(false)
 {
     m_data_fd = -1;
     m_audio_fd = -1;
@@ -495,12 +495,78 @@ bool Connection::onHangup(int reason)
     return true;
 }
     
-bool Connection::Answer()
+bool Connection::sendAnswer()
 {
+
+    m_dev->m_mutex.lock();
+
+    if (m_dev->incoming)
+    {
+	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add (CMD_AT_A, RES_OK))
+	{
+	    Debug(DebugAll, "[%s] Error sending ATA command\n", m_dev->c_str());
+	}
+	m_dev->answered = 1;
+    }
+    m_dev->m_mutex.unlock();
+
     return true;
 }
-bool Connection::Hangup()
+bool Connection::sendHangup()
 {
+    if (!m_dev)
+    {
+	Debug(DebugAll, "Asked to hangup channel not connected");
+	return false;
+    }
+    
+    CardDevice* tmp = m_dev;
+     
+    Debug(DebugAll, "[%s] Hanging up device\n", tmp->c_str());
+
+    tmp->m_mutex.lock();
+
+//	if (pvt->a_timer)
+//	{
+//		ast_timer_close (pvt->a_timer);
+//		pvt->a_timer = NULL;
+//	}
+
+    if (tmp->needchup)
+    {
+	if (tmp->at_send_chup() || tmp->at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
+	{
+		Debug(DebugAll, "[%s] Error sending AT+CHUP command\n", tmp->c_str());
+	}
+	tmp->needchup = 0;
+    }
+
+    tmp->m_conn = NULL;
+    tmp->needring = 0;
+
+    m_dev = NULL;
+
+    tmp->m_mutex.unlock();
+
+//	ast_setstate (channel, AST_STATE_DOWN);
+
+    return true;
+}
+
+bool Connection::sendDTMF(char digit)
+{
+
+    m_dev->m_mutex.lock();
+    
+    if (m_dev->at_send_dtmf(digit) || m_dev->at_fifo_queue_add (CMD_AT_DTMF, RES_OK))
+    {
+	Debug(DebugAll, "[%s] Error sending DTMF %c\n", m_dev->c_str(), digit);
+	m_dev->m_mutex.unlock();
+	return -1;
+    }
+    Debug(DebugAll, "[%s] Send DTMF %c\n", m_dev->c_str(), digit);
+    m_dev->m_mutex.unlock();
+
     return true;
 }
 

@@ -1157,7 +1157,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	char		from_number_utf8_str[1024];
 	char*		from_number = NULL;
 	char*		text = NULL;
-	char		text_base64[16384];
+//	char		text_base64[16384];
 
 	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
 	{
@@ -1300,7 +1300,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 	char*		cusd;
 	unsigned char	dcs;
 	char		cusd_utf8_str[1024];
-	char		text_base64[16384];
+//	char		text_base64[16384];
 
 	if (at_parse_cusd (str, len, &cusd, &dcs))
 	{
