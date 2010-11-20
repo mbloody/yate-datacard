@@ -357,10 +357,13 @@ public:
 // SMS and USSD
     bool sendSMS(const String &called, const String &sms);
     bool sendUSSD(const String &ussd);   
+
+    void forwardAudio(char* data, int len);
+    int sendAudio(char* data, int len);
     
 private:
     bool incomingCall(const String &caller);
-    bool Hangup(int error, int reason = 0);
+    bool Hangup(int error, int reason = 0);    
 };
 
 
@@ -378,6 +381,8 @@ public:
 
     bool sendDTMF(char digit);
 
+    virtual void forwardAudio(char* data, int len);
+    int sendAudio(char* data, int len);
     
 protected:
     CardDevice* m_dev;

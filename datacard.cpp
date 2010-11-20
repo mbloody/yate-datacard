@@ -54,13 +54,13 @@ private:
     YDevEndPoint* m_ep;
 };
 
-/*
+
 class DatacardChannel;
 
 class DatacardConsumer : public DataConsumer
 {
 public:
-    DatacardConsumer(DatacardChannel* conn, const char* formatText);
+    DatacardConsumer(DatacardChannel* conn, const char* format);
     ~DatacardConsumer();
     virtual unsigned long Consume(const DataBlock &data, unsigned long tStamp, unsigned long flags);
 private:
@@ -71,13 +71,12 @@ private:
 class DatacardSource : public DataSource
 {
 public:
-    DatacardSource(DatacardChannel* conn, u_int32_t format, const char* formatText);
-    ~YIAXSource();
-    void Forward(const DataBlock &data, unsigned long tStamp = 0);
+    DatacardSource(DatacardChannel* conn, const char* format);
+    ~DatacardSource();
 private:
     DatacardChannel* m_connection;
 };
-*/
+
 
 class DatacardDriver : public Driver
 {
@@ -104,6 +103,11 @@ public:
 	if (exeMsg)
 	    s->copyParams(*exeMsg,"caller,callername,called,billid,callto,username");
 	Engine::enqueue(s);
+	
+	setSource(new DatacardSource(this,"slin"));
+	getSource()->deref();
+	setConsumer(new DatacardConsumer(this,"slin"));
+	getConsumer()->deref();
     };
     ~DatacardChannel();
     
@@ -119,6 +123,9 @@ public:
     virtual bool onRinging();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
+    
+    
+    virtual void forwardAudio(char* data, int len);
 };
 
 
@@ -160,6 +167,31 @@ bool USSDHandler::received(Message &msg)
     return m_ep->sendUSSD(dev, text);
 }
 
+
+DatacardConsumer::DatacardConsumer(DatacardChannel* conn, const char* format): DataConsumer(format), m_connection(conn)
+{
+}
+
+DatacardConsumer::~DatacardConsumer()
+{
+}
+
+unsigned long DatacardConsumer::Consume(const DataBlock& data, unsigned long tStamp, unsigned long flags)
+{
+    if (!m_connection)
+	return invalidStamp();
+    m_connection->sendAudio((char*)data.data(), data.length());
+	
+    return 0;
+}
+
+DatacardSource::DatacardSource(DatacardChannel* conn, const char* format):DataSource(format), m_connection(conn)
+{ 
+}
+
+DatacardSource::~DatacardSource()
+{
+}
 
 void DatacardChannel::disconnected(bool final, const char *reason)
 {
@@ -217,6 +249,16 @@ bool DatacardChannel::onHangup(int reason)
 //    deref();
     return true;    
 }
+
+
+void DatacardChannel::forwardAudio(char* data, int len)
+{
+    DatacardSource* s = static_cast<DatacardSource*>(getSource());
+    if(!s)
+     return;
+    s->Forward(DataBlock(data, len),0);
+}
+
 
 
 bool DatacardDriver::msgExecute(Message& msg, String& dest)

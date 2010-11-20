@@ -178,7 +178,6 @@ MediaThread::~MediaThread()
 
 void MediaThread::run()
 {
-    int res;
     struct pollfd pfd;
     int in_pos = 0;
     int out_pos = 0;
@@ -187,8 +186,18 @@ void MediaThread::run()
     char buf[1024];
     int len;
 
+    size_t		used;
+    int		iovcnt;
+    struct iovec	iov[3];
+    ssize_t		res;
+    size_t		count;
+
+
+
     if (!m_device) 
         return;
+
+    m_device->a_write_rb.rb_init(m_device->a_write_buf, sizeof(m_device->a_write_buf));
 
     // Main loop
     while (m_device->isRunning())
@@ -234,9 +243,32 @@ void MediaThread::run()
 
 	    if (len) 
 	    {
-		write(pfd.fd, buf, len);
+		m_device->forwardAudio(buf, len);
+///		
+///		write(pfd.fd, buf, len);
+///
 	    }
+	    used = m_device->a_write_rb.rb_used ();
+	    if (used >= FRAME_SIZE)
+	    {
+	        iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
+	        m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
+	        count = 0;
+	        while ((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
+	        {
+	    	    if (count++ > 10)
+	    	    {
+			Debug(DebugAll,"Deadlock avoided for write!\n");
+			break;
+		    }
+		    usleep (1);
+		}
 
+		if (res < 0 || res != FRAME_SIZE)
+		{
+		    Debug(DebugAll,"[%s] Write error!\n",m_device->c_str());
+		}
+	    }
 	} 
 	m_device->m_mutex.unlock();
 //	else if (pfd.revents) 
@@ -542,6 +574,30 @@ bool CardDevice::Hangup(int error, int reason)
 }
 
 
+//audio
+void CardDevice::forwardAudio(char* data, int len)
+{
+    if(!m_conn)
+    {
+        Debug(DebugAll, "CardDevice::forwardAudio error: m_conn is NULL\n");
+	return;
+    }
+    m_conn->forwardAudio(data, len);
+}
+
+int CardDevice::sendAudio(char* data, int len)
+{
+//    TODO:
+    size_t count = a_write_rb.rb_free();
+
+    if (count < (size_t) len)
+    {
+	a_write_rb.rb_read_upd(len - count);
+    }
+    a_write_rb.rb_write(data, len);
+    return 0;
+}
+
 //EndPoint
 
 DevicesEndPoint::DevicesEndPoint(int interval):Thread("DeviceEndPoint"),m_mutex(true),m_interval(interval),m_run(true)
@@ -751,3 +807,13 @@ bool Connection::sendDTMF(char digit)
     return true;
 }
 
+
+
+void Connection::forwardAudio(char* data, int len)
+{
+}
+
+int Connection::sendAudio(char* data, int len)
+{
+    return m_dev->sendAudio(data, len);
+}
