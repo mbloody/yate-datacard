@@ -361,6 +361,8 @@ public:
     void forwardAudio(char* data, int len);
     int sendAudio(char* data, int len);
     
+    bool newCall(const String &called, void* usrData);
+    
 private:
     bool incomingCall(const String &caller);
     bool Hangup(int error, int reason = 0);    
@@ -372,7 +374,7 @@ class Connection
 public:
     Connection(CardDevice* dev);
     virtual bool onIncoming(const String &caller);
-    virtual bool onRinging();
+    virtual bool onProgress();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
     
@@ -410,7 +412,7 @@ public:
     void cleanDevices();
     
     virtual Connection* createConnection(CardDevice* dev, void* usrData = 0);
-    void MakeCall(CardDevice* dev, const String &called);
+    bool MakeCall(CardDevice* dev, const String &called, void* usrData);
 
 private:
     Mutex m_mutex;

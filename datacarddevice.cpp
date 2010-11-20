@@ -574,6 +574,72 @@ bool CardDevice::Hangup(int error, int reason)
 }
 
 
+bool CardDevice::newCall(const String &called, void* usrData)
+{
+    int clir = 0;
+
+    m_conn = m_endpoint->createConnection(this, usrData);
+    if(!m_conn)
+    {
+        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL\n");
+	return false;
+    }
+
+    Lock lock(m_mutex);
+
+    if (!initialized || incoming || outgoing)
+    {
+	Debug(DebugAll, "[%s] Error device already in use\n", c_str());
+	Hangup(0);
+	return false;
+    }
+
+    Debug(DebugAll, "[%s] Calling '%s'\n", c_str(), called.c_str());
+
+    if (usecallingpres)
+    {
+    	Hangup(0);
+    	return false;
+    //TODO:
+    /*
+	if (pvt->callingpres < 0)
+	{
+		#if ASTERISK_VERSION_NUM >= 10800
+		clir = channel->connected.id.number.presentation;
+		#else
+		clir = channel->cid.cid_pres;
+		#endif
+	}
+	else
+	{
+		clir = pvt->callingpres;
+	}
+
+	clir = get_at_clir_value (pvt, clir);
+	dest_num = ast_strdup (dest_num);
+	if (at_send_clir (pvt, clir) || at_fifo_queue_add_ptr (pvt, CMD_AT_CLIR, RES_OK, dest_num))
+	{
+		ast_mutex_unlock (&pvt->lock);
+		ast_log (LOG_ERROR, "[%s] Error sending AT+CLIR command\n", pvt->id);
+		return -1;
+	}
+	*/
+    }
+    else
+    {
+	if (at_send_atd(called.c_str()) || at_fifo_queue_add(CMD_AT_D, RES_OK))
+	{
+		Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
+		Hangup(0);
+		return false;
+	}
+    }
+
+    outgoing = 1;
+    needchup = 1;
+    return true;
+}
+
 //audio
 void CardDevice::forwardAudio(char* data, int len)
 {
@@ -705,8 +771,16 @@ Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
 {
     return 0;
 }
-void DevicesEndPoint::MakeCall(CardDevice* dev, const String &called)
+bool DevicesEndPoint::MakeCall(CardDevice* dev, const String &called, void* usrData)
 {
+    
+    if(!dev)
+    {
+        Debug(DebugAll, "DevicesEndPoint::MakeCall error: dev is NULL\n");
+	return false;
+    }
+
+    return dev->newCall(called, usrData);
 }
 
 Connection::Connection(CardDevice* dev):m_dev(dev)
@@ -718,7 +792,7 @@ bool Connection::onIncoming(const String &caller)
     return true;
 }
 
-bool Connection::onRinging()
+bool Connection::onProgress()
 {
     return true;
 }

@@ -915,7 +915,8 @@ int CardDevice::at_response_orig (char* str, size_t len)
 
 //TODO:
 //	channel_queue_control (AST_CONTROL_PROGRESS);
-
+	if(m_conn)
+	    m_conn->onProgress();
 	/*
 	 * parse ORIG info in the following format:
 	 * ^ORIG:<call_index>,<call_type>
@@ -1004,17 +1005,19 @@ int CardDevice::at_response_cend (char* str, size_t len)
 int CardDevice::at_response_conn ()
 {
 //TODO:
-/*
+
 	if (outgoing)
 	{
 		Debug(DebugAll, "[%s] Remote end answered\n", c_str());
-		channel_queue_control (AST_CONTROL_ANSWER);
+		if(m_conn)
+		    m_conn->onAnswered();
+//		channel_queue_control (AST_CONTROL_ANSWER);
 	}
 	else if (incoming && answered)
 	{
-		ast_setstate (owner, AST_STATE_UP);
+//		ast_setstate (owner, AST_STATE_UP);
 	}
-*/
+
 	return 0;
 }
 

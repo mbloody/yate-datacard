@@ -95,19 +95,32 @@ INIT_PLUGIN(DatacardDriver);
 class DatacardChannel :  public Channel, public Connection
 {
 public:
-    DatacardChannel(CardDevice* dev, const char* addr = 0, const NamedList* exeMsg = 0) :
-      Channel(__plugin, 0, (exeMsg != 0)), Connection(dev)
+    DatacardChannel(CardDevice* dev, Message* msg = 0) :
+      Channel(__plugin, 0, (msg != 0)), Connection(dev)
     {
-	m_address = addr;
-	Message* s = message("chan.startup",exeMsg);
-	if (exeMsg)
-	    s->copyParams(*exeMsg,"caller,callername,called,billid,callto,username");
-	Engine::enqueue(s);
+	m_address = 0;
+	Message* s = message("chan.startup",msg);
 	
+	if (msg)
+	{
+	    s->copyParams(*msg,"caller,callername,called,billid,callto,username");
+	    CallEndpoint* ch = YOBJECT(CallEndpoint,msg->userData());
+	    if (ch && ch->connect(this,msg->getValue("reason"))) 
+	    {
+		callConnect(*msg);
+		m_targetid = msg->getValue("id");
+		msg->setParam("peerid",id());
+		msg->setParam("targetid",id());
+		deref();
+	    }
+	}
+	Engine::enqueue(s);
+
 	setSource(new DatacardSource(this,"slin"));
 	getSource()->deref();
 	setConsumer(new DatacardConsumer(this,"slin"));
 	getConsumer()->deref();
+		
     };
     ~DatacardChannel();
     
@@ -120,7 +133,7 @@ public:
 	{ m_targetid = targetid; }
 
     virtual bool onIncoming(const String &caller);
-    virtual bool onRinging();
+    virtual bool onProgress();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
     
@@ -131,7 +144,8 @@ public:
 
 Connection* YDevEndPoint::createConnection(CardDevice* dev, void* usrData)
 {
-    DatacardChannel* channel = new DatacardChannel(dev);
+    Message* msg = static_cast<Message*>(usrData);
+    DatacardChannel* channel = new DatacardChannel(dev, msg);
     if(channel)
 	channel->initChan();
     return channel;
@@ -232,14 +246,20 @@ bool DatacardChannel::onIncoming(const String &caller)
 //    return true;
 }
 
-bool DatacardChannel::onRinging()
+bool DatacardChannel::onProgress()
 {
-    Debug(this,DebugAll,"DatacardChannel::onRinging()");
+    Debug(this,DebugAll,"DatacardChannel::onProgress()");
+    status("progressing");
+    Message *m = message("call.progress",false,true);
+    Engine::enqueue(m);
     return true;
 }
 bool DatacardChannel::onAnswered()
 {
     Debug(this,DebugAll,"DatacardChannel::onAnswered()");
+    status("answered");
+    Message *m = message("call.answered",false,true);
+    Engine::enqueue(m);
     return true;
 }
 bool DatacardChannel::onHangup(int reason)
@@ -263,6 +283,18 @@ void DatacardChannel::forwardAudio(char* data, int len)
 
 bool DatacardDriver::msgExecute(Message& msg, String& dest)
 {
+    if (dest.null())
+        return false;
+    if (!msg.userData()) 
+    {
+	Debug(this,DebugWarn,"Call found but no data channel!");
+        return false;
+    }
+    
+    CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
+    if(m_endpoint->MakeCall(dev, dest, &msg))
+	return true;
+    msg.setParam("error","congestion");
     return false;
 }
 
