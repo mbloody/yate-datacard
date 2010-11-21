@@ -357,7 +357,7 @@ bool DatacardDriver::received(Message& msg, int id)
 }
 
 DatacardDriver::DatacardDriver()
-    : Driver("datacard", "varchans")
+    : Driver("datacard", "varchans"),m_endpoint(0)
 {
     Output("Loaded module DatacardChannel");
 }
@@ -370,10 +370,17 @@ DatacardDriver::~DatacardDriver()
 
 void DatacardDriver::initialize()
 {
+    if(m_endpoint)
+    {
+        Output("DatacardChannel already initialized");
+        return;
+    }
+
     Output("Initializing module DatacardChannel");
 //TODO: make reload    
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
+
     m_endpoint = new YDevEndPoint(DEF_DISCOVERY_INT);
 //    String preferred = s_cfg.getValue("formats","preferred");
 //    bool def = s_cfg.getBoolValue("formats","default",true);
