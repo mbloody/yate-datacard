@@ -243,6 +243,7 @@ DatacardChannel::~DatacardChannel()
 
 bool DatacardChannel::msgAnswered(Message& msg)
 {
+    status("answered");
     return sendAnswer();
 }
 
