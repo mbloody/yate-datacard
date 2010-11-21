@@ -34,8 +34,9 @@ public:
 	Message* m = new Message("datacard.ussd");
 	m->addParam("type","incoming");
 	m->addParam("protocol","datacard");
-	m->addParam("line",*dev);
+	m->addParam("device",*dev);
 	m->addParam("text",ussd);
+	dev->getStatus(m);
 	Engine::enqueue(m);
     }
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
@@ -44,9 +45,10 @@ public:
 	Message* m = new Message("datacard.sms");
 	m->addParam("type","incoming");
 	m->addParam("protocol","datacard");
-	m->addParam("line",*dev);
+	m->addParam("device",*dev);
 	m->addParam("caller",caller);
 	m->addParam("text",sms);
+	dev->getStatus(m);
 	Engine::enqueue(m);
     }
     virtual Connection* createConnection(CardDevice* dev, void* usrData);
@@ -175,8 +177,8 @@ bool SMSHandler::received(Message &msg)
     String protocol(msg.getValue("protocol"));
     if(type != "outgoing" || protocol != "datacard")
 	return false;
-    String line(msg.getValue("line"));
-    CardDevice* dev = m_ep->findDevice(line);
+    String device(msg.getValue("device"));
+    CardDevice* dev = m_ep->findDevice(device);
     if(!dev)
 	return false;
     String called(msg.getValue("called"));
@@ -190,8 +192,8 @@ bool USSDHandler::received(Message &msg)
     String protocol(msg.getValue("protocol"));
     if(type != "outgoing" || protocol != "datacard")
 	return false;
-    String line(msg.getValue("line"));
-    CardDevice* dev = m_ep->findDevice(line);
+    String device(msg.getValue("device"));
+    CardDevice* dev = m_ep->findDevice(device);
     if(!dev)
 	return false;
     String text(msg.getValue("text"));
