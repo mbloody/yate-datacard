@@ -4,8 +4,24 @@
 using namespace TelEngine;
 namespace { // anonymous
 
-static Configuration s_cfg;
+static TokenDict dict_errors[] = {
+    { "incomplete", DATACARD_INCOMPLETE },
+    { "noroute", DATACARD_NOROUTE },
+    { "noconn", DATACARD_NOCONN },
+    { "nomedia", DATACARD_NOMEDIA },
+    { "nocall", DATACARD_NOCALL },
+    { "busy", DATACARD_BUSY },
+    { "noanswer", DATACARD_NOANSWER },
+    { "rejected", DATACARD_REJECTED },
+    { "forbidden", DATACARD_FORBIDDEN },
+    { "offline", DATACARD_OFFLINE },
+    { "congestion", DATACARD_CONGESTION },
+    { "failure", DATACARD_FAILURE },
+    {  0,   0 },
+};
 
+
+static Configuration s_cfg;
 
 class YDevEndPoint : public DevicesEndPoint
 {
@@ -273,8 +289,10 @@ bool DatacardChannel::onAnswered()
 bool DatacardChannel::onHangup(int reason)
 {
     Debug(this,DebugAll,"DatacardChannel::onHangup(%d)",reason);
-    disconnect();
-//    deref();
+    if( reason == DATACARD_NORMAL)
+	disconnect();
+    else
+	disconnect(lookup(reason,dict_errors));
     return true;    
 }
 
@@ -284,7 +302,7 @@ void DatacardChannel::forwardAudio(char* data, int len)
     DatacardSource* s = static_cast<DatacardSource*>(getSource());
     if(!s)
      return;
-    s->Forward(DataBlock(data, len),0);
+    s->Forward(DataBlock(data, len));
 }
 
 

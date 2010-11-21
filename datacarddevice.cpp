@@ -374,7 +374,7 @@ bool CardDevice::disconnect()
     {
     	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner\n", c_str());
 	needchup = 0;
-	Hangup(0);
+	Hangup(DATACARD_FAILURE);
     }
 
     close(m_data_fd);
@@ -557,7 +557,7 @@ bool CardDevice::incomingCall(const String &caller)
     return m_conn->onIncoming(caller);
 }
 
-bool CardDevice::Hangup(int error, int reason)
+bool CardDevice::Hangup(int reason)
 {
     Lock lock(m_mutex);
     Connection* tmp = m_conn;
@@ -587,7 +587,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
     if (!initialized || incoming || outgoing)
     {
 	Debug(DebugAll, "[%s] Error device already in use\n", c_str());
-	Hangup(0);
+	Hangup(DATACARD_BUSY);
 	return false;
     }
 
@@ -595,7 +595,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (m_usecallingpres)
     {
-    	Hangup(0);
+    	Hangup(DATACARD_FAILURE);
     	return false;
     //TODO:
     /*
@@ -627,7 +627,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 	if (at_send_atd(called.c_str()) || at_fifo_queue_add(CMD_AT_D, RES_OK))
 	{
 		Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
-		Hangup(0);
+		Hangup(DATACARD_FAILURE);
 		return false;
 	}
     }
@@ -636,6 +636,151 @@ bool CardDevice::newCall(const String &called, void* usrData)
     needchup = 1;
     return true;
 }
+
+int CardDevice::getReason(int end_status, int cc_cause)
+{
+    //TODO: review this!!!!!!!!!!!!!!
+    switch(end_status)
+    {
+    
+	case CM_CALL_END_OFFLINE:
+	case CM_CALL_END_NO_SRV:
+	case CM_CALL_END_INTERCEPT:
+	case CM_CALL_END_REORDER:
+	case CM_CALL_END_ALERT_STOP:
+	case CM_CALL_END_ACTIVATION:
+	case CM_CALL_END_MC_ABORT:
+	case CM_CALL_END_RUIM_NOT_PRESENT:
+	case CM_CALL_END_NDSS_FAIL:
+	case CM_CALL_END_CONF_FAILED:
+	case CM_CALL_END_NO_GW_SRV:
+	case CM_CALL_END_INCOM_CALL:
+	    return DATACARD_FORBIDDEN;
+
+	case CM_CALL_END_REL_SO_REJ:
+	case CM_CALL_END_INCOM_REJ:
+	case CM_CALL_END_SETUP_REJ:
+	case CM_CALL_END_NO_FUNDS:
+	    return DATACARD_REJECTED;
+	    
+	case CM_CALL_END_REL_NORMAL:	
+	case CM_CALL_END_CLIENT_END:
+	case CM_CALL_END_FADE:
+	    return DATACARD_NORMAL;
+
+	case CM_CALL_END_LL_CAUSE:
+	case CM_CALL_END_NETWORK_END:
+	default:
+	    switch(cc_cause)
+	    {
+	    
+		case NORMAL_CALL_CLEARING:
+		case NORMAL_UNSPECIFIED:		
+		    return DATACARD_NORMAL;
+		    
+		case NO_ROUTE_TO_DEST:
+		case DESTINATION_OUT_OF_ORDER:
+		    return DATACARD_NOROUTE;
+		    
+		case USER_BUSY:		    
+		    return DATACARD_BUSY;
+		    
+		case NO_USER_RESPONDING:
+		case USER_ALERTING_NO_ANSWER:
+		    return DATACARD_NOANSWER;
+		    
+		case CALL_REJECTED:
+		case FACILITY_REJECTED:
+		case REJ_UNSPECIFIED:
+		case AS_REJ_RR_REL_IND:
+		case AS_REJ_RR_RANDOM_ACCESS_FAILURE:
+		case AS_REJ_RRC_REL_IND:
+		case AS_REJ_RRC_CLOSE_SESSION_IND:
+		case AS_REJ_RRC_OPEN_SESSION_FAILURE:
+		case AS_REJ_LOW_LEVEL_FAIL:
+		case AS_REJ_LOW_LEVEL_FAIL_REDIAL_NOT_ALLOWD:
+		case MM_REJ_INVALID_SIM:
+		case MM_REJ_NO_SERVICE:
+		case MM_REJ_TIMER_T3230_EXP:
+		case MM_REJ_NO_CELL_AVAILABLE:
+		case MM_REJ_WRONG_STATE:
+		case MM_REJ_ACCESS_CLASS_BLOCKED:
+		case CNM_REJ_TIMER_T303_EXP:
+		case CNM_REJ_NO_RESOURCES:		    
+		    return DATACARD_REJECTED;
+
+		case CHANNEL_UNACCEPTABLE:		    
+		case NETWORK_OUT_OF_ORDER:
+		case NO_CIRCUIT_CHANNEL_AVAILABLE:
+		case REQUESTED_CIRCUIT_CHANNEL_NOT_AVAILABLE:
+		case RESOURCES_UNAVAILABLE_UNSPECIFIED:
+		case SERVICE_OR_OPTION_NOT_AVAILABLE:
+		case ONLY_RESTRICTED_DIGITAL_INFO_BC_AVAILABLE:
+		case QUALITY_OF_SERVICE_UNAVAILABLE:
+		case SWITCHING_EQUIPMENT_CONGESTION:
+		    return DATACARD_CONGESTION;
+
+// Not sortet 
+		case NUMBER_CHANGED:
+		case NON_SELECTED_USER_CLEARING:
+		case INVALID_NUMBER_FORMAT:
+		case RESPONSE_TO_STATUS_ENQUIRY:
+		case USER_NOT_MEMBER_OF_CUG:
+		case INTERWORKING_UNSPECIFIED:
+		case ABORT_MSG_RECEIVED:
+		case UNASSIGNED_CAUSE:
+		case OPERATOR_DETERMINED_BARRING:
+		case OTHER_CAUSE:
+		case CNM_MM_REL_PENDING:
+		case ACM_GEQ_ACMMAX:
+		case ACCESS_INFORMATION_DISCARDED:
+		case INCOMING_CALL_BARRED_WITHIN_CUG:
+		case BEARER_CAPABILITY_NOT_AUTHORISED:
+		case BEARER_CAPABILITY_NOT_PRESENTLY_AVAILABLE:
+//		    
+		case INCOMPATIBLE_DESTINATION:
+		case TEMPORARY_FAILURE:
+		case REQUESTED_FACILITY_NOT_SUBSCRIBED:
+		case INVALID_TRANSACTION_ID_VALUE:
+		case INVALID_TRANSIT_NETWORK_SELECTION:
+		case SEMANTICALLY_INCORRECT_MESSAGE:
+		case INVALID_MANDATORY_INFORMATION:
+		case IE_NON_EXISTENT_OR_NOT_IMPLEMENTED:
+		case MESSAGE_TYPE_NON_EXISTENT:
+		case MESSAGE_TYPE_NOT_COMPATIBLE_WITH_PROT_STATE:
+		case CONDITIONAL_IE_ERROR:
+		case MESSAGE_NOT_COMPATIBLE_WITH_PROTOCOL_STATE:
+		case RECOVERY_ON_TIMER_EXPIRY:		
+		case PROTOCOL_ERROR_UNSPECIFIED:		
+		case CNM_INVALID_USER_DATA:
+		case BEARER_SERVICE_NOT_IMPLEMENTED:
+		case SERVICE_OR_OPTION_NOT_IMPLEMENTED:
+		case REQUESTED_FACILITY_NOT_IMPLEMENTED:
+		default:
+		    return DATACARD_FAILURE;
+	    }
+    }
+    return DATACARD_FAILURE;
+    
+    
+/*	
+//Datacard reasons
+#define DATACARD_NORMAL 0
+#define DATACARD_INCOMPLETE 1
+#define DATACARD_NOROUTE 2
+#define DATACARD_NOCONN 3
+#define DATACARD_NOMEDIA 4
+#define DATACARD_NOCALL 5
+#define DATACARD_BUSY 6
+#define DATACARD_NOANSWER 7
+#define DATACARD_REJECTED 8
+#define DATACARD_FORBIDDEN 9
+#define DATACARD_OFFLINE 10
+#define DATACARD_CONGESTION 11
+#define DATACARD_FAILURE 12
+*/    
+}
+
 
 //audio
 void CardDevice::forwardAudio(char* data, int len)

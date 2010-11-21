@@ -2,7 +2,7 @@
 #define DATACARDDEVICE_H
 #include <yatephone.h>
 #include "ringbuffer.h"
-
+#include "endreasons.h"
 
 #ifndef MIN
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
@@ -363,7 +363,8 @@ public:
     
 private:
     bool incomingCall(const String &caller);
-    bool Hangup(int error, int reason = 0);    
+    bool Hangup(int error);
+    int getReason(int end_status, int cc_cause);
 };
 
 

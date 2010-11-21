@@ -779,7 +779,7 @@ int CardDevice::at_response_error()
 				Debug(DebugAll, "[%s] Answer failed\n", c_str());
 //TODO:
 //				channel_queue_hangup (0);
-				Hangup(0);
+				Hangup(DATACARD_FAILURE);
 				break;
 
 			case CMD_AT_CLIR:
@@ -799,7 +799,7 @@ int CardDevice::at_response_error()
 				needchup = 0;
 //TODO:
 //				channel_queue_control (AST_CONTROL_CONGESTION);
-				Hangup(0);
+				Hangup(DATACARD_CONGESTION);
 				break;
 
 			case CMD_AT_DDSETEX:
@@ -981,8 +981,9 @@ int CardDevice::at_response_cend (char* str, size_t len)
 	{
 		Debug(DebugAll, "[%s] hanging up owner\n", c_str());
 		
-//		if (m_conn->onHangup(cc_cause) == false)
-		if (Hangup(0, cc_cause) == false)
+		int reason = getReason(end_status, cc_cause);
+				
+		if (Hangup(reason) == false)
 		{
 			Debug(DebugAll, "[%s] Error queueing hangup...\n", c_str());
 			return -1;
@@ -1384,7 +1385,7 @@ int CardDevice::at_response_busy ()
 	needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_BUSY);
-	Hangup(0);
+	Hangup(DATACARD_BUSY);
 
 	return 0;
 }
@@ -1403,7 +1404,7 @@ int CardDevice::at_response_no_dialtone()
 	needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_CONGESTION);
-	Hangup(0);
+	Hangup(DATACARD_CONGESTION);
 
 	return 0;
 }
@@ -1422,7 +1423,7 @@ int CardDevice::at_response_no_carrier()
 	needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_CONGESTION);
-	Hangup(0);
+	Hangup(DATACARD_CONGESTION);
 
 	return 0;
 }
