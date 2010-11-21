@@ -33,8 +33,8 @@ public:
 	Debug(DebugAll, "onReceiveUSSD Got USSD response: '%s'\n", ussd.c_str());
 	Message* m = new Message("datacard.ussd");
 	m->addParam("type","incoming");
-	m->addParam("protocol","datacard");
-	m->addParam("device",*dev);
+	m->addParam("module","datacard");
+//	m->addParam("device",*dev);
 	m->addParam("text",ussd);
 	dev->getStatus(m);
 	Engine::enqueue(m);
@@ -44,8 +44,8 @@ public:
 	Debug(DebugAll, "onReceiveSMS Got SMS from %s: '%s'\n", caller.c_str(), sms.c_str());
 	Message* m = new Message("datacard.sms");
 	m->addParam("type","incoming");
-	m->addParam("protocol","datacard");
-	m->addParam("device",*dev);
+	m->addParam("module","datacard");
+//	m->addParam("device",*dev);
 	m->addParam("caller",caller);
 	m->addParam("text",sms);
 	dev->getStatus(m);
@@ -103,6 +103,7 @@ public:
     ~DatacardDriver();
     virtual void initialize();
     virtual bool msgExecute(Message& msg, String& dest);
+    virtual bool received(Message& msg, int id);
 
 private:
     YDevEndPoint* m_endpoint;
@@ -324,6 +325,34 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
 	return true;
     msg.setParam("error","congestion");
     return false;
+}
+
+bool DatacardDriver::received(Message& msg, int id)
+{
+//TODO: implement it
+    if (id == Status) 
+    {
+	String target = msg.getValue("module");
+	if (!target || target == name() || target.startsWith(prefix()))
+	    return Driver::received(msg,id);
+	if (!target.startSkip(name(),false))
+	    return false;
+	target.trimBlanks();
+	
+	String detail;
+	if(target == "devices")
+	{
+	    detail = "test";	
+	}
+	msg.retValue().clear();
+	msg.retValue() << "module=" << name();
+	msg.retValue() << "," << target;
+	if (detail)
+	    msg.retValue() << ";" << detail;
+	msg.retValue() << "\r\n";
+	return true;
+    }
+    return Driver::received(msg,id);
 }
 
 DatacardDriver::DatacardDriver()

@@ -464,7 +464,7 @@ bool CardDevice::getStatus(NamedList * list)
 //		ast_cli (a->fd, "  RSSI                    : %d\n", pvt->rssi);
 //		ast_cli (a->fd, "  Mode                    : %d\n", pvt->linkmode);
 //		ast_cli (a->fd, "  Submode                 : %d\n", pvt->linksubmode);
-    list->addParam("prividername", m_provider_name);
+    list->addParam("providername", m_provider_name);
     list->addParam("manufacturer", m_manufacturer);
     list->addParam("model", m_model);
     list->addParam("firmware", m_firmware);
