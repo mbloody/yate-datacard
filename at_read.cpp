@@ -19,105 +19,23 @@
 #include <poll.h>
 
 
-#if 0
-// Old Asterisk implementation. Found at 
-// https://issues.asterisk.org/file_download.php?file_id=6792&type=bug
-int ast_fdisset(struct pollfd *pfds, int fd, int max, int *start)
-{
- 	int x;
-    int dummy=0;
-
-    if (fd < 0)
-        return 0;
-    if (start == NULL)
-        start = &dummy;
-    for (x = *start; x<max; x++)
- 		if (pfds[x].fd == fd) {
-            if (x == *start)
-                (*start)++;
- 			return pfds[x].revents;
- 		}
- 	return 0;
-}
-
-int ast_waitfor_n_fd(int *fds, int n, int *ms, int *exception)
-{
-    struct timeval start = { 0 , 0 };
-    int res;
-    int x, y;
- 	int winner = -1;
-    int spoint;
-    struct pollfd *pfds;
-    
-    pfds = (struct pollfd*)malloc(sizeof(struct pollfd) * n);
-    if (!pfds) {
-        // ast_log(LOG_ERROR, "Out of memory\n");
-        return -1;
-    }
-    //if (*ms > 0)
-    //    start = ast_tvnow();
-    
-    y = 0;
-    for (x=0; x < n; x++) {
-        if (fds[x] > -1) {
-            pfds[y].fd = fds[x];
-            pfds[y].events = POLLIN | POLLPRI;
-            y++;
-        }
-    }
-    res = poll(pfds, y, *ms);
-    if (res < 0) {
-        /* Simulate a timeout if we were interrupted */
-        if (errno != EINTR)
-            *ms = -1;
-        else
-            *ms = 0;
-        return -1;
-    }
-    spoint = 0;
-    for (x=0; x < n; x++) {
-        if (fds[x] > -1) {
-            if ((res = ast_fdisset(pfds, fds[x], y, &spoint))) {
-                winner = fds[x];
-                if (exception) {
-                    if (res & POLLPRI)
-                        *exception = -1;
-                    else
-                    *exception = 0;
-                }
-            }
-        }
-    }
-    //if (*ms > 0) {
-    //    *ms -= ast_tvdiff_ms(ast_tvnow(), start);
-    //    if (*ms < 0)
-    //    *ms = 0;
-    //}
-
- 	return winner;
-}
-#endif
-
 int CardDevice::at_wait (int* ms)
 {
 
     struct pollfd fds;
     fds.fd = m_data_fd;
-    fds.events = POLLIN | POLLPRI ;
+    fds.events = POLLIN;
     fds.revents = 0;
 
     int res = poll(&fds, 1, *ms);
     if (res < 0) {
         /* Simulate a timeout if we were interrupted */
         if (errno != EINTR)
-            *ms = -1;
-        else
-            *ms = 0;
+            return -1;
 	return 0;
     }
     else if(res == 0)
     {
-	*ms = -1;
 	return 0;
     }
     if((fds.revents & POLLIN))
@@ -125,26 +43,12 @@ int CardDevice::at_wait (int* ms)
         //incoming data
         return fds.fd;
     }	
-    if (fds.revents & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
+    else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
     {
         //exeption
-        return fds.fd;
+        return -1;
     }
-    return fds.fd;
-    
-#if 0
-	int exception, outfd;
-
-	outfd = ast_waitfor_n_fd (&m_data_fd, 1, ms, &exception);
-	
-
-	if (outfd < 0)
-	{
-		outfd = 0;
-	}
-
-	return outfd;
-#endif
+    return 0;
 }
 
 int CardDevice::at_read ()

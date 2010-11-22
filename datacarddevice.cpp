@@ -17,13 +17,13 @@ static int opentty (char* dev)
 
 	if (fd < 0)
 	{
-		Debug("opentty",DebugAll, "Unable to open '%s'\n", dev);
+		Debug("opentty",DebugAll, "Unable to open '%s'", dev);
 		return -1;
 	}
 
 	if (tcgetattr (fd, &term_attr) != 0)
 	{
-		Debug("opentty",DebugAll, "tcgetattr() failed '%s'\n", dev);
+		Debug("opentty",DebugAll, "tcgetattr() failed '%s'", dev);
 		return -1;
 	}
 
@@ -36,7 +36,7 @@ static int opentty (char* dev)
 
 	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
 	{
-		Debug("opentty",DebugAll,"tcsetattr() failed '%s'\n", dev);
+		Debug("opentty",DebugAll,"tcsetattr() failed '%s'", dev);
 	}
 
 	return fd;
@@ -71,7 +71,7 @@ void MonitorThread::run()
 
     if (m_device->at_send_at() || m_device->at_fifo_queue_add(CMD_AT, RES_OK))
     {
-        Debug(DebugAll, "[%s] Error sending AT\n", m_device->c_str());
+        Debug(DebugAll, "[%s] Error sending AT", m_device->c_str());
         m_device->disconnect();
         m_device->m_mutex.unlock();
         return;
@@ -86,8 +86,7 @@ void MonitorThread::run()
 
         if (m_device->dataStatus() || m_device->audioStatus())
         {
-            Debug(DebugAll, "Lost connection to Datacard %s\n", m_device->c_str());
-//		goto e_cleanup;
+            Debug(DebugAll, "Lost connection to Datacard %s", m_device->c_str());
             m_device->disconnect();
             m_device->m_mutex.unlock();
             return;
@@ -96,22 +95,27 @@ void MonitorThread::run()
 
         m_device->m_mutex.unlock();
 
-
-        if (!m_device->at_wait(&t))
+	int res = m_device->at_wait(&t);
+	if(res < 0)
+	{
+	    m_device->m_mutex.lock();
+	    m_device->disconnect();
+            m_device->m_mutex.unlock();
+            return;
+	}
+//        if (!m_device->at_wait(&t))
+        if (res == 0)
         {
             m_device->m_mutex.lock();
             if (!m_device->initialized)
             {
-                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting\n", m_device->c_str());
+                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", m_device->c_str());
 
-//                if ((e = static_cast<at_queue_t*>(m_device->m_atQueue.get())))
 		if ((e = m_device->at_fifo_queue_head()))
                 {
-                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'\n", m_device->c_str(), m_device->at_res2str (e->res), m_device->at_cmd2str (e->cmd));
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", m_device->c_str(), m_device->at_res2str (e->res), m_device->at_cmd2str (e->cmd));
                 }
-
-//		goto e_cleanup;
-                Debug(DebugAll, "Error initializing Datacard %s\n", m_device->c_str());
+                Debug(DebugAll, "Error initializing Datacard %s", m_device->c_str());
                 m_device->disconnect();
                 m_device->m_mutex.unlock();
                 return;
@@ -127,7 +131,6 @@ void MonitorThread::run()
 
         if (m_device->at_read())
         {
-//		goto e_cleanup;
             m_device->disconnect();
             m_device->m_mutex.unlock();
             return;
@@ -138,7 +141,6 @@ void MonitorThread::run()
 	    
             if (m_device->at_response(iovcnt, at_res))
             {
-//		goto e_cleanup;
                 m_device->disconnect();
                 m_device->m_mutex.unlock();
                 return;
@@ -146,19 +148,6 @@ void MonitorThread::run()
         }
         m_device->m_mutex.unlock();
     } // End of Main loop
-
-//    ast_mutex_lock (&pvt->lock);
-
-//e_cleanup:
-//    if (!pvt->initialized)
-//    {
-//    	ast_verb (3, "Error initializing Datacard %s\n", pvt->id);
-//    }
-
-//    disconnect_datacard (pvt);
-
-//    ast_mutex_unlock (&pvt->lock);
-
 }
 
 void MonitorThread::cleanup()
@@ -202,7 +191,7 @@ void MediaThread::run()
 
 //        if (m_device->dataStatus() || m_device->audioStatus())
 //        {
-//            Debug(DebugAll, "Lost connection to Datacard %s\n", m_device->c_str());
+//            Debug(DebugAll, "Lost connection to Datacard %s", m_device->c_str());
 //		goto e_cleanup;
 //            m_device->disconnect();
 //            m_device->m_mutex.unlock();
@@ -222,18 +211,22 @@ void MediaThread::run()
 
 	if (res == -1 && errno != EINTR) 
 	{
-	    Debug(DebugAll, "poll() error\n");
-	    break;
+	    Debug(DebugAll, "MediaThread poll() error datacard [%s]", m_device->c_str());
+	    m_device->m_mutex.lock();
+            m_device->disconnect();
+	    m_device->m_mutex.unlock();
+            return;
 	}
 
 	if (res == 0)
 	    continue;
 
-        m_device->m_mutex.lock();
 
 	if (pfd.revents & POLLIN) 
 	{
-//	    Debug(DebugAll, "POLLIN\n");
+	    m_device->m_mutex.lock();
+
+//	    Debug(DebugAll, "POLLIN");
 
 	    len = read(pfd.fd, buf, FRAME_SIZE);
 
@@ -254,7 +247,7 @@ void MediaThread::run()
 	        {
 	    	    if (count++ > 10)
 	    	    {
-			Debug(DebugAll,"Deadlock avoided for write!\n");
+			Debug(DebugAll,"Deadlock avoided for write!");
 			break;
 		    }
 		    usleep (1);
@@ -262,21 +255,23 @@ void MediaThread::run()
 
 		if (res < 0 || res != FRAME_SIZE)
 		{
-		    Debug(DebugAll,"[%s] Write error!\n",m_device->c_str());
+		    Debug(DebugAll,"[%s] Write error!",m_device->c_str());
 		}
 	    }
+	    m_device->m_mutex.unlock();
 	} 
-	m_device->m_mutex.unlock();
-//	else if (pfd.revents) 
-//	{
-//
-//	    Debug(DebugAll, "Connection error\n");
-//	} 
-//	else 
-//	{
-//	    ast_log(LOG_NOTICE, "Unhandled poll output\n");
-//	}
-
+	else if (pfd.revents) 
+	{
+	    Debug(DebugAll, "MediaThread poll exception datacard [%s]", m_device->c_str());
+	    m_device->m_mutex.lock();
+            m_device->disconnect();
+            m_device->m_mutex.unlock();
+            return;
+	} 
+	else 
+	{
+	    Debug(DebugAll, "MediaThread Unhandled poll output datacard [%s]", m_device->c_str());
+	}
 
     } // End of Main loop
     
@@ -343,7 +338,7 @@ bool CardDevice::tryConnect()
     m_mutex.lock();
     if (!m_connected)
     {
-	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...\n", safe(), data_tty.safe());
+	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...", safe(), data_tty.safe());
 	if ((m_data_fd = opentty((char*)data_tty.safe())) > -1)
 	{
 		if ((m_audio_fd = opentty((char*)audio_tty.safe())) > -1)
@@ -351,7 +346,7 @@ bool CardDevice::tryConnect()
 		    if (startMonitor())
 		    {
 			m_connected = true;
-			Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...\n", safe());
+			Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...", safe());
 		    }
 		}
 	}
@@ -364,7 +359,7 @@ bool CardDevice::disconnect()
 {
     if(!m_connected)
     {
-    	Debug("disconnect",DebugAll,"[%s] Datacard not connected\n", safe());	
+    	Debug("disconnect",DebugAll,"[%s] Datacard not connected", safe());	
     	return m_connected;
     }
     if(isRunning()) 
@@ -372,7 +367,7 @@ bool CardDevice::disconnect()
 
     if(m_conn)
     {
-    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner\n", c_str());
+    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner", c_str());
 	needchup = 0;
 	Hangup(DATACARD_FAILURE);
     }
@@ -489,7 +484,7 @@ bool CardDevice::getStatus(NamedList * list)
 // SMS and USSD
 bool CardDevice::sendSMS(const String &called, const String &sms)
 {
-    Debug(DebugAll, "[%s] sendSMS: %s\n", c_str(), sms.c_str());
+    Debug(DebugAll, "[%s] sendSMS: %s", c_str(), sms.c_str());
     
     Lock lock(m_mutex);
     
@@ -505,19 +500,19 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             if (at_send_cmgs(called.safe()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
             {
                 free(msg);
-                Debug(DebugAll, "[%s] Error sending SMS message\n", c_str());
+                Debug(DebugAll, "[%s] Error sending SMS message", c_str());
                 return false;
 		    }
 	    }
         else
         {
-            Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent\n", c_str());
+            Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent", c_str());
             return false;
         }
     }
     else
     {
-        Debug(DebugAll, "Device %s not connected / initialized / registered\n", c_str());
+        Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
         return false;
     }
     return true;
@@ -525,7 +520,7 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
 
 bool CardDevice::sendUSSD(const String &ussd)
 {
-    Debug(DebugAll, "[%s] sendUSSD: %s\n", c_str(), ussd.c_str());
+    Debug(DebugAll, "[%s] sendUSSD: %s", c_str(), ussd.c_str());
 
     Lock lock(m_mutex);
     
@@ -533,13 +528,13 @@ bool CardDevice::sendUSSD(const String &ussd)
     {
         if (at_send_cusd(ussd.c_str()) || at_fifo_queue_add(CMD_AT_CUSD, RES_OK))
         {
-            Debug(DebugAll, "[%s] Error sending USSD command\n", c_str());
+            Debug(DebugAll, "[%s] Error sending USSD command", c_str());
             return false;
         }
     }
     else
     {
-        Debug(DebugAll, "Device %s not connected / initialized / registered\n", c_str());
+        Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
         return false;
     }
     return true;
@@ -551,7 +546,7 @@ bool CardDevice::incomingCall(const String &caller)
     m_conn = m_endpoint->createConnection(this);
     if(!m_conn)
     {
-        Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL\n");
+        Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
 	return false;
     }
     return m_conn->onIncoming(caller);
@@ -563,7 +558,7 @@ bool CardDevice::Hangup(int reason)
     Connection* tmp = m_conn;
     if(!tmp)
     {
-        Debug(DebugAll, "CardDevice::Hangup error: m_conn is NULL\n");
+        Debug(DebugAll, "CardDevice::Hangup error: m_conn is NULL");
 	return false;
     }
     m_conn = 0;
@@ -578,7 +573,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
     m_conn = m_endpoint->createConnection(this, usrData);
     if(!m_conn)
     {
-        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL\n");
+        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL");
 	return false;
     }
 
@@ -586,12 +581,12 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (!initialized || incoming || outgoing)
     {
-	Debug(DebugAll, "[%s] Error device already in use\n", c_str());
+	Debug(DebugAll, "[%s] Error device already in use", c_str());
 	Hangup(DATACARD_BUSY);
 	return false;
     }
 
-    Debug(DebugAll, "[%s] Calling '%s'\n", c_str(), called.c_str());
+    Debug(DebugAll, "[%s] Calling '%s'", c_str(), called.c_str());
 
     if (m_usecallingpres)
     {
@@ -617,7 +612,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 	if (at_send_clir (pvt, clir) || at_fifo_queue_add_ptr (pvt, CMD_AT_CLIR, RES_OK, dest_num))
 	{
 		ast_mutex_unlock (&pvt->lock);
-		ast_log (LOG_ERROR, "[%s] Error sending AT+CLIR command\n", pvt->id);
+		ast_log (LOG_ERROR, "[%s] Error sending AT+CLIR command", pvt->id);
 		return -1;
 	}
 	*/
@@ -626,7 +621,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
     {
 	if (at_send_atd(called.c_str()) || at_fifo_queue_add(CMD_AT_D, RES_OK))
 	{
-		Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
+		Debug(DebugAll, "[%s] Error sending ATD command", c_str());
 		Hangup(DATACARD_FAILURE);
 		return false;
 	}
@@ -787,7 +782,7 @@ void CardDevice::forwardAudio(char* data, int len)
 {
     if(!m_conn)
     {
-        Debug(DebugAll, "CardDevice::forwardAudio error: m_conn is NULL\n");
+        Debug(DebugAll, "CardDevice::forwardAudio error: m_conn is NULL");
 	return;
     }
     m_conn->forwardAudio(data, len);
@@ -856,7 +851,7 @@ bool DevicesEndPoint::sendSMS(CardDevice* dev, const String &called, const Strin
 {
     if (!dev)
     {
-        Debug(DebugAll, "DevicesEndPoint::sendSMS() error: dev is NULL\n");
+        Debug(DebugAll, "DevicesEndPoint::sendSMS() error: dev is NULL");
         return false;
     }
     return dev->sendSMS(called, sms);
@@ -866,7 +861,7 @@ bool DevicesEndPoint::sendUSSD(CardDevice* dev, const String &ussd)
 {
     if (!dev)
     {
-        Debug(DebugAll, "DevicesEndPoint::sendUSSD() error: dev is NULL\n");
+        Debug(DebugAll, "DevicesEndPoint::sendUSSD() error: dev is NULL");
         return false;
     }
     return dev->sendUSSD(ussd);
@@ -945,7 +940,7 @@ bool DevicesEndPoint::MakeCall(CardDevice* dev, const String &called, void* usrD
     
     if(!dev)
     {
-        Debug(DebugAll, "DevicesEndPoint::MakeCall error: dev is NULL\n");
+        Debug(DebugAll, "DevicesEndPoint::MakeCall error: dev is NULL");
 	return false;
     }
 
@@ -984,7 +979,7 @@ bool Connection::sendAnswer()
     {
 	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add (CMD_AT_A, RES_OK))
 	{
-	    Debug(DebugAll, "[%s] Error sending ATA command\n", m_dev->c_str());
+	    Debug(DebugAll, "[%s] Error sending ATA command", m_dev->c_str());
 	}
 	m_dev->answered = 1;
     }
@@ -1002,7 +997,7 @@ bool Connection::sendHangup()
     
     CardDevice* tmp = m_dev;
      
-    Debug(DebugAll, "[%s] Hanging up device\n", tmp->c_str());
+    Debug(DebugAll, "[%s] Hanging up device", tmp->c_str());
 
     tmp->m_mutex.lock();
 
@@ -1016,7 +1011,7 @@ bool Connection::sendHangup()
     {
 	if (tmp->at_send_chup() || tmp->at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
 	{
-		Debug(DebugAll, "[%s] Error sending AT+CHUP command\n", tmp->c_str());
+		Debug(DebugAll, "[%s] Error sending AT+CHUP command", tmp->c_str());
 	}
 	tmp->needchup = 0;
     }
@@ -1040,11 +1035,11 @@ bool Connection::sendDTMF(char digit)
     
     if (m_dev->at_send_dtmf(digit) || m_dev->at_fifo_queue_add (CMD_AT_DTMF, RES_OK))
     {
-	Debug(DebugAll, "[%s] Error sending DTMF %c\n", m_dev->c_str(), digit);
+	Debug(DebugAll, "[%s] Error sending DTMF %c", m_dev->c_str(), digit);
 	m_dev->m_mutex.unlock();
 	return -1;
     }
-    Debug(DebugAll, "[%s] Send DTMF %c\n", m_dev->c_str(), digit);
+    Debug(DebugAll, "[%s] Send DTMF %c", m_dev->c_str(), digit);
     m_dev->m_mutex.unlock();
 
     return true;
