@@ -320,7 +320,7 @@ at_res_t CardDevice::at_read_result_classification (int iovcnt)
 		{
 			at_res = RES_ERROR;
 		}
-		else if (d_read_rb.rb_memcmp("+CMS ERROR:", 11) == 0)
+		else if (d_read_rb.rb_memcmp("\r\n+CMS ERROR:", 13) == 0)
 		{
 			at_res = RES_CMS_ERROR;
 		}

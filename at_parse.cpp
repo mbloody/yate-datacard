@@ -137,6 +137,9 @@ const char* CardDevice::at_cmd2str (at_cmd_t cmd)
 
 		case CMD_UNKNOWN:
 			return "UNKNOWN";
+		
+		case CMD_AT_CSMP:
+		    return "AT+CSMP";
 
 		default:
 			return "UNDEFINED";

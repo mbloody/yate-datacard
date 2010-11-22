@@ -238,7 +238,6 @@ int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 	{
 		snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGS=\"%s\"\r", number);
 	}
-
 	return at_write(d_send_buf);
 }
 
@@ -574,3 +573,10 @@ int CardDevice::at_send_cmee (int level)
 	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMEE=%d\r", level);
 	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
 }
+
+int CardDevice::at_send_csmp (int fo, int vp, int pid, int dcs)
+{
+    d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CSMP=%d,%d,%d,%d\r", fo, vp, pid, dcs);
+	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+}
+

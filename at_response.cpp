@@ -31,11 +31,11 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 
 		if (iovcnt == 2)
 		{
-			Debug(DebugAll, "[%s] iovcnt == 2\n", c_str());
+			Debug(DebugAll, "[%s] iovcnt == 2", c_str());
 
 			if (len > sizeof (d_parse_buf) - 1)
 			{
-				Debug(DebugAll, "[%s] buffer overflow\n", c_str());
+				Debug(DebugAll, "[%s] buffer overflow", c_str());
 				return -1;
 			}
 
@@ -50,7 +50,7 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 			str[len] = '\0';
 		}
 
-//		Debug(DebugAll,  "[%s] [%.*s]\n", c_str(), (int) len, str);
+//		Debug(DebugAll,  "[%s] [%.*s]", c_str(), (int) len, str);
 
 		switch (at_res)
 		{
@@ -139,7 +139,7 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 				return 0;
 
 			case RES_PARSE_ERROR:
-				Debug(DebugAll, "[%s] Error parsing result\n", c_str());
+				Debug(DebugAll, "[%s] Error parsing result", c_str());
 				return -1;
 
 			case RES_UNKNOWN:
@@ -149,33 +149,33 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 					switch (e->cmd)
 					{
 						case CMD_AT_CGMI:
-							Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)\n", c_str());
+							Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)", c_str());
 							return at_response_cgmi (str, len);
 
 						case CMD_AT_CGMM:
-							Debug(DebugAll,  "[%s] Got AT_CGMM data (model info)\n", c_str());
+							Debug(DebugAll,  "[%s] Got AT_CGMM data (model info)", c_str());
 							return at_response_cgmm (str, len);
 
 						case CMD_AT_CGMR:
-							Debug(DebugAll,  "[%s] Got AT+CGMR data (firmware info)\n", c_str());
+							Debug(DebugAll,  "[%s] Got AT+CGMR data (firmware info)", c_str());
 							return at_response_cgmr (str, len);
 
 						case CMD_AT_CGSN:
-							Debug(DebugAll,  "[%s] Got AT+CGSN data (IMEI number)\n", c_str());
+							Debug(DebugAll,  "[%s] Got AT+CGSN data (IMEI number)", c_str());
 							return at_response_cgsn (str, len);
 
 						case CMD_AT_CIMI:
-							Debug(DebugAll,  "[%s] Got AT+CIMI data (IMSI number)\n", c_str());
+							Debug(DebugAll,  "[%s] Got AT+CIMI data (IMSI number)", c_str());
 							return at_response_cimi (str, len);
 
 						default:
-							Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'\n", c_str(), (int) len, str);
+							Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
 							break;
 					}
 				}
 				else
 				{
-					Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'\n", c_str(), (int) len, str);
+					Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
 				}
 
 				break;
@@ -209,7 +209,7 @@ int CardDevice::at_response_ok()
 					{
 						if (at_send_atz() || at_fifo_queue_add(CMD_AT_Z, RES_OK))
 						{
-							Debug(DebugAll, "[%s] Error reset datacard\n", c_str());
+							Debug(DebugAll, "[%s] Error reset datacard", c_str());
 							goto e_return;
 						}
 					}
@@ -217,7 +217,7 @@ int CardDevice::at_response_ok()
 					{
 						if (at_send_ate0() || at_fifo_queue_add (CMD_AT_E, RES_OK))
 						{
-							Debug(DebugAll, "[%s] Error disabling echo\n", c_str());
+							Debug(DebugAll, "[%s] Error disabling echo", c_str());
 							goto e_return;
 						}
 					}
@@ -227,7 +227,7 @@ int CardDevice::at_response_ok()
 			case CMD_AT_Z:
 				if (at_send_ate0() || at_fifo_queue_add (CMD_AT_E, RES_OK))
 				{
-					Debug(DebugAll, "[%s] Error disabling echo\n", c_str());
+					Debug(DebugAll, "[%s] Error disabling echo", c_str());
 					goto e_return;
 				}
 				break;
@@ -239,7 +239,7 @@ int CardDevice::at_response_ok()
 					{
 						if (at_send_u2diag (u2diag) || at_fifo_queue_add (CMD_AT_U2DIAG, RES_OK))
 						{
-							Debug(DebugAll, "[%s] Error setting U2DIAG\n", c_str());
+							Debug(DebugAll, "[%s] Error setting U2DIAG", c_str());
 							goto e_return;
 						}
 					}
@@ -247,7 +247,7 @@ int CardDevice::at_response_ok()
 					{
 						if (at_send_cgmi() || at_fifo_queue_add (CMD_AT_CGMI, RES_OK))
 						{
-							Debug(DebugAll, "[%s] Error asking datacard for manufacturer info\n", c_str());
+							Debug(DebugAll, "[%s] Error asking datacard for manufacturer info", c_str());
 							goto e_return;
 						}
 					}
@@ -259,7 +259,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cgmi() || at_fifo_queue_add (CMD_AT_CGMI, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error asking datacard for manufacturer info\n", c_str());
+						Debug(DebugAll, "[%s] Error asking datacard for manufacturer info", c_str());
 						goto e_return;
 					}
 				}
@@ -270,7 +270,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cgmm() || at_fifo_queue_add (CMD_AT_CGMM, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error asking datacard for model info\n", c_str());
+						Debug(DebugAll, "[%s] Error asking datacard for model info", c_str());
 						goto e_return;
 					}
 				}
@@ -281,7 +281,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cgmr() || at_fifo_queue_add (CMD_AT_CGMR, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error asking datacard for firmware info\n", c_str());
+						Debug(DebugAll, "[%s] Error asking datacard for firmware info", c_str());
 						goto e_return;
 					}
 				}
@@ -292,7 +292,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cmee (0) || at_fifo_queue_add (CMD_AT_CMEE, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting error verbosity level\n", c_str());
+						Debug(DebugAll, "[%s] Error setting error verbosity level", c_str());
 						goto e_return;
 					}
 				}
@@ -303,7 +303,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cgsn() || at_fifo_queue_add (CMD_AT_CGSN, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error asking datacard for IMEI number\n", c_str());
+						Debug(DebugAll, "[%s] Error asking datacard for IMEI number", c_str());
 						goto e_return;
 					}
 				}
@@ -314,7 +314,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cimi() || at_fifo_queue_add (CMD_AT_CIMI, RES_OK))
 					{
-						Debug(DebugAll,  "[%s] Error asking datacard for IMSI number\n", c_str());
+						Debug(DebugAll,  "[%s] Error asking datacard for IMSI number", c_str());
 						goto e_return;
 					}
 				}
@@ -325,7 +325,7 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cpin_test() || at_fifo_queue_add (CMD_AT_CPIN, RES_OK))
 					{
-						Debug(DebugAll,  "[%s] Error asking datacard for PIN state\n", c_str());
+						Debug(DebugAll,  "[%s] Error asking datacard for PIN state", c_str());
 						goto e_return;
 					}
 				}
@@ -336,66 +336,66 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_cops_init (0, 0) || at_fifo_queue_add (CMD_AT_COPS_INIT, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting operator select parameters\n", c_str());
+						Debug(DebugAll, "[%s] Error setting operator select parameters", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_COPS_INIT:
-				Debug(DebugAll, "[%s] Operator select parameters set\n", c_str());
+				Debug(DebugAll, "[%s] Operator select parameters set", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_creg_init (2) || at_fifo_queue_add (CMD_AT_CREG_INIT, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error enabeling registration info\n", c_str());
+						Debug(DebugAll, "[%s] Error enabeling registration info", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CREG_INIT:
-				Debug(DebugAll,  "[%s] registration info enabled\n", c_str());
+				Debug(DebugAll,  "[%s] registration info enabled", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_creg() || at_fifo_queue_add (CMD_AT_CREG, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error sending registration query\n", c_str());
+						Debug(DebugAll, "[%s] Error sending registration query", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CREG:
-				Debug(DebugAll, "[%s] registration query sent\n", c_str());
+				Debug(DebugAll, "[%s] registration query sent", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_cnum() || at_fifo_queue_add (CMD_AT_CNUM, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error checking subscriber phone number\n", c_str());
+						Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CNUM:
-				Debug(DebugAll, "[%s] Subscriber phone number query successed\n", c_str());
+				Debug(DebugAll, "[%s] Subscriber phone number query successed", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_cvoice_test() || at_fifo_queue_add (CMD_AT_CVOICE, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error checking voice capabilities\n", c_str());
+						Debug(DebugAll, "[%s] Error checking voice capabilities", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CVOICE:
-				Debug(DebugAll, "[%s] Datacard has voice support\n", c_str());
+				Debug(DebugAll, "[%s] Datacard has voice support", c_str());
 
 				has_voice = 1;
 
@@ -403,20 +403,20 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_clip (1) || at_fifo_queue_add (CMD_AT_CLIP, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error enabling calling line notification\n", c_str());
+						Debug(DebugAll, "[%s] Error enabling calling line notification", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CLIP:
-				Debug(DebugAll, "[%s] Calling line indication enabled\n", c_str());
+				Debug(DebugAll, "[%s] Calling line indication enabled", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_cssn (1, 1) || at_fifo_queue_add (CMD_AT_CSSN, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error activating Supplementary Service Notification\n", c_str());
+						Debug(DebugAll, "[%s] Error activating Supplementary Service Notification", c_str());
 						goto e_return;
 					}
 				}
@@ -424,14 +424,14 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_CSSN:
-				Debug(DebugAll, "[%s] Supplementary Service Notification enabled successful\n", c_str());
+				Debug(DebugAll, "[%s] Supplementary Service Notification enabled successful", c_str());
 
 				if (!initialized)
 				{
 					/* set the SMS operating mode to text mode */
 					if (at_send_cmgf (1) || at_fifo_queue_add (CMD_AT_CMGF, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting CMGF\n", c_str());
+						Debug(DebugAll, "[%s] Error setting CMGF", c_str());
 						goto e_return;
 					}
 				}
@@ -439,21 +439,35 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_CMGF:
-				Debug(DebugAll, "[%s] SMS text mode enabled\n", c_str());
+				Debug(DebugAll, "[%s] SMS text mode enabled", c_str());
+
+				if (!initialized)
+				{
+					/* set text mode additional params */
+					if (at_send_csmp (17,167,0,8) || at_fifo_queue_add (CMD_AT_CSMP, RES_OK))
+					{
+						Debug(DebugAll, "[%s] Error setting CSMP (text mode additional params)", c_str());
+						goto e_return;
+					}
+				}
+				break;
+				
+			case CMD_AT_CSMP:
+				Debug(DebugAll, "[%s] SMS text mode additional parameters set", c_str());
 
 				if (!initialized)
 				{
 					/* set text encoding to UCS-2 */
 					if (at_send_cscs ("UCS2") || at_fifo_queue_add (CMD_AT_CSCS, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting CSCS (text encoding)\n", c_str());
+						Debug(DebugAll, "[%s] Error setting CSCS (text encoding)", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CSCS:
-				Debug(DebugAll,  "[%s] UCS-2 text encoding enabled\n", c_str());
+				Debug(DebugAll,  "[%s] UCS-2 text encoding enabled", c_str());
 
 				use_ucs2_encoding = 1;
 
@@ -462,29 +476,29 @@ int CardDevice::at_response_ok()
 					/* set SMS storage location */
 					if (at_send_cpms() || at_fifo_queue_add (CMD_AT_CPMS, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting CPMS\n", c_str());
+						Debug(DebugAll, "[%s] Error setting CPMS", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CPMS:
-				Debug(DebugAll,  "[%s] SMS storage location is established\n", c_str());
+				Debug(DebugAll,  "[%s] SMS storage location is established", c_str());
 
 				if (!initialized)
 				{
 					/* turn on SMS new message indication */
 					if (at_send_cnmi() || at_fifo_queue_add (CMD_AT_CNMI, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error sending CNMI\n", c_str());
+						Debug(DebugAll, "[%s] Error sending CNMI", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CNMI:
-				Debug(DebugAll, "[%s] SMS new message indication enabled\n", c_str());
-				Debug(DebugAll, "[%s] Datacard has sms support\n", c_str());
+				Debug(DebugAll, "[%s] SMS new message indication enabled", c_str());
+				Debug(DebugAll, "[%s] Datacard has sms support", c_str());
 
 				has_sms = 1;
 
@@ -492,24 +506,24 @@ int CardDevice::at_response_ok()
 				{
 					if (at_send_csq() || at_fifo_queue_add (CMD_AT_CSQ, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error querying signal strength\n", c_str());
+						Debug(DebugAll, "[%s] Error querying signal strength", c_str());
 						goto e_return;
 					}
 
 					timeout = 10000;
 					initialized = 1;
-					Debug(DebugAll, "Datacard %s initialized and ready\n", c_str());
+					Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 				}
 				break;
 
 			/* end initilization stuff */
 
 			case CMD_AT_A:
-				Debug(DebugAll,  "[%s] Answer sent successfully\n", c_str());
+				Debug(DebugAll,  "[%s] Answer sent successfully", c_str());
 
 				if (at_send_ddsetex() || at_fifo_queue_add (CMD_AT_DDSETEX, RES_OK))
 				{
-					Debug(DebugAll, "[%s] Error sending AT^DDSETEX\n", c_str());
+					Debug(DebugAll, "[%s] Error sending AT^DDSETEX", c_str());
 					goto e_return;
 				}
 
@@ -521,21 +535,21 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_CLIR:
-				Debug(DebugAll, "[%s] CLIR sent successfully\n", c_str());
+				Debug(DebugAll, "[%s] CLIR sent successfully", c_str());
 
 				if (e->ptype != 0 || at_send_atd((char*)(e->param.data)) || at_fifo_queue_add (CMD_AT_D, RES_OK))
 				{
-					Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
+					Debug(DebugAll, "[%s] Error sending ATD command", c_str());
 					goto e_return;
 				}
 				break;
 
 			case CMD_AT_D:
-				Debug(DebugAll,  "[%s] Dial sent successfully\n", c_str());
+				Debug(DebugAll,  "[%s] Dial sent successfully", c_str());
 
 				if (at_send_ddsetex() || at_fifo_queue_add (CMD_AT_DDSETEX, RES_OK))
 				{
-					Debug(DebugAll, "[%s] Error sending AT^DDSETEX\n", c_str());
+					Debug(DebugAll, "[%s] Error sending AT^DDSETEX", c_str());
 					goto e_return;
 				}
 
@@ -547,48 +561,48 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_DDSETEX:
-				Debug(DebugAll,  "[%s] AT^DDSETEX sent successfully\n", c_str());
+				Debug(DebugAll,  "[%s] AT^DDSETEX sent successfully", c_str());
 				break;
 
 			case CMD_AT_CHUP:
-				Debug(DebugAll,  "[%s] Successful hangup\n", c_str());
+				Debug(DebugAll,  "[%s] Successful hangup", c_str());
 				break;
 
 			case CMD_AT_CMGS:
-				Debug(DebugAll, "[%s] Successfully sent sms message\n", c_str());
+				Debug(DebugAll, "[%s] Successfully sent sms message", c_str());
 				outgoing_sms = 0;
 				break;
 
 			case CMD_AT_DTMF:
-				Debug(DebugAll, "[%s] DTMF sent successfully\n", c_str());
+				Debug(DebugAll, "[%s] DTMF sent successfully", c_str());
 				break;
 
 			case CMD_AT_CUSD:
-				Debug(DebugAll, "[%s] CUSD code sent successfully\n", c_str());
+				Debug(DebugAll, "[%s] CUSD code sent successfully", c_str());
 				break;
 
 			case CMD_AT_COPS:
-				Debug(DebugAll, "[%s] Provider query successfully\n", c_str());
+				Debug(DebugAll, "[%s] Provider query successfully", c_str());
 				break;
 
 			case CMD_AT_CMGR:
-				Debug(DebugAll, "[%s] SMS message see later\n", c_str());
+				Debug(DebugAll, "[%s] SMS message see later", c_str());
 				break;
 
 			case CMD_AT_CMGD:
-				Debug(DebugAll, "[%s] SMS message deleted successfully\n", c_str());
+				Debug(DebugAll, "[%s] SMS message deleted successfully", c_str());
 				break;
 
 			case CMD_AT_CSQ:
-				Debug(DebugAll, "[%s] Got signal strength result\n", c_str());
+				Debug(DebugAll, "[%s] Got signal strength result", c_str());
 				break;
 			
 			case CMD_AT_CCWA:
-				Debug(DebugAll, "Call-Waiting disabled on device %s.\n", c_str());
+				Debug(DebugAll, "Call-Waiting disabled on device %s.", c_str());
 				break;
 			
 			case CMD_AT_CFUN:
-				Debug(DebugAll, "[%s] CFUN sent successfully\n", c_str());
+				Debug(DebugAll, "[%s] CFUN sent successfully", c_str());
 				break;
 
 			case CMD_AT_CLVL:
@@ -598,14 +612,14 @@ int CardDevice::at_response_ok()
 
 					if (at_send_clvl (5) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error syncronizing audio level (part 2/2)\n", c_str());
+						Debug(DebugAll, "[%s] Error syncronizing audio level (part 2/2)", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			default:
-				Debug(DebugAll, "[%s] Received 'OK' for unhandled command '%s'\n", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll, "[%s] Received 'OK' for unhandled command '%s'", c_str(), at_cmd2str (e->cmd));
 				break;
 		}
 
@@ -613,11 +627,11 @@ int CardDevice::at_response_ok()
 	}
 	else if (e)
 	{
-		Debug(DebugAll, "[%s] Received 'OK' when expecting '%s', ignoring\n", c_str(), at_res2str (e->res));
+		Debug(DebugAll, "[%s] Received 'OK' when expecting '%s', ignoring", c_str(), at_res2str (e->res));
 	}
 	else
 	{
-		Debug(DebugAll,  "[%s] Received unexpected 'OK'\n", c_str());
+		Debug(DebugAll,  "[%s] Received unexpected 'OK'", c_str());
 	}
 
 	return 0;
@@ -650,65 +664,65 @@ int CardDevice::at_response_error()
 			case CMD_AT_Z:
 			case CMD_AT_E:
 			case CMD_AT_U2DIAG:
-				Debug(DebugAll,  "[%s] Command '%s' failed\n", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll,  "[%s] Command '%s' failed", c_str(), at_cmd2str (e->cmd));
 				goto e_return;
 
 			case CMD_AT_CGMI:
-				Debug(DebugAll, "[%s] Getting manufacturer info failed\n", c_str());
+				Debug(DebugAll, "[%s] Getting manufacturer info failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CGMM:
-				Debug(DebugAll,  "[%s] Getting model info failed\n", c_str());
+				Debug(DebugAll,  "[%s] Getting model info failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CGMR:
-				Debug(DebugAll,  "[%s] Getting firmware info failed\n", c_str());
+				Debug(DebugAll,  "[%s] Getting firmware info failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CMEE:
-				Debug(DebugAll,  "[%s] Setting error verbosity level failed\n", c_str());
+				Debug(DebugAll,  "[%s] Setting error verbosity level failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CGSN:
-				Debug(DebugAll,  "[%s] Getting IMEI number failed\n", c_str());
+				Debug(DebugAll,  "[%s] Getting IMEI number failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CIMI:
-				Debug(DebugAll,  "[%s] Getting IMSI number failed\n", c_str());
+				Debug(DebugAll,  "[%s] Getting IMSI number failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CPIN:
-				Debug(DebugAll,  "[%s] Error checking PIN state\n", c_str());
+				Debug(DebugAll,  "[%s] Error checking PIN state", c_str());
 				goto e_return;
 
 			case CMD_AT_COPS_INIT:
-				Debug(DebugAll,  "[%s] Error setting operator select parameters\n", c_str());
+				Debug(DebugAll,  "[%s] Error setting operator select parameters", c_str());
 				goto e_return;
 
 			case CMD_AT_CREG_INIT:
-				Debug(DebugAll, "[%s] Error enableling registration info\n", c_str());
+				Debug(DebugAll, "[%s] Error enableling registration info", c_str());
 				goto e_return;
 
 			case CMD_AT_CREG:
-				Debug(DebugAll, "[%s] Error getting registration info\n", c_str());
+				Debug(DebugAll, "[%s] Error getting registration info", c_str());
 
 				if (!initialized)
 				{
 					if (at_send_cnum() || at_fifo_queue_add (CMD_AT_CNUM, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error checking subscriber phone number\n", c_str());
+						Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CNUM:
-				Debug(DebugAll, "[%s] Error checking subscriber phone number\n", c_str());
-				Debug(DebugAll, "Datacard %s needs to be reinitialized. The SIM card is not ready yet\n", c_str());
+				Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
+				Debug(DebugAll, "Datacard %s needs to be reinitialized. The SIM card is not ready yet", c_str());
 				goto e_return;
 
 			case CMD_AT_CVOICE:
-				Debug(DebugAll, "[%s] Datacard has NO voice support\n", c_str());
+				Debug(DebugAll, "[%s] Datacard has NO voice support", c_str());
 
 				has_voice = 0;
 
@@ -716,25 +730,25 @@ int CardDevice::at_response_error()
 				{
 					if (at_send_cmgf (1) || at_fifo_queue_add (CMD_AT_CMGF, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting CMGF\n", c_str());
+						Debug(DebugAll, "[%s] Error setting CMGF", c_str());
 						goto e_return;
 					}
 				}
 				break;
 
 			case CMD_AT_CLIP:
-				Debug(DebugAll, "[%s] Error enabling calling line indication\n", c_str());
+				Debug(DebugAll, "[%s] Error enabling calling line indication", c_str());
 				goto e_return;
 
 			case CMD_AT_CSSN:
-				Debug(DebugAll, "[%s] Error Supplementary Service Notification activation failed\n", c_str());
+				Debug(DebugAll, "[%s] Error Supplementary Service Notification activation failed", c_str());
 				goto e_return;
 
 			case CMD_AT_CMGF:
 			case CMD_AT_CPMS:
 			case CMD_AT_CNMI:
-				Debug(DebugAll, "[%s] Command '%s' failed\n", c_str(), at_cmd2str (e->cmd));
-				Debug(DebugAll, "[%s] No SMS support\n", c_str());
+				Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll, "[%s] No SMS support", c_str());
 
 				has_sms = 0;
 
@@ -744,13 +758,13 @@ int CardDevice::at_response_error()
 					{
 						if (at_send_csq() || at_fifo_queue_add (CMD_AT_CSQ, RES_OK))
 						{
-							Debug(DebugAll, "[%s] Error querying signal strength\n", c_str());
+							Debug(DebugAll, "[%s] Error querying signal strength", c_str());
 							goto e_return;
 						}
 
 						timeout = 10000;
 						initialized = 1;
-						Debug(DebugAll, "Datacard %s initialized and ready\n", c_str());
+						Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 					}
 
 					goto e_return;
@@ -758,7 +772,7 @@ int CardDevice::at_response_error()
 				break;
 
 			case CMD_AT_CSCS:
-				Debug(DebugAll, "[%s] No UCS-2 encoding support\n", c_str());
+				Debug(DebugAll, "[%s] No UCS-2 encoding support", c_str());
 
 				use_ucs2_encoding = 0;
 
@@ -767,7 +781,7 @@ int CardDevice::at_response_error()
 					/* set SMS storage location */
 					if (at_send_cpms() || at_fifo_queue_add (CMD_AT_CPMS, RES_OK))
 					{
-						Debug(DebugAll, "[%s] Error setting SMS storage location\n", c_str());
+						Debug(DebugAll, "[%s] Error setting SMS storage location", c_str());
 						goto e_return;
 					}
 				}
@@ -776,25 +790,25 @@ int CardDevice::at_response_error()
 			/* end initilization stuff */
 
 			case CMD_AT_A:
-				Debug(DebugAll, "[%s] Answer failed\n", c_str());
+				Debug(DebugAll, "[%s] Answer failed", c_str());
 //TODO:
 //				channel_queue_hangup (0);
 				Hangup(DATACARD_FAILURE);
 				break;
 
 			case CMD_AT_CLIR:
-				Debug(DebugAll, "[%s] Setting CLIR failed\n", c_str());
+				Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
 
 				/* continue dialing */
 				if (e->ptype != 0 || at_send_atd((char*)e->param.data) || at_fifo_queue_add (CMD_AT_D, RES_OK))
 				{
-					Debug(DebugAll, "[%s] Error sending ATD command\n", c_str());
+					Debug(DebugAll, "[%s] Error sending ATD command", c_str());
 					goto e_return;
 				}
 				break;
 
 			case CMD_AT_D:
-				Debug(DebugAll, "[%s] Dial failed\n", c_str());
+				Debug(DebugAll, "[%s] Dial failed", c_str());
 				outgoing = 0;
 				needchup = 0;
 //TODO:
@@ -803,47 +817,47 @@ int CardDevice::at_response_error()
 				break;
 
 			case CMD_AT_DDSETEX:
-				Debug(DebugAll, "[%s] AT^DDSETEX failed\n", c_str());
+				Debug(DebugAll, "[%s] AT^DDSETEX failed", c_str());
 				break;
 
 			case CMD_AT_CHUP:
-				Debug(DebugAll, "[%s] Error sending hangup, disconnecting\n", c_str());
+				Debug(DebugAll, "[%s] Error sending hangup, disconnecting", c_str());
 				goto e_return;
 
 			case CMD_AT_CMGR:
-				Debug(DebugAll, "[%s] Error reading SMS message\n", c_str());
+				Debug(DebugAll, "[%s] Error reading SMS message", c_str());
 				incoming_sms = 0;
 				break;
 
 			case CMD_AT_CMGD:
-				Debug(DebugAll, "[%s] Error deleting SMS message\n", c_str());
+				Debug(DebugAll, "[%s] Error deleting SMS message", c_str());
 				incoming_sms = 0;
 				break;
 
 			case CMD_AT_CMGS:
-				Debug(DebugAll, "[%s] Error sending SMS message\n", c_str());
+				Debug(DebugAll, "[%s] Error sending SMS message", c_str());
 				outgoing_sms = 0;
 				break;
 
 			case CMD_AT_DTMF:
-				Debug(DebugAll, "[%s] Error sending DTMF\n", c_str());
+				Debug(DebugAll, "[%s] Error sending DTMF", c_str());
 				break;
 
 			case CMD_AT_COPS:
-				Debug(DebugAll, "[%s] Could not get provider name\n", c_str());
+				Debug(DebugAll, "[%s] Could not get provider name", c_str());
 				break;
 
 			case CMD_AT_CLVL:
-				Debug(DebugAll, "[%s] Error syncronizing audio level\n", c_str());
+				Debug(DebugAll, "[%s] Error syncronizing audio level", c_str());
 				volume_synchronized = 0;
 				break;
 
 			case CMD_AT_CUSD:
-				Debug(DebugAll, "[%s] Could not send USSD code\n", c_str());
+				Debug(DebugAll, "[%s] Could not send USSD code", c_str());
 				break;
 
 			default:
-				Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'\n", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'", c_str(), at_cmd2str (e->cmd));
 				break;
 		}
 
@@ -851,11 +865,11 @@ int CardDevice::at_response_error()
 	}
 	else if (e)
 	{
-		Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring\n", c_str(), at_res2str (e->res));
+		Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring", c_str(), at_res2str (e->res));
 	}
 	else
 	{
-		Debug(DebugAll, "[%s] Received unexpected 'ERROR'\n", c_str());
+		Debug(DebugAll, "[%s] Received unexpected 'ERROR'", c_str());
 	}
 
 	return 0;
@@ -924,16 +938,16 @@ int CardDevice::at_response_orig (char* str, size_t len)
 
 	if (!sscanf (str, "^ORIG:%d,%d", &call_index, &call_type))
 	{
-		Debug(DebugAll, "[%s] Error parsing ORIG event '%s'\n", c_str(), str);
+		Debug(DebugAll, "[%s] Error parsing ORIG event '%s'", c_str(), str);
 		return -1;
 	}
 
-	Debug(DebugAll, "[%s] Received call_index: %d\n", c_str(), call_index);
-	Debug(DebugAll, "[%s] Received call_type:  %d\n", c_str(), call_type);
+	Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
+	Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
 
 	if (at_send_clvl (1) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
 	{
-		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)\n", c_str());
+		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
 	}
 
 	volume_synchronized = 0;
@@ -964,28 +978,28 @@ int CardDevice::at_response_cend (char* str, size_t len)
 
 	if (!sscanf (str, "^CEND:%d,%d,%d,%d", &call_index, &duration, &end_status, &cc_cause))
 	{
-		Debug(DebugAll, "[%s] Could not parse all CEND parameters\n", c_str());
+		Debug(DebugAll, "[%s] Could not parse all CEND parameters", c_str());
 	}
 
-	Debug(DebugAll, "[%s] CEND: call_index: %d\n", c_str(), call_index);
-	Debug(DebugAll, "[%s] CEND: duration:   %d\n", c_str(), duration);
-	Debug(DebugAll, "[%s] CEND: end_status: %d\n", c_str(), end_status);
-	Debug(DebugAll, "[%s] CEND: cc_cause:   %d\n", c_str(), cc_cause);
+	Debug(DebugAll, "[%s] CEND: call_index: %d", c_str(), call_index);
+	Debug(DebugAll, "[%s] CEND: duration:   %d", c_str(), duration);
+	Debug(DebugAll, "[%s] CEND: end_status: %d", c_str(), end_status);
+	Debug(DebugAll, "[%s] CEND: cc_cause:   %d", c_str(), cc_cause);
 
-	Debug(DebugAll, "[%s] Line disconnected\n", c_str());
+	Debug(DebugAll, "[%s] Line disconnected", c_str());
 
 	needchup = 0;
 //TODO:
 
 	if (m_conn)
 	{
-		Debug(DebugAll, "[%s] hanging up owner\n", c_str());
+		Debug(DebugAll, "[%s] hanging up owner", c_str());
 		
 		int reason = getReason(end_status, cc_cause);
 				
 		if (Hangup(reason) == false)
 		{
-			Debug(DebugAll, "[%s] Error queueing hangup...\n", c_str());
+			Debug(DebugAll, "[%s] Error queueing hangup...", c_str());
 			return -1;
 		}
 	}
@@ -1009,7 +1023,7 @@ int CardDevice::at_response_conn ()
 
 	if (outgoing)
 	{
-		Debug(DebugAll, "[%s] Remote end answered\n", c_str());
+		Debug(DebugAll, "[%s] Remote end answered", c_str());
 		if(m_conn)
 		    m_conn->onAnswered();
 //		channel_queue_control (AST_CONTROL_ANSWER);
@@ -1045,16 +1059,16 @@ int CardDevice::at_response_clip(char* str, size_t len)
 
 		if ((clip = at_parse_clip (str, len)) == NULL)
 		{
-			Debug(DebugAll, "[%s] Error parsing CLIP: %s\n", c_str(), str);
+			Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
 		}
 //		if (!(channel = channel_new (AST_STATE_RING, clip)))
 		if(incomingCall(String(clip)) == false)
 		{
-			Debug(DebugAll, "[%s] Unable to allocate channel for incoming call\n", c_str());
+			Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
 
 			if (at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
 			{
-				Debug(DebugAll, "[%s] Error sending AT+CHUP command\n", c_str());
+				Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
 			}
 			return -1;
 		}
@@ -1064,7 +1078,7 @@ int CardDevice::at_response_clip(char* str, size_t len)
 /*
 		if (ast_pbx_start (channel))
 		{
-			Debug(DebugAll, "[%s] Unable to start pbx on incoming call\n", c_str());
+			Debug(DebugAll, "[%s] Unable to start pbx on incoming call", c_str());
 			channel_ast_hangup();
 
 			return -1;
@@ -1091,7 +1105,7 @@ int CardDevice::at_response_ring ()
 		{
 			if (at_send_clvl (1) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
 			{
-				Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)\n", c_str());
+				Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
 			}
 
 			volume_synchronized = 0;
@@ -1118,17 +1132,17 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 
 	if (index > -1)
 	{
-		Debug(DebugAll, "[%s] Incoming SMS message\n", c_str());
+		Debug(DebugAll, "[%s] Incoming SMS message", c_str());
 
 		if (m_disablesms)
 		{
-			Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.\n", c_str());
+			Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
 		}
 		else
 		{
 			if (at_send_cmgr (index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_CMGR, index))
 			{
-				Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message\n", c_str());
+				Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
 				return -1;
 			}
 
@@ -1139,7 +1153,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 	}
 	else
 	{
-		Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting\n", c_str());
+		Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting", c_str());
 		return -1;
 	}
 }
@@ -1172,7 +1186,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 		{
 			if (at_send_cmgd (e->param.num) || at_fifo_queue_add (CMD_AT_CMGD, RES_OK))
 			{
-				Debug(DebugAll, "[%s] Error sending CMGD to delete SMS message\n", c_str());
+				Debug(DebugAll, "[%s] Error sending CMGD to delete SMS message", c_str());
 			}
 		}
 
@@ -1180,11 +1194,11 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 
 		if (at_parse_cmgr(str, len, &from_number, &text))
 		{
-			Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting\n", c_str());
+			Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting", c_str());
 			return -1;
 		}
 
-		Debug(DebugAll, "[%s] Successfully read SMS message\n", c_str());
+		Debug(DebugAll, "[%s] Successfully read SMS message", c_str());
 
 		incoming_sms = 0;
 
@@ -1197,7 +1211,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			}
 			else
 			{
-				Debug(DebugAll, "[%s] Error parsing SMS (convert UCS-2 to UTF-8): %s\n", c_str(), text);
+				Debug(DebugAll, "[%s] Error parsing SMS (convert UCS-2 to UTF-8): %s", c_str(), text);
 			}
 
 			res = hexstr_ucs2_to_utf8 (from_number, strlen (from_number), from_number_utf8_str, sizeof (from_number_utf8_str));
@@ -1207,7 +1221,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			}
 			else
 			{
-				Debug(DebugAll, "[%s] Error parsing SMS from_number (convert UCS-2 to UTF-8): %s\n", c_str(), from_number);
+				Debug(DebugAll, "[%s] Error parsing SMS from_number (convert UCS-2 to UTF-8): %s", c_str(), from_number);
 			}
 		}
 		
@@ -1217,7 +1231,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 //		decodeBase64(String(text), String(text_base64));
 //		decodeBase64(to, from);
 //		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
-		Debug(DebugAll, "[%s] Got SMS from %s: '%s'\n", c_str(), from_number, text);
+		Debug(DebugAll, "[%s] Got SMS from %s: '%s'", c_str(), from_number, text);
 		m_endpoint->onReceiveSMS(this, from_number, text);
 
 /*
@@ -1234,7 +1248,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			if (ast_pbx_start (channel))
 			{
 				ast_hangup (channel);
-				Debug(DebugAll, "[%s] Unable to start pbx on incoming sms\n", c_str());
+				Debug(DebugAll, "[%s] Unable to start pbx on incoming sms", c_str());
 			}
 		}
 #endif
@@ -1242,12 +1256,12 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 	}
 	else if (e)
 	{
-		Debug(DebugAll, "[%s] Received '+CMGR' when expecting '%s' response to '%s', ignoring\n", c_str(),
+		Debug(DebugAll, "[%s] Received '+CMGR' when expecting '%s' response to '%s', ignoring", c_str(),
 				at_res2str (e->res), at_cmd2str (e->cmd));
 	}
 	else
 	{
-		Debug(DebugAll, "[%s] Received unexpected '+CMGR'\n", c_str());
+		Debug(DebugAll, "[%s] Received unexpected '+CMGR'", c_str());
 	}
 	return 0;
 }
@@ -1263,14 +1277,11 @@ int CardDevice::at_response_sms_prompt()
 {
 	at_queue_t* e;
 
-    Debug(DebugAll, "[%s] 1\n", c_str());
 	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
-//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && e->res == RES_SMS_PROMPT)
 	{
-	    Debug(DebugAll, "[%s] 2\n", c_str());
 		if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
 		{
-			Debug(DebugAll, "[%s] Error sending sms message\n", c_str());
+			Debug(DebugAll, "[%s] Error sending sms message", c_str());
 			return -1;
 		}
 
@@ -1278,12 +1289,12 @@ int CardDevice::at_response_sms_prompt()
 	}
 	else if (e)
 	{
-		Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring\n", c_str(),
+		Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(),
 				at_res2str (e->res), at_cmd2str (e->cmd));
 	}
 	else
 	{
-		Debug(DebugAll, "[%s] Received unexpected sms prompt\n", c_str());
+		Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
 	}
 
 	return 0;
@@ -1311,7 +1322,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 
 	if (at_parse_cusd (str, len, &cusd, &dcs))
 	{
-		Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'\n", c_str(), (int) len, str);
+		Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'", c_str(), (int) len, str);
 		return 0;
 	}
 
@@ -1324,7 +1335,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 		}
 		else
 		{
-			Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s\n", c_str(), cusd);
+			Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd);
 			return -1;
 		}
 	}
@@ -1337,17 +1348,17 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 		}
 		else
 		{
-			Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s\n", c_str(), cusd);
+			Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd);
 			return -1;
 		}
 	}
 
-	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
+	Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
 //	ast_base64encode (text_base64, cusd, strlen(cusd), sizeof(text_base64));
 //	String from(text_base64);
 //	String to(cusd);
 //	decodeBase64(to, from);
-	Debug(DebugAll, "[%s] Got USSD response: '%s'\n", c_str(), cusd);
+	Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
 	m_endpoint->onReceiveUSSD(this, cusd);
 //
 
@@ -1365,7 +1376,7 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 		if (ast_pbx_start (channel))
 		{
 			ast_hangup (channel);
-			Debug(DebugAll,  "[%s] Unable to start pbx on incoming ussd\n", c_str());
+			Debug(DebugAll,  "[%s] Unable to start pbx on incoming ussd", c_str());
 		}
 	}
 #endif
@@ -1399,7 +1410,7 @@ int CardDevice::at_response_busy ()
 
 int CardDevice::at_response_no_dialtone()
 {
-	Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'\n", c_str());
+	Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
 
 	needchup = 1;
 //TODO:
@@ -1418,7 +1429,7 @@ int CardDevice::at_response_no_dialtone()
 
 int CardDevice::at_response_no_carrier()
 {
-	Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'\n", c_str());
+	Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
 
 	needchup = 1;
 //TODO:
@@ -1451,7 +1462,7 @@ int CardDevice::at_response_cpin (char* str, size_t len)
 
 int CardDevice::at_response_smmemfull()
 {
-	Debug(DebugAll,  "[%s] SMS storage is full\n", c_str());
+	Debug(DebugAll,  "[%s] SMS storage is full", c_str());
 	return 0;
 }
 
@@ -1532,12 +1543,12 @@ int CardDevice::at_response_creg (char* str, size_t len)
 
 	if (at_send_cops() || at_fifo_queue_add (CMD_AT_COPS, RES_OK))
 	{
-		Debug(DebugAll, "[%s] Error sending query for provider name\n", c_str());
+		Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
 	}
 
 	if (at_parse_creg (str, len, &d, &gsm_reg_status, &lac, &ci))
 	{
-		Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'\n", c_str(), (int) len, str);
+		Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'", c_str(), (int) len, str);
 		return 0;
 	}
 

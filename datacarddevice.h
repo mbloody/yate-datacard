@@ -54,6 +54,7 @@ typedef enum {
 	CMD_AT_U2DIAG,
 	CMD_AT_Z,
 	CMD_AT_CMEE,
+	CMD_AT_CSMP,
 } at_cmd_t;
 
 typedef enum {
@@ -332,6 +333,7 @@ public:
     int at_send_cfun(int, int);
     int at_send_cmee(int);
     int at_send_cpms();
+    int at_send_csmp (int, int, int, int);
 
     ObjList m_atQueue;
     int	at_fifo_queue_add(at_cmd_t, at_res_t);
