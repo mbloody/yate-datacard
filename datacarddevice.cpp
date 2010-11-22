@@ -170,15 +170,17 @@ void MediaThread::run()
     struct pollfd pfd;
     char buf[1024];
     int len;
+    char silence_frame[FRAME_SIZE];
 
-    size_t		used;
-    int		iovcnt;
-    struct iovec	iov[3];
-    ssize_t		res;
-    size_t		count;
+    size_t used;
+    int iovcnt;
+    struct iovec iov[3];
+    ssize_t res;
+    size_t count;
 
-
-
+    
+    memset(silence_frame, 0, sizeof(silence_frame));
+    
     if (!m_device) 
         return;
 
@@ -213,60 +215,80 @@ void MediaThread::run()
 	{
 	    Debug(DebugAll, "MediaThread poll() error datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
-            m_device->disconnect();
+        m_device->disconnect();
 	    m_device->m_mutex.unlock();
-            return;
+        return;
 	}
 
-	if (res == 0)
-	    continue;
+    if (res == 0)
+        continue;
 
 
 	if (pfd.revents & POLLIN) 
 	{
 	    m_device->m_mutex.lock();
 
-//	    Debug(DebugAll, "POLLIN");
+///	    Debug(DebugAll, "POLLIN");
 
 	    len = read(pfd.fd, buf, FRAME_SIZE);
 
 	    if (len) 
 	    {
-		m_device->forwardAudio(buf, len);
+		    m_device->forwardAudio(buf, len);
 ///		
-///		write(pfd.fd, buf, len);
+///    		write(pfd.fd, buf, len);
 ///
 	    }
 	    used = m_device->a_write_rb.rb_used ();
-	    if (used >= FRAME_SIZE)
+        if (used >= FRAME_SIZE)
 	    {
-	        iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
-	        m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
-	        count = 0;
-	        while ((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
-	        {
-	    	    if (count++ > 10)
-	    	    {
-			Debug(DebugAll,"Deadlock avoided for write!");
-			break;
-		    }
-		    usleep (1);
-		}
+            iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
+            m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
+        }
+        else if (used > 0)
+        {
+            Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
 
-		if (res < 0 || res != FRAME_SIZE)
-		{
-		    Debug(DebugAll,"[%s] Write error!",m_device->c_str());
-		}
+            iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
+            m_device->a_write_rb.rb_read_upd(used);
+
+            iov[iovcnt].iov_base = silence_frame;
+            iov[iovcnt].iov_len	= FRAME_SIZE - used;
+		    iovcnt++;
 	    }
+	    else
+	    {
+		    Debug(DebugAll, "[%s] write silence", m_device->c_str());
+
+    		iov[0].iov_base = silence_frame;
+	    	iov[0].iov_len = FRAME_SIZE;
+	    	iovcnt = 1;
+	    }
+        count = 0;
+        while ((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
+        {
+    	    if (count++ > 10)
+    	    {
+		        Debug(DebugAll,"Deadlock avoided for write!");
+		        break;
+	        }
+	        usleep (1);
+	    }
+
+	    if (res < 0 || res != FRAME_SIZE)
+	    {
+	        Debug(DebugAll,"[%s] Write error!",m_device->c_str());
+	    }
+    
 	    m_device->m_mutex.unlock();
 	} 
 	else if (pfd.revents) 
 	{
 	    Debug(DebugAll, "MediaThread poll exception datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
-            m_device->disconnect();
-            m_device->m_mutex.unlock();
-            return;
+        m_device->disconnect();
+        m_device->m_mutex.unlock();
+        return;
 	} 
 	else 
 	{
@@ -274,8 +296,7 @@ void MediaThread::run()
 	}
 
     } // End of Main loop
-    
-    
+
 }
 
 void MediaThread::cleanup()
@@ -549,6 +570,7 @@ bool CardDevice::incomingCall(const String &caller)
         Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
 	return false;
     }
+    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
     return m_conn->onIncoming(caller);
 }
 
@@ -626,6 +648,8 @@ bool CardDevice::newCall(const String &called, void* usrData)
 		return false;
 	}
     }
+
+    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
 
     outgoing = 1;
     needchup = 1;
@@ -792,12 +816,14 @@ int CardDevice::sendAudio(char* data, int len)
 {
 //    TODO:
     size_t count = a_write_rb.rb_free();
-
+    
+    m_mutex.lock();
     if (count < (size_t) len)
     {
-	a_write_rb.rb_read_upd(len - count);
+	    a_write_rb.rb_read_upd(len - count);
     }
     a_write_rb.rb_write(data, len);
+    m_mutex.unlock();
     return 0;
 }
 
