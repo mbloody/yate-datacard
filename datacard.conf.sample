@@ -1,4 +1,5 @@
 [general]
+;discovery-interval=60
 
 [datacard0]
 audio=/dev/ttyUSB2

@@ -8,9 +8,6 @@
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#define CONFIG_FILE		"datacard.conf"
-#define DEF_DISCOVERY_INT	60
-
 #define FRAME_SIZE		320
 
 
