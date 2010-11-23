@@ -209,19 +209,20 @@ void MediaThread::run()
 
         m_device->m_mutex.unlock();
 
-	res = poll(&pfd, 1, 50);
+//	res = poll(&pfd, 1, 50);
+	res = poll(&pfd, 1, 1000);
 
 	if (res == -1 && errno != EINTR) 
 	{
 	    Debug(DebugAll, "MediaThread poll() error datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
-        m_device->disconnect();
+	    m_device->disconnect();
 	    m_device->m_mutex.unlock();
-        return;
+	    return;
 	}
 
-    if (res == 0)
-        continue;
+	if (res == 0)
+    	    continue;
 
 
 	if (pfd.revents & POLLIN) 
