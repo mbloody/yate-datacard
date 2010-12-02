@@ -11,57 +11,67 @@
 
 //TODO: Check if we need use unsigned char!!!!!
 
-void RingBuffer::rb_init (char* buf, size_t size)
+void RingBuffer::rb_init(char* buf, size_t size)
 {
-	m_buffer = buf;
-	m_size   = size;
-	m_used   = 0;
-	m_read   = 0;
-	m_write  = 0;
+    m_buffer = buf;
+    m_size   = size;
+    m_used   = 0;
+    m_read   = 0;
+    m_write  = 0;
 }
 
 size_t RingBuffer::rb_used()
 {
-	return m_used;
+    return m_used;
 }
 
 size_t RingBuffer::rb_free()
 {
-	return m_size - m_used;
+    return m_size - m_used;
 }
 
-int RingBuffer::rb_memcmp (const char* mem, size_t len)
+size_t RingBuffer::read()
 {
-	size_t tmp;
+    return m_read;
+}
+size_t RingBuffer::write()
+{
+    return m_write;
+}
+        
 
-	if (m_used > 0 && len > 0 && m_used >= len)
+int RingBuffer::rb_memcmp(const char* mem, size_t len)
+{
+    size_t tmp;
+
+    if (m_used > 0 && len > 0 && m_used >= len)
+    {
+	if ((m_read + len) > m_size)
 	{
-		if ((m_read + len) > m_size)
-		{
-			tmp = m_size - m_read;
-			if (memcmp (m_buffer + m_read, mem, tmp) == 0)
-			{
-				len -= tmp;
-				mem += tmp;
+	    tmp = m_size - m_read;
+	    if (memcmp (m_buffer + m_read, mem, tmp) == 0)
+	    {
+		len -= tmp;
+		mem += tmp;
 
-				if (memcmp (m_buffer, mem, len) == 0)
-				{
-					return 0;
-				}
-			}
-		}
-		else 
+		if(memcmp (m_buffer, mem, len) == 0)
 		{
-			if (memcmp (m_buffer + m_read, mem, len) == 0)
-			{
-				return 0;
-			}
+		    return 0;
 		}
-
-		return 1;
+	    }
+	}
+	else 
+	{
+	    if (memcmp (m_buffer + m_read, mem, len) == 0)
+	    {
+		return 0;
+	    }
 	}
 
-	return -1;
+	return 1;
+    }
+
+    return -1;
 }
 
 // ============================ READ ============================= 

@@ -613,10 +613,18 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (m_usecallingpres)
     {
-    	Hangup(DATACARD_FAILURE);
-    	return false;
+//    	Hangup(DATACARD_FAILURE);
+//    	return false;
     //TODO:
     /*
+	AT+CLIR=[<n>]
+
+	<n>: (this setting effects CLI status for following calls)
+
+	    0 presentation indicator is used according to the subscription of the CLIR service
+	    1 CLIR invocation (hide)
+	    2 CLIR suppression (show)
+	    
 	if (pvt->callingpres < 0)
 	{
 		#if ASTERISK_VERSION_NUM >= 10800
@@ -631,14 +639,18 @@ bool CardDevice::newCall(const String &called, void* usrData)
 	}
 
 	clir = get_at_clir_value (pvt, clir);
-	dest_num = ast_strdup (dest_num);
-	if (at_send_clir (pvt, clir) || at_fifo_queue_add_ptr (pvt, CMD_AT_CLIR, RES_OK, dest_num))
-	{
-		ast_mutex_unlock (&pvt->lock);
-		ast_log (LOG_ERROR, "[%s] Error sending AT+CLIR command", pvt->id);
-		return -1;
-	}
 	*/
+	if(callingpres < 0)
+	    clir = 0;
+	else
+	    clir = callingpres;
+	char* dest_number = strdup(called.c_str());
+	if (at_send_clir(clir) || at_fifo_queue_add_ptr (CMD_AT_CLIR, RES_OK, dest_number))
+	{
+		Debug(DebugAll, "[%s] Error sending AT+CLIR command", c_str());
+		Hangup(DATACARD_FAILURE);
+		return false;
+	}
     }
     else
     {
@@ -911,6 +923,7 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     if (dev->u2diag == 0)
 	dev->u2diag = -1;
     dev->m_usecallingpres = data->getBoolValue("usecallingpres",false);
+    dev->callingpres = data->getIntValue("callingpres",-1);
 
 //TODO:	
 //		else if (!strcasecmp (v->name, "callingpres"))
@@ -926,7 +939,7 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
 //				}
 //			}
 //		}
-    dev->callingpres = -1;
+//    dev->callingpres = -1;
     dev->m_disablesms = data->getBoolValue("disablesms",false);  
     
     m_mutex.lock();

@@ -81,7 +81,7 @@ int CardDevice::at_read ()
 
 
 		Debug(DebugAll, "[%s] receive %zu byte, used %zu, free %zu, read %zu, write %zu\n", c_str(), n,
-			d_read_rb.rb_used(), d_read_rb.rb_free(), d_read_rb.m_read, d_read_rb.m_write);
+			d_read_rb.rb_used(), d_read_rb.rb_free(), d_read_rb.read(), d_read_rb.write());
 
 		iovcnt = d_read_rb.rb_read_all_iov(d_read_iov);
 
