@@ -401,6 +401,8 @@ void DatacardDriver::initialize()
 	name  = *sect;
 	if (!name.startsWith("datacard"))
 	    continue;
+	if(!sect->getBoolValue("enabled",false))
+	    continue;
 	m_endpoint->appendDevice(name, sect);
     }
     m_endpoint->startup();
