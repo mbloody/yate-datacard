@@ -94,15 +94,15 @@ typedef enum {
 class at_queue_t : public GenObject
 {
 public:
-    at_cmd_t		cmd;
-    at_res_t		res;
+    at_cmd_t cmd;
+    at_res_t res;
 
-    int			ptype;
+    int ptype;
 
     union
     {
-    	void*		data;
-	int		num;
+    	void* data;
+	int num;
     } param;
 };
 
@@ -140,11 +140,10 @@ public:
     bool tryConnect();
     bool disconnect();
     
-
     int dataStatus()
-    { return devStatus(m_data_fd);}
+	{ return devStatus(m_data_fd);}
     int audioStatus()
-    { return devStatus(m_audio_fd);}
+	{ return devStatus(m_audio_fd);}
 
     bool getStatus(NamedList * list);
 
@@ -152,22 +151,16 @@ public:
     bool startMonitor();
     int devStatus(int fd);
 
-//	AST_LIST_HEAD_NOLOCK (at_queue, at_queue_t) at_queue;	/* queue for response we are expecting */
-//	pthread_t		monitor_thread;			/* monitor thread handle */
-//	Thread monitor_thread;
     DevicesEndPoint* m_endpoint;
     MonitorThread* m_monitor;
     Mutex m_mutex;
     Connection* m_conn;
 
-
     MediaThread* m_media;
-
     
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
-//	struct ast_timer*	a_timer;
 
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
@@ -224,9 +217,10 @@ public:
     bool isRunning() const;
     void stopRunning();
 	    
-	/* Config */
-    String			audio_tty;			/* tty for audio connection */
-    String			data_tty;			/* tty for AT commands */
+    /* Config */
+    String audio_tty;			/* tty for audio connection */
+    String data_tty;			/* tty for AT commands */
+    
 //    char			context[AST_MAX_CONTEXT];	/* the context for incoming calls */
 //    int group;				/* group number for group dialling */
     int rxgain;				/* increase the incoming volume */
