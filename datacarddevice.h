@@ -164,8 +164,6 @@ public:
 
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
-    char a_read_buf[FRAME_SIZE * 5];
-    RingBuffer a_read_rb;
 	
     char d_send_buf[2*1024];
     size_t d_send_size;
@@ -207,9 +205,6 @@ public:
     unsigned int needring:1;			/* we need to send a RING */
     unsigned int answered:1;			/* we sent/received an answer */
     unsigned int volume_synchronized:1;		/* we have synchronized the volume */
-    unsigned int group_last_used:1;		/* mark the last used device */
-    unsigned int prov_last_used:1;		/* mark the last used device */
-    unsigned int sim_last_used:1;		/* mark the last used device */
 	
     // TODO: Running flag. Do we need to stop every MonitorThread or set one 
     // flag on module level? Do we need syncronization?
