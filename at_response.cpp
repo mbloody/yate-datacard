@@ -19,36 +19,11 @@
  * \retval -1 error
  */
 
-int CardDevice::at_response(int iovcnt, at_res_t at_res)
+int CardDevice::at_response(char* str, at_res_t at_res)
 {
-	char*		str;
-	size_t		len;
+//	char*		str;
+	size_t		len = strlen(str);
 	at_queue_t*	e;
-
-	if (iovcnt > 0)
-	{
-		len = d_read_iov[0].iov_len + d_read_iov[1].iov_len - 1;
-
-		if (iovcnt == 2)
-		{
-			Debug(DebugAll, "[%s] iovcnt == 2", c_str());
-
-			if (len > sizeof (d_parse_buf) - 1)
-			{
-				Debug(DebugAll, "[%s] buffer overflow", c_str());
-				return -1;
-			}
-
-			str = d_parse_buf;
-			memmove (str,					d_read_iov[0].iov_base, d_read_iov[0].iov_len);
-			memmove (str + d_read_iov[0].iov_len,	d_read_iov[1].iov_base, d_read_iov[1].iov_len);
-			str[len] = '\0';
-		}
-		else
-		{
-			str = (char*)d_read_iov[0].iov_base;
-			str[len] = '\0';
-		}
 
 //		Debug(DebugAll,  "[%s] [%.*s]", c_str(), (int) len, str);
 
@@ -180,7 +155,6 @@ int CardDevice::at_response(int iovcnt, at_res_t at_res)
 
 				break;
 		}
-	}
 
 	return 0;
 }
@@ -510,7 +484,7 @@ int CardDevice::at_response_ok()
 						goto e_return;
 					}
 
-					timeout = 10000;
+//					timeout = 10000;
 					initialized = 1;
 					Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 				}
@@ -762,7 +736,7 @@ int CardDevice::at_response_error()
 							goto e_return;
 						}
 
-						timeout = 10000;
+//						timeout = 10000;
 						initialized = 1;
 						Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 					}

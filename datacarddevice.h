@@ -13,6 +13,17 @@
 
 using namespace TelEngine;
 
+
+#define BLT_RDBUFF_MAX      1024
+
+typedef enum {
+    BLT_STATE_WANT_R   = 0,
+    BLT_STATE_WANT_N   = 1,
+    BLT_STATE_WANT_CMD = 2,
+    BLT_STATE_WANT_N2  = 3,    
+} blt_state_t;
+
+
 typedef enum {
 	CMD_UNKNOWN = 0,
 
@@ -157,6 +168,16 @@ public:
     Connection* m_conn;
 
     MediaThread* m_media;
+
+
+    int handle_rd_data();
+    blt_state_t state;
+    char rd_buff[BLT_RDBUFF_MAX];
+    int rd_buff_pos;
+
+    int send_atcmd(const char * fmt, ...);
+
+
     
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
@@ -164,15 +185,17 @@ public:
 
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
+//    char a_read_buf[FRAME_SIZE * 5];
+//    RingBuffer a_read_rb;
 	
-    char d_send_buf[2*1024];
-    size_t d_send_size;
-    char d_read_buf[2*1024];
-    RingBuffer d_read_rb;
-    struct iovec d_read_iov[2];
-    unsigned int d_read_result:1;
-    char d_parse_buf[1024];
-    int timeout;			/* used to set the timeout for data */
+//    char d_send_buf[2*1024];
+//    size_t d_send_size;
+//    char d_read_buf[2*1024];
+//    RingBuffer d_read_rb;
+//    struct iovec d_read_iov[2];
+//    unsigned int d_read_result:1;
+//    char d_parse_buf[1024];
+//    int timeout;			/* used to set the timeout for data */
 
     unsigned int has_sms:1;
     unsigned int has_voice:1;
@@ -205,6 +228,9 @@ public:
     unsigned int needring:1;			/* we need to send a RING */
     unsigned int answered:1;			/* we sent/received an answer */
     unsigned int volume_synchronized:1;		/* we have synchronized the volume */
+    unsigned int group_last_used:1;		/* mark the last used device */
+    unsigned int prov_last_used:1;		/* mark the last used device */
+    unsigned int sim_last_used:1;		/* mark the last used device */
 	
     // TODO: Running flag. Do we need to stop every MonitorThread or set one 
     // flag on module level? Do we need syncronization?
@@ -229,11 +255,11 @@ public:
 		
     // AT command methods.
     int at_wait(int*);
-    int at_read();
-    int at_read_result_iov();
-    at_res_t at_read_result_classification(int);
+//    int at_read();
+//    int at_read_result_iov();
+    at_res_t at_read_result_classification(char* command);
     
-    int at_response(int, at_res_t);
+    int at_response(char* str, at_res_t);
     int t_response_busy();
     int at_response_cend(char*, size_t);
     int at_response_cgmi(char*, size_t);

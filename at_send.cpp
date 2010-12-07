@@ -15,6 +15,22 @@
 #include "datacarddevice.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+
+
+int CardDevice::send_atcmd(const char * fmt, ...)
+{
+    char buf[1024];
+    va_list ap;
+    int len;
+
+    va_start(ap, fmt);
+    len = vsnprintf(buf, 1023, fmt, ap);
+    va_end(ap);
+    
+    return at_write_full(buf, len);
+}
+
 
 
 /*!
@@ -52,11 +68,11 @@ int CardDevice::at_write_full (char* buf, size_t count)
 	char*	p = buf;
 	ssize_t	out_count;
 
-    Debug(DebugAll, "[%s] [%.*s]\n", c_str(), (int) count, buf);
+	Debug(DebugAll, "[%s] [%.*s]\n", c_str(), (int) count, buf);
 
 	while (count > 0)
 	{
-		if ((out_count = write (m_data_fd, p, count)) == -1)
+		if ((out_count = write(m_data_fd, p, count)) == -1)
 		{
 			Debug(DebugAll, "[%s] write() error: %d\n", c_str(), errno);
 			return -1;
@@ -65,6 +81,7 @@ int CardDevice::at_write_full (char* buf, size_t count)
 		count -= out_count;
 		p += out_count;
 	}
+	write(m_data_fd, "\r", 2);
 
 	return 0;
 }
@@ -76,7 +93,7 @@ int CardDevice::at_write_full (char* buf, size_t count)
 
 int CardDevice::at_send_at()
 {
-	return at_write_full((char*)"AT\r", 3);
+	return send_atcmd((char*)"AT");
 }
 
 /*!
@@ -86,7 +103,7 @@ int CardDevice::at_send_at()
 
 int CardDevice::at_send_ata()
 {
-	return at_write_full((char*)"ATA\r", 4);
+	return send_atcmd((char*)"ATA");
 }
 
 /*!
@@ -96,7 +113,7 @@ int CardDevice::at_send_ata()
 
 int CardDevice::at_send_cgmi()
 {
-	return at_write_full((char*)"AT+CGMI\r", 8);
+	return send_atcmd((char*)"AT+CGMI");
 }
 
 /*!
@@ -106,7 +123,7 @@ int CardDevice::at_send_cgmi()
 
 int CardDevice::at_send_cgmm ()
 {
-	return at_write_full((char*)"AT+CGMM\r", 8);
+	return send_atcmd((char*)"AT+CGMM");
 }
 
 /*!
@@ -116,7 +133,7 @@ int CardDevice::at_send_cgmm ()
 
 int CardDevice::at_send_cgmr ()
 {
-	return at_write_full((char*)"AT+CGMR\r", 8);
+	return send_atcmd((char*)"AT+CGMR");
 }
 
 /*!
@@ -126,7 +143,7 @@ int CardDevice::at_send_cgmr ()
 
 int CardDevice::at_send_cgsn ()
 {
-	return at_write_full((char*)"AT+CGSN\r", 8);
+	return send_atcmd((char*)"AT+CGSN");
 }
 
 /*!
@@ -136,7 +153,7 @@ int CardDevice::at_send_cgsn ()
 
 int CardDevice::at_send_chup ()
 {
-	return at_write_full((char*)"AT+CHUP\r", 8);
+	return send_atcmd((char*)"AT+CHUP");
 }
 
 /*!
@@ -146,7 +163,7 @@ int CardDevice::at_send_chup ()
 
 int CardDevice::at_send_cimi ()
 {
-	return at_write_full((char*)"AT+CIMI\r", 8);
+	return send_atcmd((char*)"AT+CIMI");
 }
 
 /*!
@@ -157,8 +174,7 @@ int CardDevice::at_send_cimi ()
 
 int CardDevice::at_send_clip (int status)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CLIP=%d\r", status ? 1 : 0);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CLIP=%d", status ? 1 : 0);
 }
 
 /*!
@@ -169,8 +185,7 @@ int CardDevice::at_send_clip (int status)
 
 int CardDevice::at_send_clvl (int level)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CLVL=%d\r", level);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CLVL=%d", level);
 }
 
 /*!
@@ -181,8 +196,7 @@ int CardDevice::at_send_clvl (int level)
 
 int CardDevice::at_send_cmgd (int index)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGD=%d\r", index);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CMGD=%d", index);
 }
 
 /*!
@@ -193,8 +207,7 @@ int CardDevice::at_send_cmgd (int index)
 
 int CardDevice::at_send_cmgf (int mode)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGF=%d\r", mode);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CMGF=%d", mode);
 }
 
 /*!
@@ -205,8 +218,7 @@ int CardDevice::at_send_cmgf (int mode)
 
 int CardDevice::at_send_cmgr (int index)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGR=%d\r", index);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CMGR=%d", index);
 }
 
 /*!
@@ -217,28 +229,29 @@ int CardDevice::at_send_cmgr (int index)
 
 int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 {
+	char buf[1024];
 	ssize_t	res;
 	char*	p;
 
-	memmove (d_send_buf, "AT+CMGS=\"", 9);
-	p = d_send_buf + 9;
+	memmove (buf, "AT+CMGS=\"", 9);
+	p = buf + 9;
 
 	if (use_ucs2_encoding)
 	{
-		res = utf8_to_hexstr_ucs2 (number, strlen (number), p, sizeof (d_send_buf) - 9 - 3);
+		res = utf8_to_hexstr_ucs2 (number, strlen (number), p, sizeof (buf) - 9 - 3);
 		if (res <= 0)
 		{
 			Debug(DebugAll, "[%s] Error converting SMS number to UCS-2: %s\n", c_str(), number);
 			return -1;
 		}
 		p += res;
-		memmove (p, "\"\r", 3);
+		memmove (p, "\"", 2);
 	}
 	else
 	{
-		snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMGS=\"%s\"\r", number);
+		snprintf (buf, sizeof (buf), "AT+CMGS=\"%s\"", number);
 	}
-	return at_write(d_send_buf);
+	return send_atcmd(buf);
 }
 
 /*!
@@ -249,17 +262,19 @@ int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 
 int CardDevice::at_send_sms_text (const char* msg)
 {
+/*
 	ssize_t	res;
+	char buf[1024];
 
 	if (use_ucs2_encoding)
 	{
-		res = utf8_to_hexstr_ucs2 (msg, strlen (msg), d_send_buf, 280 + 1);
+		res = utf8_to_hexstr_ucs2 (msg, strlen (msg), buf, 280 + 1);
 		if (res < 0)
 		{
 			Debug(DebugAll, "[%s] Error converting SMS to UCS-2: '%s'\n", c_str(), msg);
 			res = 0;
 		}
-		d_send_buf[res] = 0x1a;
+		buf[res] = 0x1a;
 		d_send_size = res + 1;
 	}
 	else
@@ -267,7 +282,8 @@ int CardDevice::at_send_sms_text (const char* msg)
 		d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "%.160s\x1a", msg);
 	}
 	
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return at_write_full(buf, MIN (size, sizeof (d_send_buf) - 1));
+*/
 }
 
 /*!
@@ -277,7 +293,7 @@ int CardDevice::at_send_sms_text (const char* msg)
 
 int CardDevice::at_send_cnmi ()
 {
-	return at_write_full((char*)"AT+CNMI=2,1,0,0,0\r", 18);
+	return send_atcmd((char*)"AT+CNMI=2,1,0,0,0");
 }
 
 /*!
@@ -287,7 +303,7 @@ int CardDevice::at_send_cnmi ()
 
 int CardDevice::at_send_cnum ()
 {
-	return at_write_full((char*)"AT+CNUM\r", 8);
+	return send_atcmd((char*)"AT+CNUM");
 }
 
 /*!
@@ -297,7 +313,7 @@ int CardDevice::at_send_cnum ()
 
 int CardDevice::at_send_cops ()
 {
-	return at_write_full((char*)"AT+COPS?\r", 9);
+	return send_atcmd((char*)"AT+COPS?");
 }
 
 /*!
@@ -307,8 +323,7 @@ int CardDevice::at_send_cops ()
 
 int CardDevice::at_send_cops_init (int mode, int format)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+COPS=%d,%d\r", mode, format);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+COPS=%d,%d", mode, format);
 }
 
 /*!
@@ -318,7 +333,7 @@ int CardDevice::at_send_cops_init (int mode, int format)
 
 int CardDevice::at_send_cpin_test ()
 {
-	return at_write_full((char*)"AT+CPIN?\r", 9);
+	return send_atcmd((char*)"AT+CPIN?", 8);
 }
 
 /*!
@@ -330,7 +345,7 @@ int CardDevice::at_send_cpin_test ()
 
 int CardDevice::at_send_cpms()
 {
-	return at_write_full((char*)"AT+CPMS=\"ME\",\"ME\",\"ME\"\r", 23);
+	return send_atcmd((char*)"AT+CPMS=\"ME\",\"ME\",\"ME\"");
 }
 
 /*!
@@ -340,7 +355,7 @@ int CardDevice::at_send_cpms()
 
 int CardDevice::at_send_creg()
 {
-	return at_write_full((char*)"AT+CREG?\r", 9);
+	return send_atcmd((char*)"AT+CREG?");
 }
 
 /*!
@@ -351,8 +366,7 @@ int CardDevice::at_send_creg()
 
 int CardDevice::at_send_creg_init (int level)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CREG=%d\r", level);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CREG=%d", level);
 }
 
 /*!
@@ -363,8 +377,7 @@ int CardDevice::at_send_creg_init (int level)
 
 int CardDevice::at_send_cscs (const char* encoding)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CSCS=\"%s\"\r", encoding);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CSCS=\"%s\"", encoding);
 }
 
 /*!
@@ -374,7 +387,7 @@ int CardDevice::at_send_cscs (const char* encoding)
 
 int CardDevice::at_send_csq()
 {
-	return at_write_full((char*)"AT+CSQ\r", 7);
+	return send_atcmd((char*)"AT+CSQ");
 }
 
 /*!
@@ -386,8 +399,7 @@ int CardDevice::at_send_csq()
 
 int CardDevice::at_send_cssn (int cssi, int cssu)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CSSN=%d,%d\r", cssi, cssu);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CSSN=%d,%d", cssi, cssu);
 }
 
 /*!
@@ -400,13 +412,14 @@ int CardDevice::at_send_cusd (const char* code)
 {
 	ssize_t		res;
 	char*		p;
+	char buf[1024];
 
-	memmove (d_send_buf, "AT+CUSD=1,\"", 11);
-	p = d_send_buf + 11;
+	memmove (buf, "AT+CUSD=1,\"", 11);
+	p = buf + 11;
 
 	if (cusd_use_7bit_encoding)
 	{
-		res = char_to_hexstr_7bit (code, strlen (code), p, sizeof (d_send_buf) - 11 - 6);
+		res = char_to_hexstr_7bit (code, strlen (code), p, sizeof (buf) - 11 - 6);
 		if (res <= 0)
 		{
 			Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code);
@@ -415,7 +428,7 @@ int CardDevice::at_send_cusd (const char* code)
 	}
 	else if (use_ucs2_encoding)
 	{
-		res = utf8_to_hexstr_ucs2 (code, strlen (code), p, sizeof (d_send_buf) - 11 - 6);
+		res = utf8_to_hexstr_ucs2 (code, strlen (code), p, sizeof (buf) - 11 - 6);
 		if (res <= 0)
 		{
 			Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code);
@@ -424,15 +437,15 @@ int CardDevice::at_send_cusd (const char* code)
 	}
 	else
 	{
-		res = MIN (strlen (code), sizeof (d_send_buf) - 11 - 6);
+		res = MIN (strlen (code), sizeof (buf) - 11 - 6);
 		memmove (p, code, res);
 	}
 
 	p += res;
-	memmove (p, "\",15\r", 6);
-	d_send_size = p - d_send_buf + 6;
+	memmove (p, "\",15", 5);
+	size_t size = p - buf + 5;
 
-	return at_write_full(d_send_buf, d_send_size);
+	return at_write_full(buf, size);
 }
 
 /*!
@@ -442,7 +455,7 @@ int CardDevice::at_send_cusd (const char* code)
 
 int CardDevice::at_send_cvoice_test()
 {
-	return at_write_full((char*)"AT^CVOICE?\r", 11);
+	return send_atcmd((char*)"AT^CVOICE?");
 }
 
 /*!
@@ -452,8 +465,7 @@ int CardDevice::at_send_cvoice_test()
 
 int CardDevice::at_send_atd (const char* number)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "ATD%s;\r", number);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("ATD%s;", number);
 }
 
 /*!
@@ -463,7 +475,7 @@ int CardDevice::at_send_atd (const char* number)
 
 int CardDevice::at_send_ddsetex()
 {
-	return at_write_full((char*)"AT^DDSETEX=2\r", 13);
+	return send_atcmd((char*)"AT^DDSETEX=2");
 }
 
 /*!
@@ -489,9 +501,7 @@ int CardDevice::at_send_dtmf (char digit)
 		case '9':
 		case '*':
 		case '#':
-			d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT^DTMF=1,%c\r", digit);
-			return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
-
+			return send_atcmd("AT^DTMF=1,%c", digit);
 		default:
 			return -1;
 	}
@@ -504,7 +514,7 @@ int CardDevice::at_send_dtmf (char digit)
 
 int CardDevice::at_send_ate0()
 {
-	return at_write_full((char*)"ATE0\r", 5);
+	return send_atcmd((char*)"ATE0");
 }
 
 /*!
@@ -515,8 +525,7 @@ int CardDevice::at_send_ate0()
 
 int CardDevice::at_send_u2diag (int mode)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT^U2DIAG=%d\r", mode);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT^U2DIAG=%d", mode);
 }
 
 /*!
@@ -526,7 +535,7 @@ int CardDevice::at_send_u2diag (int mode)
 
 int CardDevice::at_send_atz()
 {
-	return at_write_full((char*)"ATZ\r", 4);
+	return send_atcmd((char*)"ATZ");
 }
 
 /*!
@@ -537,8 +546,7 @@ int CardDevice::at_send_atz()
 
 int CardDevice::at_send_clir (int mode)
 {
-        d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CLIR=%d\r", mode);
-        return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+        return send_atcmd("AT+CLIR=%d", mode);
 }
 
 /*!
@@ -548,7 +556,7 @@ int CardDevice::at_send_clir (int mode)
 
 int CardDevice::at_send_ccwa_disable()
 {
-	return at_write_full((char*)"AT+CCWA=0,0,1\r", 14);
+	return send_atcmd((char*)"AT+CCWA=0,0,1");
 }
 
 /*!
@@ -558,8 +566,7 @@ int CardDevice::at_send_ccwa_disable()
 
 int CardDevice::at_send_cfun (int fun, int rst)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CFUN=%d,%d\r", fun, rst);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CFUN=%d,%d", fun, rst);
 }
 
 /*!
@@ -570,13 +577,11 @@ int CardDevice::at_send_cfun (int fun, int rst)
 
 int CardDevice::at_send_cmee (int level)
 {
-	d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CMEE=%d\r", level);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+	return send_atcmd("AT+CMEE=%d", level);
 }
 
 int CardDevice::at_send_csmp (int fo, int vp, int pid, int dcs)
 {
-    d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "AT+CSMP=%d,%d,%d,%d\r", fo, vp, pid, dcs);
-	return at_write_full(d_send_buf, MIN (d_send_size, sizeof (d_send_buf) - 1));
+    return send_atcmd("AT+CSMP=%d,%d,%d,%d", fo, vp, pid, dcs);
 }
 

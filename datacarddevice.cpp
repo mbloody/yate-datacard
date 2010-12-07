@@ -67,7 +67,7 @@ void MonitorThread::run()
     
     m_device->m_mutex.lock();
 
-    m_device->timeout = 10000;
+//    m_device->timeout = 10000;
 
     if (m_device->at_send_at() || m_device->at_fifo_queue_add(CMD_AT, RES_OK))
     {
@@ -91,7 +91,7 @@ void MonitorThread::run()
             m_device->m_mutex.unlock();
             return;
         }
-        t = m_device->timeout;
+        t = 10000;
 
         m_device->m_mutex.unlock();
 
@@ -129,7 +129,11 @@ void MonitorThread::run()
     
         m_device->m_mutex.lock();
 
-        if (m_device->at_read())
+	Debug(DebugAll, "m_device->handle_rd_data(); [%s]", m_device->c_str());
+
+	m_device->handle_rd_data();
+
+/*        if (m_device->at_read())
         {
             m_device->disconnect();
             m_device->m_mutex.unlock();
@@ -146,6 +150,7 @@ void MonitorThread::run()
                 return;
             }
         }
+*/
         m_device->m_mutex.unlock();
     } // End of Main loop
 }
@@ -311,10 +316,11 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_data_fd = -1;
     m_audio_fd = -1;
 
-    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
+//    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
+    state = BLT_STATE_WANT_R;
     
-    timeout = 10000;
+//    timeout = 10000;
     cusd_use_ucs2_decoding =  1;
     gsm_reg_status = -1;
 
@@ -420,7 +426,7 @@ bool CardDevice::disconnect()
     m_provider_name = "NONE";
     m_number = "Unknown";
 
-    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
+//    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
     m_atQueue.clear();
 

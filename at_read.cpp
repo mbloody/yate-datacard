@@ -19,6 +19,90 @@
 #include <poll.h>
 
 
+int CardDevice::handle_rd_data()
+{
+    char c;
+    int ret;
+
+    while ((ret = read(m_data_fd, &c, 1)) == 1) 
+    {
+	switch (state) 
+	{
+	    case BLT_STATE_WANT_R:
+		if (c == '\r') 
+		{
+		    state = BLT_STATE_WANT_N;
+		} 
+//		else if (c == '+') 
+		else if (c != '\r' && c != '\n') //!!!fix Huawei bug with CNUM return
+		{
+		    state = BLT_STATE_WANT_CMD;
+//		    rd_buff[rd_buff_pos++] = '+';
+		    rd_buff[rd_buff_pos++] = c;
+		} 
+		else 
+		{
+		    Debug(DebugAll,"Device %s: Expected '\\r', got %d. state=BLT_STATE_WANT_R\n", c_str(), c);
+		    return -1;
+		}
+		break;
+
+	    case BLT_STATE_WANT_N:
+		if (c == '\n')
+		    state = BLT_STATE_WANT_CMD;
+		else 
+		{
+		    Debug(DebugAll,"Device %s: Expected '\\n', got %d. state=BLT_STATE_WANT_N\n", c_str(), c);
+		    return -1;
+		}
+		break;
+
+	    case BLT_STATE_WANT_CMD:
+		if (c == '\r')
+		    state = BLT_STATE_WANT_N2;
+		else 
+		{
+		    if (rd_buff_pos >= BLT_RDBUFF_MAX) 
+		    {
+			Debug(DebugAll,"Device %s: Buffer exceeded\n", c_str());
+			return -1;
+		    }
+		    rd_buff[rd_buff_pos++] = c;
+		}
+		break;
+
+        case BLT_STATE_WANT_N2:
+	    if (c == '\n') 
+	    {
+		state = BLT_STATE_WANT_R;
+		Debug(DebugAll,"[%s] > %s\n",c_str(), rd_buff);
+
+		at_response(rd_buff,at_read_result_classification(rd_buff));
+//		if (strcmp(rd_buff, "") == 0)
+//		    state = BLT_STATE_WANT_CMD; //!!!fix Huawei bug with CNUM return
+    
+        	rd_buff_pos = 0;
+        	memset(rd_buff, 0, BLT_RDBUFF_MAX);
+        	return 0;
+    	    } 
+    	    else 
+    	    {
+
+		Debug(DebugAll,"Device %s: Expected '\\n' got %d. state = BLT_STATE_WANT_N2:\n", c_str(), c);
+		return -1;
+            }
+
+          break;
+
+        default:
+          Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), state);
+          return -1;
+      }
+    }
+    return 0;
+}
+
+
 int CardDevice::at_wait (int* ms)
 {
 
@@ -51,327 +135,143 @@ int CardDevice::at_wait (int* ms)
     return 0;
 }
 
-int CardDevice::at_read ()
-{
-	int	iovcnt;
-	ssize_t	n;
-
-	iovcnt = d_read_rb.rb_write_iov(d_read_iov);
-
-	if (iovcnt > 0)
-	{
-		n = readv (m_data_fd, d_read_iov, iovcnt);
-
-		if (n < 0)
-		{
-			if (errno != EINTR && errno != EAGAIN)
-			{
-				Debug(DebugAll, "[%s] readv() error: %d\n", c_str(), errno);
-				return -1;
-			}
-
-			return 0;
-		}
-		else if (n == 0)
-		{
-			return -1;
-		}
-
-		d_read_rb.rb_write_upd (n);
-
-
-		Debug(DebugAll, "[%s] receive %zu byte, used %zu, free %zu, read %zu, write %zu\n", c_str(), n,
-			d_read_rb.rb_used(), d_read_rb.rb_free(), d_read_rb.read(), d_read_rb.write());
-
-		iovcnt = d_read_rb.rb_read_all_iov(d_read_iov);
-
-		if (iovcnt > 0)
-		{
-			if (iovcnt == 2)
-			{
-				Debug(DebugAll, "[%s] [%.*s%.*s]\n", c_str(),
-						(int) d_read_iov[0].iov_len, (char*) d_read_iov[0].iov_base,
-							(int) d_read_iov[1].iov_len, (char*) d_read_iov[1].iov_base);
-			}
-			else
-			{
-				Debug(DebugAll, "[%s] [%.*s]\n", c_str(),
-						(int) d_read_iov[0].iov_len, (char*) d_read_iov[0].iov_base);
-			}
-		}
-
-		return 0;
-	}
-
-	Debug(DebugAll, "[%s] receive buffer overflow\n", c_str());
-
-	return -1;
-}
-
-int CardDevice::at_read_result_iov()
-{
-	int	iovcnt = 0;
-	int	res;
-	size_t	s;
-
-	if ((s = d_read_rb.rb_used ()) > 0)
-	{
-		if (!d_read_result)
-		{
-			if ((res = d_read_rb.rb_memcmp("\r\n", 2)) == 0)
-			{
-				d_read_rb.rb_read_upd (2);
-				d_read_result = 1;
-
-				return at_read_result_iov ();
-			}
-			else if (res > 0)
-			{
-				if (d_read_rb.rb_memcmp ("\n", 1) == 0)
-				{
-					Debug(DebugAll, "[%s] multiline response\n", c_str());
-					d_read_rb.rb_read_upd (1);
-
-					return at_read_result_iov();
-				}
-
-				if (d_read_rb.rb_read_until_char_iov(d_read_iov, '\r') > 0)
-				{
-					s = d_read_iov[0].iov_len + d_read_iov[1].iov_len + 1;
-				}
-
-				d_read_rb.rb_read_upd(s);
-
-				return at_read_result_iov();
-			}
-
-			return 0;
-		}
-		else
-		{
-			if (d_read_rb.rb_memcmp("+CSSI:", 6) == 0)
-			{
-				if ((iovcnt = d_read_rb.rb_read_n_iov(d_read_iov, 8)) > 0)
-				{
-					d_read_result = 0;
-				}
-
-				return iovcnt;
-			}
-			else if (d_read_rb.rb_memcmp("\r\n+CSSU:", 8) == 0)
-			{
-				d_read_rb.rb_read_upd(2);
-				return at_read_result_iov();
-			}
-			else if (d_read_rb.rb_memcmp("> ", 2) == 0)
-			{
-				d_read_result = 0;
-				return d_read_rb.rb_read_n_iov(d_read_iov, 2);
-			}
-			else if (d_read_rb.rb_memcmp("+CMGR:", 6) == 0)
-			{
-				if ((iovcnt = d_read_rb.rb_read_until_mem_iov(d_read_iov, "\n\r\nOK\r\n", 7)) > 0)
-				{
-					d_read_result = 0;
-				}
-
-				return iovcnt;
-			}
-			else if (d_read_rb.rb_memcmp("+CNUM:", 6) == 0)
-			{
-				if ((iovcnt = d_read_rb.rb_read_until_mem_iov(d_read_iov, "\n\r\nOK\r\n", 7)) > 0)
-				{
-					d_read_result = 0;
-				}
-
-				return iovcnt;
-			}
-			else if (d_read_rb.rb_memcmp("ERROR+CNUM:", 11) == 0)
-			{
-				if ((iovcnt = d_read_rb.rb_read_until_mem_iov(d_read_iov, "\n\r\nOK\r\n", 7)) > 0)
-				{
-					d_read_result = 0;
-				}
-
-				return iovcnt;
-			}
-			else
-			{
-				if ((iovcnt = d_read_rb.rb_read_until_mem_iov(d_read_iov, "\r\n", 2)) > 0)
-				{
-					d_read_result = 0;
-					s = d_read_iov[0].iov_len + d_read_iov[1].iov_len + 1;
-
-					return d_read_rb.rb_read_n_iov(d_read_iov, s);
-				}
-			}
-		}
-	}
-
-	return 0;
-}
-
-at_res_t CardDevice::at_read_result_classification (int iovcnt)
+at_res_t CardDevice::at_read_result_classification (char* command)
 {
 	at_res_t at_res;
 
-	if (iovcnt > 0)
+
+	if (memcmp(command,"^BOOT:", 6) == 0)		// 5115
 	{
-		if (d_read_rb.rb_memcmp("^BOOT:", 6) == 0)		// 5115
-		{
-			at_res = RES_BOOT;
-		}
-		else if (d_read_rb.rb_memcmp("OK\r", 3) == 0)		// 2637
-		{
-			at_res = RES_OK;
-		}
-		else if (d_read_rb.rb_memcmp("^RSSI:", 6) == 0)		// 880
-		{
-			at_res = RES_RSSI;
-		}
-		else if (d_read_rb.rb_memcmp("^MODE:", 6) == 0)		// 656
-		{
-			at_res = RES_MODE;
-		}
-		else if (d_read_rb.rb_memcmp("^CEND:", 6) == 0)		// 425
-		{
-			at_res = RES_CEND;
-		}
-		else if (d_read_rb.rb_memcmp("+CSSI:", 6) == 0)		// 416
-		{
-			at_res = RES_CSSI;
-		}
-		else if (d_read_rb.rb_memcmp("^ORIG:", 6) == 0)		// 408
-		{
-			at_res = RES_ORIG;
-		}
-		else if (d_read_rb.rb_memcmp("^CONF:", 6) == 0)		// 404
-		{
-			at_res = RES_CONF;
-		}
-		else if (d_read_rb.rb_memcmp("^CONN:", 6) == 0)		// 332
-		{
-			at_res = RES_CONN;
-		}
-		else if (d_read_rb.rb_memcmp("+CREG:", 6) == 0)		// 56
-		{
-			at_res = RES_CREG;
-		}
-		else if (d_read_rb.rb_memcmp("+COPS:", 6) == 0)		// 56
-		{
-			at_res = RES_COPS;
-		}
-		else if (d_read_rb.rb_memcmp("^SRVST:", 7) == 0)	// 35
-		{
-			at_res = RES_SRVST;
-		}
-		else if (d_read_rb.rb_memcmp("+CSQ:", 5) == 0)		// 28 init
-		{
-			at_res = RES_CSQ;
-		}
-		else if (d_read_rb.rb_memcmp("+CPIN:", 6) == 0)		// 28 init
-		{
-			at_res = RES_CPIN;
-		}
-
-
-		else if (d_read_rb.rb_memcmp("RING\r", 5) == 0)		// 15 incoming
-		{
-			at_res = RES_RING;
-		}
-		else if (d_read_rb.rb_memcmp("+CLIP:", 6) == 0)		// 15 incoming
-		{
-			at_res = RES_CLIP;
-		}
-
-
-		else if (d_read_rb.rb_memcmp("ERROR\r", 6) == 0)	// 12
-		{
-			at_res = RES_ERROR;
-		}
-
-		else if (d_read_rb.rb_memcmp("+CMTI:", 6) == 0)		// 8 SMS
-		{
-			at_res = RES_CMTI;
-		}
-		else if (d_read_rb.rb_memcmp("+CMGR:", 6) == 0)		// 8 SMS
-		{
-			at_res = RES_CMGR;
-		}
-
-
-		else if (d_read_rb.rb_memcmp("+CSSU:", 6) == 0)		// 2
-		{
-			at_res = RES_CSSU;
-		}
-		else if (d_read_rb.rb_memcmp("BUSY\r", 5) == 0)
-		{
-			at_res = RES_BUSY;
-		}
-		else if (d_read_rb.rb_memcmp("NO DIALTONE\r", 12) == 0)
-		{
-			at_res = RES_NO_DIALTONE;
-		}
-		else if (d_read_rb.rb_memcmp("NO CARRIER\r", 11) == 0)
-		{
-			at_res = RES_NO_CARRIER;
-		}
-		else if (d_read_rb.rb_memcmp("COMMAND NOT SUPPORT\r", 20) == 0)
-		{
-			at_res = RES_ERROR;
-		}
-		else if (d_read_rb.rb_memcmp("\r\n+CMS ERROR:", 13) == 0)
-		{
-			at_res = RES_CMS_ERROR;
-		}
-		else if (d_read_rb.rb_memcmp("^SMMEMFULL:", 11) == 0)
-		{
-			at_res = RES_SMMEMFULL;
-		}
-		else if (d_read_rb.rb_memcmp("> ", 2) == 0)
-		{
-			at_res = RES_SMS_PROMPT;
-		}
-		else if (d_read_rb.rb_memcmp("+CUSD:", 6) == 0)
-		{
-			at_res = RES_CUSD;
-		}
-		else if (d_read_rb.rb_memcmp("+CNUM:", 6) == 0)
-		{
-			at_res = RES_CNUM;
-		}
-		else if (d_read_rb.rb_memcmp("ERROR+CNUM:", 11) == 0)
-		{
-			at_res = RES_CNUM;
-		}
-		else
-		{
-			at_res = RES_UNKNOWN;
-		}
-
-		switch (at_res)
-		{
-			case RES_SMS_PROMPT:
-				d_read_rb.rb_read_upd (2);
-				break;
-
-			case RES_CMGR:
-				d_read_rb.rb_read_upd (d_read_iov[0].iov_len + d_read_iov[1].iov_len + 7);
-				break;
-
-			case RES_CSSI:
-				d_read_rb.rb_read_upd (8);
-				break;
-
-			default:
-				d_read_rb.rb_read_upd (d_read_iov[0].iov_len + d_read_iov[1].iov_len + 1);
-				break;
-		}
-
-//		ast_debug (5, "[%s] receive result '%s'\n", id, at_res2str (at_res));
-
-		return at_res;
+		at_res = RES_BOOT;
+	}
+	else if (memcmp(command,"+CNUM:", 6) == 0)
+	{
+		at_res = RES_CNUM;
+	}
+	else if (memcmp(command,"ERROR+CNUM:", 11) == 0)
+	{
+		at_res = RES_CNUM;
+	}
+	else if (memcmp(command,"OK", 2) == 0)		// 2637
+	{
+		at_res = RES_OK;
+	}
+	else if (memcmp(command,"^RSSI:", 6) == 0)		// 880
+	{
+		at_res = RES_RSSI;
+	}
+	else if (memcmp(command,"^MODE:", 6) == 0)		// 656
+	{
+		at_res = RES_MODE;
+	}
+	else if (memcmp(command,"^CEND:", 6) == 0)		// 425
+	{
+		at_res = RES_CEND;
+	}
+	else if (memcmp(command,"+CSSI:", 6) == 0)		// 416
+	{
+		at_res = RES_CSSI;
+	}
+	else if (memcmp(command,"^ORIG:", 6) == 0)		// 408
+	{
+		at_res = RES_ORIG;
+	}
+	else if (memcmp(command,"^CONF:", 6) == 0)		// 404
+	{
+		at_res = RES_CONF;
+	}
+	else if (memcmp(command,"^CONN:", 6) == 0)		// 332
+	{
+		at_res = RES_CONN;
+	}
+	else if (memcmp(command,"+CREG:", 6) == 0)		// 56
+	{
+		at_res = RES_CREG;
+	}
+	else if (memcmp(command,"+COPS:", 6) == 0)		// 56
+	{
+		at_res = RES_COPS;
+	}
+	else if (memcmp(command,"^SRVST:", 7) == 0)	// 35
+	{
+		at_res = RES_SRVST;
+	}
+	else if (memcmp(command,"+CSQ:", 5) == 0)		// 28 init
+	{
+		at_res = RES_CSQ;
+	}
+	else if (memcmp(command,"+CPIN:", 6) == 0)		// 28 init
+	{
+		at_res = RES_CPIN;
+	}
+	else if (memcmp(command,"RING", 4) == 0)		// 15 incoming
+	{
+		at_res = RES_RING;
+	}
+	else if (memcmp(command,"+CLIP:", 6) == 0)		// 15 incoming
+	{
+		at_res = RES_CLIP;
+	}
+	else if (memcmp(command,"ERROR", 5) == 0)	// 12
+	{
+		at_res = RES_ERROR;
+	}
+	else if (memcmp(command,"+CMTI:", 6) == 0)		// 8 SMS
+	{
+		at_res = RES_CMTI;
+	}
+	else if (memcmp(command,"+CMGR:", 6) == 0)		// 8 SMS
+	{
+		at_res = RES_CMGR;
+	}
+	else if (memcmp(command,"+CSSU:", 6) == 0)		// 2
+	{
+		at_res = RES_CSSU;
+	}
+	else if (memcmp(command,"BUSY", 4) == 0)
+	{
+		at_res = RES_BUSY;
+	}
+	else if (memcmp(command,"NO DIALTONE", 11) == 0)
+	{
+		at_res = RES_NO_DIALTONE;
+	}
+	else if (memcmp(command,"NO CARRIER", 10) == 0)
+	{
+		at_res = RES_NO_CARRIER;
+	}
+	else if (memcmp(command,"COMMAND NOT SUPPORT", 19) == 0)
+	{
+		at_res = RES_ERROR;
+	}
+	else if (memcmp(command,"+CMS ERROR:", 11) == 0)
+	{
+		at_res = RES_CMS_ERROR;
+	}
+	else if (memcmp(command,"^SMMEMFULL:", 11) == 0)
+	{
+		at_res = RES_SMMEMFULL;
+	}
+	else if (memcmp(command,"> ", 2) == 0)
+	{
+		at_res = RES_SMS_PROMPT;
+	}
+	else if (memcmp(command,"+CUSD:", 6) == 0)
+	{
+		at_res = RES_CUSD;
+	}
+	else if (memcmp(command,"+CNUM:", 6) == 0)
+	{
+		at_res = RES_CNUM;
+	}
+	else if (memcmp(command,"ERROR+CNUM:", 11) == 0)
+	{
+		at_res = RES_CNUM;
+	}
+	else
+	{
+		at_res = RES_UNKNOWN;
 	}
 
-	return RES_PARSE_ERROR;
+	return at_res;
 }
