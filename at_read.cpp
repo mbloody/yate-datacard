@@ -29,7 +29,7 @@ int CardDevice::handle_rd_data()
 	switch (state) 
 	{
 	    case BLT_STATE_WANT_CONTROL:
-		if (c != '\r' && c != '\n') //!!!fix Huawei bug with CNUM return
+		if (c != '\r' && c != '\n')
 		{
 		    state = BLT_STATE_WANT_CMD;
 		    rd_buff[rd_buff_pos++] = c;
@@ -43,11 +43,11 @@ int CardDevice::handle_rd_data()
 		    state = BLT_STATE_WANT_CONTROL;
 		    Debug(DebugAll,"[%s] : [%s]\n",c_str(), rd_buff);
 
-		    at_response(rd_buff,at_read_result_classification(rd_buff));
+		    int res = at_response(rd_buff,at_read_result_classification(rd_buff));
     
 		    rd_buff_pos = 0;
 		    memset(rd_buff, 0, BLT_RDBUFF_MAX);
-		    return 0;
+		    return res;
 		}
 		else 
 		{
@@ -59,11 +59,13 @@ int CardDevice::handle_rd_data()
 		    rd_buff[rd_buff_pos++] = c;
 		}
 		break;
-        default:
-          Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), state);
-          return -1;
-      }
+    	    default:
+        	Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), state);
+        	return -1;
+	}
     }
+    if(ret < 0)
+	return ret;
     return 0;
 }
 

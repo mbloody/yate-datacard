@@ -131,7 +131,12 @@ void MonitorThread::run()
 
 //	Debug(DebugAll, "m_device->handle_rd_data(); [%s]", m_device->c_str());
 
-	m_device->handle_rd_data();
+	if (m_device->handle_rd_data())
+	{
+            m_device->disconnect();
+            m_device->m_mutex.unlock();
+            return;
+	}
 
 //	Debug(DebugAll, "after m_device->handle_rd_data(); [%s]", m_device->c_str());
 
