@@ -17,10 +17,8 @@ using namespace TelEngine;
 #define BLT_RDBUFF_MAX      1024
 
 typedef enum {
-    BLT_STATE_WANT_R   = 0,
-    BLT_STATE_WANT_N   = 1,
-    BLT_STATE_WANT_CMD = 2,
-    BLT_STATE_WANT_N2  = 3,    
+  BLT_STATE_WANT_CONTROL   = 0,
+  BLT_STATE_WANT_CMD = 1,
 } blt_state_t;
 
 

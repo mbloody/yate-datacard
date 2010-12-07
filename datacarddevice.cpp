@@ -129,9 +129,11 @@ void MonitorThread::run()
     
         m_device->m_mutex.lock();
 
-	Debug(DebugAll, "m_device->handle_rd_data(); [%s]", m_device->c_str());
+//	Debug(DebugAll, "m_device->handle_rd_data(); [%s]", m_device->c_str());
 
 	m_device->handle_rd_data();
+
+//	Debug(DebugAll, "after m_device->handle_rd_data(); [%s]", m_device->c_str());
 
 /*        if (m_device->at_read())
         {
@@ -318,7 +320,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
 
 //    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
-    state = BLT_STATE_WANT_R;
+    state = BLT_STATE_WANT_CONTROL;
     
 //    timeout = 10000;
     cusd_use_ucs2_decoding =  1;
@@ -371,6 +373,7 @@ bool CardDevice::tryConnect()
 	{
 		if ((m_audio_fd = opentty((char*)audio_tty.safe())) > -1)
 		{
+		    int flags;
 		    if (startMonitor())
 		    {
 			m_connected = true;

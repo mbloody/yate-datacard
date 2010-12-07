@@ -28,38 +28,27 @@ int CardDevice::handle_rd_data()
     {
 	switch (state) 
 	{
-	    case BLT_STATE_WANT_R:
-		if (c == '\r') 
-		{
-		    state = BLT_STATE_WANT_N;
-		} 
-//		else if (c == '+') 
-		else if (c != '\r' && c != '\n') //!!!fix Huawei bug with CNUM return
+	    case BLT_STATE_WANT_CONTROL:
+		if (c != '\r' && c != '\n') //!!!fix Huawei bug with CNUM return
 		{
 		    state = BLT_STATE_WANT_CMD;
-//		    rd_buff[rd_buff_pos++] = '+';
 		    rd_buff[rd_buff_pos++] = c;
 		} 
-		else 
-		{
-		    Debug(DebugAll,"Device %s: Expected '\\r', got %d. state=BLT_STATE_WANT_R\n", c_str(), c);
-		    return -1;
-		}
+		else
+		    return 0;
 		break;
-
-	    case BLT_STATE_WANT_N:
-		if (c == '\n')
-		    state = BLT_STATE_WANT_CMD;
-		else 
-		{
-		    Debug(DebugAll,"Device %s: Expected '\\n', got %d. state=BLT_STATE_WANT_N\n", c_str(), c);
-		    return -1;
-		}
-		break;
-
 	    case BLT_STATE_WANT_CMD:
-		if (c == '\r')
-		    state = BLT_STATE_WANT_N2;
+		if (c == '\r' || c == '\n')
+		{
+		    state = BLT_STATE_WANT_CONTROL;
+		    Debug(DebugAll,"[%s] : [%s]\n",c_str(), rd_buff);
+
+		    at_response(rd_buff,at_read_result_classification(rd_buff));
+    
+		    rd_buff_pos = 0;
+		    memset(rd_buff, 0, BLT_RDBUFF_MAX);
+		    return 0;
+		}
 		else 
 		{
 		    if (rd_buff_pos >= BLT_RDBUFF_MAX) 
@@ -70,30 +59,6 @@ int CardDevice::handle_rd_data()
 		    rd_buff[rd_buff_pos++] = c;
 		}
 		break;
-
-        case BLT_STATE_WANT_N2:
-	    if (c == '\n') 
-	    {
-		state = BLT_STATE_WANT_R;
-		Debug(DebugAll,"[%s] > %s\n",c_str(), rd_buff);
-
-		at_response(rd_buff,at_read_result_classification(rd_buff));
-//		if (strcmp(rd_buff, "") == 0)
-//		    state = BLT_STATE_WANT_CMD; //!!!fix Huawei bug with CNUM return
-    
-        	rd_buff_pos = 0;
-        	memset(rd_buff, 0, BLT_RDBUFF_MAX);
-        	return 0;
-    	    } 
-    	    else 
-    	    {
-
-		Debug(DebugAll,"Device %s: Expected '\\n' got %d. state = BLT_STATE_WANT_N2:\n", c_str(), c);
-		return -1;
-            }
-
-          break;
-
         default:
           Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), state);
           return -1;
