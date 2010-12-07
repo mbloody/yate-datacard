@@ -52,12 +52,12 @@ MonitorThread::~MonitorThread()
 
 void MonitorThread::run()
 {
-    at_res_t	at_res;
+//    at_res_t	at_res;
     at_queue_t*	e;
     int t;
 //    int res;
 //    struct iovec iov[2];
-    int iovcnt;
+//    int iovcnt;
 //    size_t size;
 //    size_t i = 0;
 
@@ -373,7 +373,6 @@ bool CardDevice::tryConnect()
 	{
 		if ((m_audio_fd = opentty((char*)audio_tty.safe())) > -1)
 		{
-		    int flags;
 		    if (startMonitor())
 		    {
 			m_connected = true;

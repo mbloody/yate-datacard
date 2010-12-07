@@ -183,17 +183,6 @@ public:
 
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
-//    char a_read_buf[FRAME_SIZE * 5];
-//    RingBuffer a_read_rb;
-	
-//    char d_send_buf[2*1024];
-//    size_t d_send_size;
-//    char d_read_buf[2*1024];
-//    RingBuffer d_read_rb;
-//    struct iovec d_read_iov[2];
-//    unsigned int d_read_result:1;
-//    char d_parse_buf[1024];
-//    int timeout;			/* used to set the timeout for data */
 
     unsigned int has_sms:1;
     unsigned int has_voice:1;
