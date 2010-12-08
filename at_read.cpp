@@ -46,12 +46,12 @@ int CardDevice::handle_rd_data()
 		    int res = at_response(rd_buff,at_read_result_classification(rd_buff));
     
 		    rd_buff_pos = 0;
-		    memset(rd_buff, 0, BLT_RDBUFF_MAX);
+		    memset(rd_buff, 0, RDBUFF_MAX);
 		    return res;
 		}
 		else 
 		{
-		    if (rd_buff_pos >= BLT_RDBUFF_MAX) 
+		    if (rd_buff_pos >= RDBUFF_MAX) 
 		    {
 			Debug(DebugAll,"Device %s: Buffer exceeded\n", c_str());
 			return -1;

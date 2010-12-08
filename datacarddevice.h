@@ -14,7 +14,7 @@
 using namespace TelEngine;
 
 
-#define BLT_RDBUFF_MAX      1024
+#define RDBUFF_MAX      1024
 
 typedef enum {
   BLT_STATE_WANT_CONTROL   = 0,
@@ -162,20 +162,19 @@ public:
 
     DevicesEndPoint* m_endpoint;
     MonitorThread* m_monitor;
+    MediaThread* m_media;
+    
     Mutex m_mutex;
     Connection* m_conn;
 
-    MediaThread* m_media;
 
 
     int handle_rd_data();
     blt_state_t state;
-    char rd_buff[BLT_RDBUFF_MAX];
+    char rd_buff[RDBUFF_MAX];
     int rd_buff_pos;
 
     int send_atcmd(const char * fmt, ...);
-
-
     
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
@@ -247,7 +246,6 @@ public:
     at_res_t at_read_result_classification(char* command);
     
     int at_response(char* str, at_res_t);
-    int t_response_busy();
     int at_response_cend(char*, size_t);
     int at_response_cgmi(char*, size_t);
     int at_response_cgmm(char*, size_t);
@@ -335,7 +333,7 @@ public:
     int at_send_cfun(int, int);
     int at_send_cmee(int);
     int at_send_cpms();
-    int at_send_csmp (int, int, int, int);
+    int at_send_csmp(int, int, int, int);
 
     ObjList m_atQueue;
     int	at_fifo_queue_add(at_cmd_t, at_res_t);
