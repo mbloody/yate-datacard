@@ -106,7 +106,6 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 {
 	at_res_t at_res;
 
-
 	if (memcmp(command,"^BOOT:", 6) == 0)		// 5115
 	{
 		at_res = RES_BOOT;
@@ -226,14 +225,6 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 	else if (memcmp(command,"+CUSD:", 6) == 0)
 	{
 		at_res = RES_CUSD;
-	}
-	else if (memcmp(command,"+CNUM:", 6) == 0)
-	{
-		at_res = RES_CNUM;
-	}
-	else if (memcmp(command,"ERROR+CNUM:", 11) == 0)
-	{
-		at_res = RES_CNUM;
 	}
 	else
 	{
