@@ -54,7 +54,7 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 				return at_response_cend (str, len);
 
 			case RES_CONN:
-				return at_response_conn();
+				return at_response_conn(str, len);
 
 			case RES_CREG:
 				/* An error here is not fatal. Just keep going. */
@@ -903,8 +903,6 @@ int CardDevice::at_response_orig (char* str, size_t len)
 
 //TODO:
 //	channel_queue_control (AST_CONTROL_PROGRESS);
-	if(m_conn)
-	    m_conn->onProgress();
 	/*
 	 * parse ORIG info in the following format:
 	 * ^ORIG:<call_index>,<call_type>
@@ -918,6 +916,9 @@ int CardDevice::at_response_orig (char* str, size_t len)
 
 	Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
 	Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
+	if(m_conn)
+	    m_conn->onProgress();
+
 
 	if (at_send_clvl (1) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
 	{
@@ -961,7 +962,7 @@ int CardDevice::at_response_cend (char* str, size_t len)
 	Debug(DebugAll, "[%s] CEND: cc_cause:   %d", c_str(), cc_cause);
 
 	Debug(DebugAll, "[%s] Line disconnected", c_str());
-
+	
 	needchup = 0;
 //TODO:
 
@@ -991,16 +992,28 @@ int CardDevice::at_response_cend (char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_conn ()
+int CardDevice::at_response_conn(char* str, size_t len)
 {
 //TODO:
+	int call_index =1;
+	int call_type =0;
+	if (!sscanf (str, "^CONN:%d,%d", &call_index, &call_type))
+	{
+		Debug(DebugAll, "[%s] Error parsing CONN event '%s'", c_str(), str);
+		return -1;
+	}
+
+	Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
+	Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
+
+
 
 	if (outgoing)
 	{
 		Debug(DebugAll, "[%s] Remote end answered", c_str());
 		if(m_conn)
 		    m_conn->onAnswered();
-//		channel_queue_control (AST_CONTROL_ANSWER);
+//		hannel_queue_control (AST_CONTROL_ANSWER);
 	}
 	else if (incoming && answered)
 	{

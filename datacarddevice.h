@@ -256,7 +256,7 @@ public:
     int at_response_cmgr(char*, size_t);
     int at_response_cmti(char*, size_t);
     int at_response_cnum(char*, size_t);
-    int at_response_conn();
+    int at_response_conn(char*, size_t);
     int at_response_cops(char*, size_t);
     int at_response_cpin(char*, size_t);
     int at_response_creg(char*, size_t);
@@ -380,7 +380,7 @@ public:
     bool sendHangup();
 
     bool sendDTMF(char digit);
-
+    
     virtual void forwardAudio(char* data, int len);
     int sendAudio(char* data, int len);
     
