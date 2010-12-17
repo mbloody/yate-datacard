@@ -403,7 +403,7 @@ int CardDevice::at_response_ok()
 				if (!initialized)
 				{
 					/* set the SMS operating mode to text mode */
-					if (at_send_cmgf (1) || at_fifo_queue_add (CMD_AT_CMGF, RES_OK))
+					if (at_send_cmgf (0) || at_fifo_queue_add (CMD_AT_CMGF, RES_OK))
 					{
 						Debug(DebugAll, "[%s] Error setting CMGF", c_str());
 						goto e_return;
@@ -413,35 +413,7 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_CMGF:
-				Debug(DebugAll, "[%s] SMS text mode enabled", c_str());
-
-				if (!initialized)
-				{
-					/* set text mode additional params */
-					if (at_send_csmp (17,167,0,8) || at_fifo_queue_add (CMD_AT_CSMP, RES_OK))
-					{
-						Debug(DebugAll, "[%s] Error setting CSMP (text mode additional params)", c_str());
-						goto e_return;
-					}
-				}
-				break;
-				
-			case CMD_AT_CSMP:
-				Debug(DebugAll, "[%s] SMS text mode additional parameters set", c_str());
-
-				if (!initialized)
-				{
-					/* set text encoding to UCS-2 */
-					if (at_send_cscs ("UCS2") || at_fifo_queue_add (CMD_AT_CSCS, RES_OK))
-					{
-						Debug(DebugAll, "[%s] Error setting CSCS (text encoding)", c_str());
-						goto e_return;
-					}
-				}
-				break;
-
-			case CMD_AT_CSCS:
-				Debug(DebugAll,  "[%s] UCS-2 text encoding enabled", c_str());
+				Debug(DebugAll, "[%s] SMS PDU mode enabled", c_str());
 
 				use_ucs2_encoding = 1;
 
@@ -1127,6 +1099,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 		}
 		else
 		{
+		    // FIXME: replace it with correct CMGR parser
 			if (at_send_cmgr (index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_CMGR, index))
 			{
 				Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
@@ -1178,8 +1151,18 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 		}
 
 		at_fifo_queue_rem();
+		
+		Debug(DebugAll, "got pdu '%s'", str);
+		m_incoming_pdu = true;
+		/*if (receiveSMS(str, len))
+    		Debug(DebugAll, "[%s] Successfully read SMS message", c_str());
+		else
+		{
+		    Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting", c_str());
+			return -1;
+		}*/
 
-		if (at_parse_cmgr(str, len, &from_number, &text))
+		/*if (at_parse_cmgr(str, len, &from_number, &text))
 		{
 			Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting", c_str());
 			return -1;
@@ -1210,7 +1193,7 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 			{
 				Debug(DebugAll, "[%s] Error parsing SMS from_number (convert UCS-2 to UTF-8): %s", c_str(), from_number);
 			}
-		}
+		}*/
 		
 //		String from(text_base64);
 //		String to(text);
@@ -1218,8 +1201,8 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 //		decodeBase64(String(text), String(text_base64));
 //		decodeBase64(to, from);
 //		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
-		Debug(DebugAll, "[%s] Got SMS from %s: '%s'", c_str(), from_number, text);
-		m_endpoint->onReceiveSMS(this, from_number, text);
+//		Debug(DebugAll, "[%s] Got SMS from %s: '%s'", c_str(), from_number, text);
+//		m_endpoint->onReceiveSMS(this, from_number, text);
 
 /*
 #ifdef __MANAGER__

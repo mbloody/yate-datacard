@@ -312,7 +312,7 @@ public:
     int at_send_cmgd(int index);
     int at_send_cmgf(int mode);
     int at_send_cmgr(int index);
-    int at_send_cmgs(const char* number);
+    int at_send_cmgs(const int len);
     int at_send_cnmi();
     int at_send_cnum();
     int at_send_cops();
@@ -361,9 +361,11 @@ public:
     bool newCall(const String &called, void* usrData);
     
 private:
+    bool receiveSMS(const char* pdustr, size_t len);
     bool incomingCall(const String &caller);
     bool Hangup(int error);
     int getReason(int end_status, int cc_cause);
+    bool m_incoming_pdu;
 };
 
 

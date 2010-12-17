@@ -227,31 +227,9 @@ int CardDevice::at_send_cmgr (int index)
  * \param number -- the destination of the message
  */
 
-int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
+int CardDevice::at_send_cmgs (const int len)		// !!!!!!!!!
 {
-	char buf[1024];
-	ssize_t	res;
-	char*	p;
-
-	memmove (buf, "AT+CMGS=\"", 9);
-	p = buf + 9;
-
-	if (use_ucs2_encoding)
-	{
-		res = utf8_to_hexstr_ucs2 (number, strlen (number), p, sizeof (buf) - 9 - 3);
-		if (res <= 0)
-		{
-			Debug(DebugAll, "[%s] Error converting SMS number to UCS-2: %s\n", c_str(), number);
-			return -1;
-		}
-		p += res;
-		memmove (p, "\"", 2);
-	}
-	else
-	{
-		snprintf (buf, sizeof (buf), "AT+CMGS=\"%s\"", number);
-	}
-	return send_atcmd(buf);
+	return send_atcmd("AT+CMGS=%d", len);
 }
 
 /*!
@@ -262,28 +240,9 @@ int CardDevice::at_send_cmgs (const char* number)		// !!!!!!!!!
 
 int CardDevice::at_send_sms_text (const char* msg)
 {
-/*
-	ssize_t	res;
-	char buf[1024];
-
-	if (use_ucs2_encoding)
-	{
-		res = utf8_to_hexstr_ucs2 (msg, strlen (msg), buf, 280 + 1);
-		if (res < 0)
-		{
-			Debug(DebugAll, "[%s] Error converting SMS to UCS-2: '%s'\n", c_str(), msg);
-			res = 0;
-		}
-		buf[res] = 0x1a;
-		d_send_size = res + 1;
-	}
-	else
-	{
-		d_send_size = snprintf (d_send_buf, sizeof (d_send_buf), "%.160s\x1a", msg);
-	}
-	
-	return at_write_full(buf, MIN (size, sizeof (d_send_buf) - 1));
-*/
+	char buf[256];
+	sprintf(buf, "%s\x1a", msg);
+	return at_write_full(buf, strlen(buf));
 }
 
 /*!

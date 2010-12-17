@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <poll.h>
+#include "pdu.h"
 
 
 using namespace TelEngine;
@@ -339,6 +340,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
 {
     m_data_fd = -1;
     m_audio_fd = -1;
+    m_incoming_pdu = false;
 
 //    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
@@ -449,6 +451,7 @@ bool CardDevice::disconnect()
 
     m_provider_name = "NONE";
     m_number = "Unknown";
+    m_incoming_pdu = false;
 
 //    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
@@ -542,14 +545,20 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
     
     // TODO: Check called & sms
     // Check if msg will be desrtoyed
-    char *msg;
+    
 
     if (m_connected && initialized && gsm_registered)
     {
         if (has_sms)
         {
-            msg = strdup(sms.safe());
-            if (at_send_cmgs(called.safe()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
+            PDU pdu;
+            pdu.setMessage(sms.safe());
+            pdu.setNumber(called.safe());
+            pdu.setAlphabet(PDU::UCS2);
+            pdu.generate();
+            
+            char *msg = strdup(pdu.getPDU());
+            if (at_send_cmgs(pdu.getMessageLen()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
             {
                 free(msg);
                 Debug(DebugAll, "[%s] Error sending SMS message", c_str());
@@ -567,6 +576,15 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
         Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
         return false;
     }
+    return true;
+}
+
+bool CardDevice::receiveSMS(const char* pdustr, size_t len)
+{
+    PDU pdu(pdustr);
+    if (!pdu.parse())
+        return false;
+    m_endpoint->onReceiveSMS(this, String(pdu.getNumber()), String(pdu.getMessage()));
     return true;
 }
 
