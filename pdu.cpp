@@ -86,7 +86,7 @@ int explain_udh(char *udh_type, const char *pdu)
     int idx;
     char *pdu_ptr;
     char *p;
-    const char *p1;
+    const char *p1 = NULL;
     int i;
     char tmp[512];
     char buffer[1024];
@@ -650,7 +650,8 @@ int PDU::convert(const char *tocode, const char *fromcode)
     
     iconv(cd, &msg, &inbytesleft, &out, &outbytesleft);
     
-    free(m_message);
+    if (m_message)
+        free(m_message);
     m_message = tmp;
         
     iconv_close(cd);
