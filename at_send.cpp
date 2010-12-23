@@ -68,20 +68,20 @@ int CardDevice::at_write_full (char* buf, size_t count)
 	char*	p = buf;
 	ssize_t	out_count;
 
-	Debug(DebugAll, "[%s] [%.*s]\n", c_str(), (int) count, buf);
+	Debug(DebugAll, "[%s] [%.*s]", c_str(), (int) count, buf);
 
 	while (count > 0)
 	{
 		if ((out_count = write(m_data_fd, p, count)) == -1)
 		{
-			Debug(DebugAll, "[%s] write() error: %d\n", c_str(), errno);
+			Debug(DebugAll, "[%s] write() error: %d", c_str(), errno);
 			return -1;
 		}
 
 		count -= out_count;
 		p += out_count;
 	}
-	write(m_data_fd, "\r", 2);
+	write(m_data_fd, "\r", 1);
 
 	return 0;
 }
@@ -369,16 +369,13 @@ int CardDevice::at_send_cssn (int cssi, int cssu)
 
 int CardDevice::at_send_cusd (const char* code)
 {
-	ssize_t		res;
-	char*		p;
-	char buf[1024];
+	ssize_t res;
+	char buf[256];
 
-	memmove (buf, "AT+CUSD=1,\"", 11);
-	p = buf + 11;
 
 	if (cusd_use_7bit_encoding)
 	{
-		res = char_to_hexstr_7bit (code, strlen (code), p, sizeof (buf) - 11 - 6);
+		res = char_to_hexstr_7bit (code, strlen (code), buf, sizeof (buf));
 		if (res <= 0)
 		{
 			Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code);
@@ -387,7 +384,7 @@ int CardDevice::at_send_cusd (const char* code)
 	}
 	else if (use_ucs2_encoding)
 	{
-		res = utf8_to_hexstr_ucs2 (code, strlen (code), p, sizeof (buf) - 11 - 6);
+		res = utf8_to_hexstr_ucs2 (code, strlen (code), buf, sizeof (buf));
 		if (res <= 0)
 		{
 			Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code);
@@ -396,15 +393,11 @@ int CardDevice::at_send_cusd (const char* code)
 	}
 	else
 	{
-		res = MIN (strlen (code), sizeof (buf) - 11 - 6);
-		memmove (p, code, res);
+		res = MIN (strlen (code), sizeof (buf));
+		memmove (buf, code, res);
 	}
 
-	p += res;
-	memmove (p, "\",15", 5);
-	size_t size = p - buf + 5;
-
-	return at_write_full(buf, size);
+	return send_atcmd("AT+CUSD=1,\"%s\",15", buf);
 }
 
 /*!
