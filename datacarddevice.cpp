@@ -13,8 +13,9 @@ static int opentty (char* dev)
 {
 	int		fd;
 	struct termios	term_attr;
-
-	fd = open (dev, O_RDWR | O_NOCTTY);
+// To open on non block mode
+//	fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK);
+	fd = open(dev, O_RDWR | O_NOCTTY);
 
 	if (fd < 0)
 	{
@@ -41,24 +42,6 @@ static int opentty (char* dev)
 	}
 
 	return fd;
-}
-
-bool setNonBlock(int fh, bool nonblock)
-{
-    int flags = fcntl(fh, F_GETFL);
-    if (nonblock) 
-    {
-	if (flags & O_NONBLOCK)
-	    return true;
-	flags |= O_NONBLOCK;
-    } 
-    else 
-    {
-	if (!(flags & O_NONBLOCK)) 
-	    return true;
-	flags &= ~O_NONBLOCK;
-    }
-    return (fcntl(fh, F_SETFL, flags) >= 0);
 }
 
 MonitorThread::MonitorThread(CardDevice* dev):m_device(dev)

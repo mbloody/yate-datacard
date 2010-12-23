@@ -16,7 +16,7 @@ CFLAGS := -O3 @YATE_INC@
 LDFLAGS:= @YATE_LIB@  -ldl -lpthread
 MODSTRIP:= @YATE_STR@
 
-OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o char_conv.o at_read.o
+OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o char_conv.o at_read.o pdu.o
 
 PROGS:= datacard.yate 
 INCFILES := 
@@ -136,7 +136,7 @@ rpm: tarball
    
 	
 datacard.yate : datacarddevice.h ringbuffer.h
-datacard.yate : OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o at_read.o char_conv.o
+datacard.yate : OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o at_read.o char_conv.o pdu.o
 datacard.yate : $(OBJS)
 
 %.yate: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
