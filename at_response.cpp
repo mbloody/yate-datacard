@@ -1477,7 +1477,7 @@ int CardDevice::at_response_pdu(char* str, size_t len)
     if (m_incoming_pdu)
     {
 	m_incoming_pdu = false;
-	if(!receiveSMS(rd_buff, 0))
+	if(!receiveSMS(str, len))
 	{
 	    Debug(DebugAll, "[%s] Error parse SMS message", c_str());
     	    return 1;
