@@ -594,82 +594,28 @@ int CardDevice::at_parse_cmti (char* str, size_t len)
 
 /*!
  * \brief Parse a CMGR message
- * \param pvt -- pvt structure
- * \param str -- string to parse (null terminated)
  * \param len -- string lenght
- * \param number -- a pointer to a char pointer which will store the from number
- * \param text -- a pointer to a char pointer which will store the message text
- * @note str will be modified when the CMGR message is parsed
+ * \param stat -- 
+ * \param length -- 
  * \retval  0 success
  * \retval -1 parse error
  */
 
-int CardDevice::at_parse_cmgr (char* str, size_t len, char** number, char** text)
+int CardDevice::at_parse_cmgr (char* str, size_t len, int* stat, int* pdulen)
 {
-	size_t	i;
-	int	state;
-
-	*number = NULL;
-	*text   = NULL;
 
 	/*
 	 * parse cmgr info in the following format:
-	 * +CMGR: <msg status>,"+123456789",...\r\n
-	 * <message text>
+	 * +CMGR: <stat>,[<reserved>],<length>	                                        
+	 * +CMGR: 0,,22
 	 */
 
-	for (i = 0, state = 0; i < len && state < 6; i++)
+	if (!sscanf(str, "+CMGR: %d,,%d", stat, pdulen))
 	{
-		switch (state)
-		{
-			case 0: /* search for start of the number section (,) */
-				if (str[i] == ',')
-				{
-					state++;
-				}
-				break;
-
-			case 1: /* find the opening quote (") */
-				if (str[i] == '"')
-				{
-					state++;
-				}
-				break;
-
-			case 2: /* mark the start of the number */
-				*number = &str[i];
-				state++;
-				break;
-
-			/* fall through */
-
-			case 3: /* search for the end of the number (") */
-				if (str[i] == '"')
-				{
-					str[i] = '\0';
-					state++;
-				}
-				break;
-
-			case 4: /* search for the start of the message text (\n) */
-				if (str[i] == '\n')
-				{
-					state++;
-				}
-				break;
-
-			case 5: /* mark the start of the message text */
-				*text = &str[i];
-				state++;
-				break;
-		}
-	}
-
-	if (state != 6)
-	{
+	    Debug(DebugAll, "[%s] Error parsing CMGR event '%s'\n", c_str(), str);
 		return -1;
 	}
-
+	
 	return 0;
 }
 

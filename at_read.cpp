@@ -43,14 +43,6 @@ int CardDevice::handle_rd_data()
 		    state = BLT_STATE_WANT_CONTROL;
 		    Debug(DebugAll,"[%s] : [%s]\n",c_str(), rd_buff);
 
-            //FIXME: check error in parsing
-            if (m_incoming_pdu && receiveSMS(rd_buff, 0))
-            {
-    		    Debug(DebugAll, "[%s] Successfully read SMS message", c_str());
-    		    m_incoming_pdu = false;
-    		    return 0;
-		    }
-
 		    int res = at_response(rd_buff,at_read_result_classification(rd_buff));
     
 		    rd_buff_pos = 0;

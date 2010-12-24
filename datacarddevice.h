@@ -274,12 +274,13 @@ public:
     int at_response_smmemfull();
     int at_response_sms_prompt();
     int at_response_busy();
+    int at_response_pdu(char*, size_t);
 
     const char* at_cmd2str(at_cmd_t);
     const char* at_res2str(at_res_t);
 
     char* at_parse_clip(char*, size_t);
-    int at_parse_cmgr(char*, size_t, char**, char**);
+    int at_parse_cmgr(char*, size_t, int*, int*);
     int at_parse_cmti(char*, size_t);
 
     char* at_parse_cnum(char*, size_t);
@@ -292,7 +293,6 @@ public:
     int at_parse_rssi(char*, size_t);
 
 
-    int at_write(char*);
     int at_write_full(char*, size_t);
 
     int at_send_at();

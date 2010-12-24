@@ -36,23 +36,6 @@ int CardDevice::send_atcmd(const char * fmt, ...)
 /*!
  * \brief Write to data socket
  * \param pvt -- pvt structure
- * \param buf -- buffer to write (null terminated)
- *
- * This function will write characters from buf. The buffer must be null terminated.
- *
- * \retval -1 error
- * \retval  0 success
- */
-
-int CardDevice::at_write(char* buf)
-{
-	return at_write_full(buf, strlen (buf));
-}
-
-
-/*!
- * \brief Write to data socket
- * \param pvt -- pvt structure
  * \param buf -- buffer to write
  * \param count -- number of bytes to write
  *
@@ -234,15 +217,12 @@ int CardDevice::at_send_cmgs (const int len)		// !!!!!!!!!
 
 /*!
  * \brief Send the text of an SMS message
- * \param pvt -- pvt structure
  * \param msg -- the text of the message
  */
 
-int CardDevice::at_send_sms_text (const char* msg)
+int CardDevice::at_send_sms_text(const char* msg)
 {
-	char buf[256];
-	sprintf(buf, "%s\x1a", msg);
-	return at_write_full(buf, strlen(buf));
+	return send_atcmd("%s\x1a", msg);
 }
 
 /*!

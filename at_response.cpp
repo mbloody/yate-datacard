@@ -21,141 +21,131 @@
 
 int CardDevice::at_response(char* str, at_res_t at_res)
 {
-//	char*		str;
-	size_t		len = strlen(str);
-	at_queue_t*	e;
+    size_t		len = strlen(str);
+    at_queue_t*	e;
 
-//		Debug(DebugAll,  "[%s] [%.*s]", c_str(), (int) len, str);
+    switch (at_res)
+    {
+	case RES_BOOT:
+	case RES_CONF:
+	case RES_CSSI:
+	case RES_CSSU:
+	case RES_SRVST:
+	    return 0;
 
-		switch (at_res)
+	case RES_OK:
+	    return at_response_ok();
+
+	case RES_RSSI:
+	    return at_response_rssi(str, len);
+
+	case RES_MODE:
+	    /* An error here is not fatal. Just keep going. */
+	    at_response_mode(str, len);
+	    return 0;
+
+	case RES_ORIG:
+	    return at_response_orig (str, len);
+
+	case RES_CEND:
+	    return at_response_cend (str, len);
+
+	case RES_CONN:
+	    return at_response_conn(str, len);
+
+	case RES_CREG:
+	    /* An error here is not fatal. Just keep going. */
+	    at_response_creg (str, len);
+	    return 0;
+
+	case RES_COPS:
+	    /* An error here is not fatal. Just keep going. */
+	    at_response_cops (str, len);
+	    return 0;
+
+	case RES_CSQ:
+	    return at_response_csq (str, len);
+
+	case RES_CMS_ERROR:
+	case RES_ERROR:
+	    return at_response_error();
+
+	case RES_RING:
+	    return at_response_ring();
+
+	case RES_SMMEMFULL:
+	    return at_response_smmemfull();
+
+	case RES_CLIP:
+	    return at_response_clip(str, len);
+
+	case RES_CMTI:
+	    return at_response_cmti(str, len);
+
+	case RES_CMGR:
+	    return at_response_cmgr(str, len);
+
+	case RES_SMS_PROMPT:
+	    return at_response_sms_prompt();
+
+	case RES_CUSD:
+	    return at_response_cusd(str, len);
+
+	case RES_BUSY:
+	    return at_response_busy();
+
+	case RES_NO_DIALTONE:
+	    return at_response_no_dialtone();
+
+	case RES_NO_CARRIER:
+	    return at_response_no_carrier();
+
+	case RES_CPIN:
+	    return at_response_cpin(str, len);
+
+	case RES_CNUM:
+	    /* An error here is not fatal. Just keep going. */
+	    at_response_cnum (str, len);
+	    return 0;
+
+	case RES_PARSE_ERROR:
+	    Debug(DebugAll, "[%s] Error parsing result", c_str());
+	    return -1;
+
+	case RES_UNKNOWN:
+	    if ((e = at_fifo_queue_head()))
+	    {
+		switch (e->cmd)
 		{
-			case RES_BOOT:
-			case RES_CONF:
-			case RES_CSSI:
-			case RES_CSSU:
-			case RES_SRVST:
-				return 0;
-
-			case RES_OK:
-				return at_response_ok();
-
-			case RES_RSSI:
-				return at_response_rssi(str, len);
-
-			case RES_MODE:
-				/* An error here is not fatal. Just keep going. */
-				at_response_mode (str, len);
-				return 0;
-
-			case RES_ORIG:
-				return at_response_orig (str, len);
-
-			case RES_CEND:
-				return at_response_cend (str, len);
-
-			case RES_CONN:
-				return at_response_conn(str, len);
-
-			case RES_CREG:
-				/* An error here is not fatal. Just keep going. */
-				at_response_creg (str, len);
-				return 0;
-
-			case RES_COPS:
-				/* An error here is not fatal. Just keep going. */
-				at_response_cops (str, len);
-				return 0;
-
-
-
-			case RES_CSQ:
-				return at_response_csq (str, len);
-
-			case RES_CMS_ERROR:
-			case RES_ERROR:
-				return at_response_error();
-
-			case RES_RING:
-				return at_response_ring();
-
-			case RES_SMMEMFULL:
-				return at_response_smmemfull();
-
-			case RES_CLIP:
-				return at_response_clip (str, len);
-
-			case RES_CMTI:
-				return at_response_cmti (str, len);
-
-			case RES_CMGR:
-				return at_response_cmgr (str, len);
-
-			case RES_SMS_PROMPT:
-				return at_response_sms_prompt();
-
-			case RES_CUSD:
-				return at_response_cusd (str, len);
-
-			case RES_BUSY:
-				return at_response_busy();
-
-			case RES_NO_DIALTONE:
-				return at_response_no_dialtone();
-
-			case RES_NO_CARRIER:
-				return at_response_no_carrier();
-
-			case RES_CPIN:
-				return at_response_cpin (str, len);
-
-			case RES_CNUM:
-				/* An error here is not fatal. Just keep going. */
-				at_response_cnum (str, len);
-				return 0;
-
-			case RES_PARSE_ERROR:
-				Debug(DebugAll, "[%s] Error parsing result", c_str());
-				return -1;
-
-			case RES_UNKNOWN:
-				if ((e = at_fifo_queue_head()))
-//				if ((e =  static_cast<at_queue_t*>(m_atQueue.get())))
-				{
-					switch (e->cmd)
-					{
-						case CMD_AT_CGMI:
-							Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)", c_str());
-							return at_response_cgmi (str, len);
-
-						case CMD_AT_CGMM:
-							Debug(DebugAll,  "[%s] Got AT_CGMM data (model info)", c_str());
-							return at_response_cgmm (str, len);
-
-						case CMD_AT_CGMR:
-							Debug(DebugAll,  "[%s] Got AT+CGMR data (firmware info)", c_str());
-							return at_response_cgmr (str, len);
-
-						case CMD_AT_CGSN:
-							Debug(DebugAll,  "[%s] Got AT+CGSN data (IMEI number)", c_str());
-							return at_response_cgsn (str, len);
-
-						case CMD_AT_CIMI:
-							Debug(DebugAll,  "[%s] Got AT+CIMI data (IMSI number)", c_str());
-							return at_response_cimi (str, len);
-
-						default:
-							Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
-							break;
-					}
-				}
-				else
-				{
-					Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
-				}
-
-				break;
+		    case CMD_AT_CGMI:
+			Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)", c_str());
+			return at_response_cgmi(str, len);
+		    case CMD_AT_CGMM:
+			Debug(DebugAll,  "[%s] Got AT_CGMM data (model info)", c_str());
+			return at_response_cgmm(str, len);
+		    case CMD_AT_CGMR:
+			Debug(DebugAll,  "[%s] Got AT+CGMR data (firmware info)", c_str());
+			return at_response_cgmr(str, len);
+		    case CMD_AT_CGSN:
+			Debug(DebugAll,  "[%s] Got AT+CGSN data (IMEI number)", c_str());
+			return at_response_cgsn (str, len);
+		    case CMD_AT_CIMI:
+			Debug(DebugAll,  "[%s] Got AT+CIMI data (IMSI number)", c_str());
+			return at_response_cimi(str, len);
+		    case CMD_AT_CMGR:
+			Debug(DebugAll,  "[%s] Got AT+CMGR data (SMS PDU data)", c_str());
+			return at_response_pdu(str, len);
+		    default:
+			Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
+			break;
 		}
-
+	    }
+	    else
+	    {
+		Debug(DebugAll, "[%s] Ignoring unknown result: '%.*s'", c_str(), (int) len, str);
+	    }
+	    break;
+	}
 	return 0;
 }
 
@@ -170,8 +160,7 @@ int CardDevice::at_response_ok()
 {
 	at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_CMGR))
-//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_CMGR))
+	if ((e = at_fifo_queue_head()) && (e->res == RES_OK))
 	{
 		switch (e->cmd)
 		{
@@ -199,7 +188,7 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_Z:
-				if (at_send_ate0() || at_fifo_queue_add (CMD_AT_E, RES_OK))
+				if (at_send_ate0() || at_fifo_queue_add(CMD_AT_E, RES_OK))
 				{
 					Debug(DebugAll, "[%s] Error disabling echo", c_str());
 					goto e_return;
@@ -532,7 +521,15 @@ int CardDevice::at_response_ok()
 				break;
 
 			case CMD_AT_CMGR:
-				Debug(DebugAll, "[%s] SMS message see later", c_str());
+				Debug(DebugAll, "[%s] SMS message read successfully", c_str());
+				incoming_sms = 0;
+				if (m_auto_delete_sms && e->ptype == 1)
+				{
+				    if (at_send_cmgd (e->param.num) || at_fifo_queue_add (CMD_AT_CMGD, RES_OK))
+				    {
+					Debug(DebugAll, "[%s] Error sending CMGD to delete SMS message", c_str());
+				    }
+				}
 				break;
 
 			case CMD_AT_CMGD:
@@ -600,8 +597,7 @@ int CardDevice::at_response_error()
 	at_queue_t* e;
 
 	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
-//	if ((e = static_cast<at_queue_t*>(m_atQueue.get())) && (e->res == RES_OK || e->res == RES_ERROR ||
-			e->res == RES_CMS_ERROR || e->res == RES_CMGR || e->res == RES_SMS_PROMPT))
+			e->res == RES_CMS_ERROR || e->res == RES_SMS_PROMPT))
 	{
 		switch (e->cmd)
 		{
@@ -1100,7 +1096,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 		else
 		{
 		    // FIXME: replace it with correct CMGR parser
-			if (at_send_cmgr (index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_CMGR, index))
+			if (at_send_cmgr(index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_OK, index))
 			{
 				Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
 				return -1;
@@ -1120,7 +1116,6 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 
 /*!
  * \brief Handle +CMGR response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1130,115 +1125,16 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 int CardDevice::at_response_cmgr(char* str, size_t len)
 {
 //TODO:
-//
-
-	at_queue_t*	e;
-	ssize_t		res;
-	char		sms_utf8_str[4096];
-	char		from_number_utf8_str[1024];
-	char*		from_number = NULL;
-	char*		text = NULL;
-//	char		text_base64[16384];
-
-	if ((e = at_fifo_queue_head()) && e->res == RES_CMGR)
-	{
-		if (m_auto_delete_sms && e->ptype == 1)
-		{
-			if (at_send_cmgd (e->param.num) || at_fifo_queue_add (CMD_AT_CMGD, RES_OK))
-			{
-				Debug(DebugAll, "[%s] Error sending CMGD to delete SMS message", c_str());
-			}
-		}
-
-		at_fifo_queue_rem();
-		
-		Debug(DebugAll, "got pdu '%s'", str);
-		m_incoming_pdu = true;
-		/*if (receiveSMS(str, len))
-    		Debug(DebugAll, "[%s] Successfully read SMS message", c_str());
-		else
-		{
-		    Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting", c_str());
-			return -1;
-		}*/
-
-		/*if (at_parse_cmgr(str, len, &from_number, &text))
-		{
-			Debug(DebugAll, "[%s] Error parsing SMS message, disconnecting", c_str());
-			return -1;
-		}
-
-		Debug(DebugAll, "[%s] Successfully read SMS message", c_str());
-
-		incoming_sms = 0;
-
-		if (use_ucs2_encoding)
-		{
-			res = hexstr_ucs2_to_utf8 (text, strlen (text), sms_utf8_str, sizeof (sms_utf8_str));
-			if (res > 0)
-			{
-				text = sms_utf8_str;
-			}
-			else
-			{
-				Debug(DebugAll, "[%s] Error parsing SMS (convert UCS-2 to UTF-8): %s", c_str(), text);
-			}
-
-			res = hexstr_ucs2_to_utf8 (from_number, strlen (from_number), from_number_utf8_str, sizeof (from_number_utf8_str));
-			if (res > 0)
-			{
-				from_number = from_number_utf8_str;
-			}
-			else
-			{
-				Debug(DebugAll, "[%s] Error parsing SMS from_number (convert UCS-2 to UTF-8): %s", c_str(), from_number);
-			}
-		}*/
-		
-//		String from(text_base64);
-//		String to(text);
-		
-//		decodeBase64(String(text), String(text_base64));
-//		decodeBase64(to, from);
-//		ast_base64encode (text_base64, text, strlen(text), sizeof(text_base64));
-//		Debug(DebugAll, "[%s] Got SMS from %s: '%s'", c_str(), from_number, text);
-//		m_endpoint->onReceiveSMS(this, from_number, text);
-
-/*
-#ifdef __MANAGER__
-		struct ast_channel* channel;
-
-		snprintf (d_send_buf, sizeof (d_send_buf), "sms@%s", context);
-
-		if (channel = channel_local_request (d_send_buf, c_str(), from_number, "en"))
-		{
-			pbx_builtin_setvar_helper (channel, "SMS", text);
-			pbx_builtin_setvar_helper (channel, "SMS_BASE64", text_base64);
-
-			if (ast_pbx_start (channel))
-			{
-				ast_hangup (channel);
-				Debug(DebugAll, "[%s] Unable to start pbx on incoming sms", c_str());
-			}
-		}
-#endif
-*/
-	}
-	else if (e)
-	{
-		Debug(DebugAll, "[%s] Received '+CMGR' when expecting '%s' response to '%s', ignoring", c_str(),
-				at_res2str (e->res), at_cmd2str (e->cmd));
-	}
-	else
-	{
-		Debug(DebugAll, "[%s] Received unexpected '+CMGR'", c_str());
-	}
-	return 0;
+    int stat = 0;
+    int pdulen = 0;
+    at_parse_cmgr(str, len, &stat, &pdulen);
+    Debug(DebugAll, "got '%s' stat = %d, pdulen = %d", str, stat, pdulen);
+    m_incoming_pdu = true;
+    return 0;
 }
 
 /*!
  * \brief Send an SMS message from the queue.
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1282,13 +1178,10 @@ int CardDevice::at_response_sms_prompt()
 int CardDevice::at_response_cusd (char* str, size_t len)
 {
 //TODO:
-//
-
 	ssize_t		res;
 	char*		cusd;
 	unsigned char	dcs;
 	char		cusd_utf8_str[1024];
-//	char		text_base64[16384];
 
 	if (at_parse_cusd (str, len, &cusd, &dcs))
 	{
@@ -1324,39 +1217,12 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 	}
 
 	Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
-//	ast_base64encode (text_base64, cusd, strlen(cusd), sizeof(text_base64));
-//	String from(text_base64);
-//	String to(cusd);
-//	decodeBase64(to, from);
-	Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
 	m_endpoint->onReceiveUSSD(this, cusd);
-//
-
-/*
-#ifdef __MANAGER__
-	struct ast_channel* channel;
-
-	snprintf (d_send_buf, sizeof (d_send_buf), "ussd@%s", context);
-
-	if (channel = channel_local_request (d_send_buf, c_str(), "ussd", "en"))
-	{
-		pbx_builtin_setvar_helper (channel, "USSD", cusd);
-		pbx_builtin_setvar_helper (channel, "USSD_BASE64", text_base64);
-
-		if (ast_pbx_start (channel))
-		{
-			ast_hangup (channel);
-			Debug(DebugAll,  "[%s] Unable to start pbx on incoming ussd", c_str());
-		}
-	}
-#endif
-*/
 	return 0;
 }
 
 /*!
  * \brief Handle BUSY response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1367,13 +1233,11 @@ int CardDevice::at_response_busy ()
 //TODO:
 //	channel_queue_control (AST_CONTROL_BUSY);
 	Hangup(DATACARD_BUSY);
-
 	return 0;
 }
  
 /*!
  * \brief Handle NO DIALTONE response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1392,7 +1256,6 @@ int CardDevice::at_response_no_dialtone()
 
 /*!
  * \brief Handle NO CARRIER response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1438,7 +1301,6 @@ int CardDevice::at_response_smmemfull()
 
 /*!
  * \brief Handle +CSQ response Here we get the signal strength and bit error rate
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1451,7 +1313,6 @@ int CardDevice::at_response_csq (char* str, size_t len)
 
 /*!
  * \brief Handle +CNUM response Here we get our own phone number
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1475,7 +1336,6 @@ int CardDevice::at_response_cnum(char* str, size_t len)
 
 /*!
  * \brief Handle +COPS response Here we get the GSM provider name
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1498,7 +1358,6 @@ int CardDevice::at_response_cops(char* str, size_t len)
 
 /*!
  * \brief Handle +CREG response Here we get the GSM registration status
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1523,32 +1382,20 @@ int CardDevice::at_response_creg (char* str, size_t len)
 	}
 
 	if (d)
-	{
-		gsm_registered = 1;
-	}
+	    gsm_registered = 1;
 	else
-	{
-		gsm_registered = 0;
-	}
+	    gsm_registered = 0;
 
 	if (lac)
-	{
-		//ast_copy_string (location_area_code, lac, sizeof (location_area_code));
-		m_location_area_code = lac;
-	}
-
+	    m_location_area_code = lac;
 	if (ci)
-	{
-		//ast_copy_string (cell_id, ci, sizeof (cell_id));
-		m_cell_id = ci;
-	}
+	    m_cell_id = ci;
 
 	return 0;
 }
 
 /*!
  * \brief Handle AT+CGMI response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1572,7 +1419,7 @@ int CardDevice::at_response_cgmi(char* str, size_t len)
 
 int CardDevice::at_response_cgmm (char* str, size_t len)
 {
-	m_model.assign(str,len);;
+	m_model.assign(str,len);
 	
 	if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X")
 	{
@@ -1584,7 +1431,6 @@ int CardDevice::at_response_cgmm (char* str, size_t len)
 
 /*!
  * \brief Handle AT+CGMR response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1593,28 +1439,26 @@ int CardDevice::at_response_cgmm (char* str, size_t len)
 
 int CardDevice::at_response_cgmr(char* str, size_t len)
 {
-	m_firmware.assign(str,len);;
-	return 0;
+    m_firmware.assign(str,len);
+    return 0;
 }
 
 /*!
  * \brief Handle AT+CGSN response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
  * \retval -1 error
  */
 
-int CardDevice::at_response_cgsn (char* str, size_t len)
+int CardDevice::at_response_cgsn(char* str, size_t len)
 {
-	m_imei.assign(str,len);;
-	return 0;
+    m_imei.assign(str,len);
+    return 0;
 }
 
 /*!
  * \brief Handle AT+CIMI response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1623,6 +1467,23 @@ int CardDevice::at_response_cgsn (char* str, size_t len)
 
 int CardDevice::at_response_cimi(char* str, size_t len)
 {
-    m_imsi.assign(str,len);;
+    m_imsi.assign(str,len);
     return 0;
 }
+
+int CardDevice::at_response_pdu(char* str, size_t len)
+{
+    //FIXME: check error in parsing
+    if (m_incoming_pdu)
+    {
+	m_incoming_pdu = false;
+	if(!receiveSMS(rd_buff, 0))
+	{
+	    Debug(DebugAll, "[%s] Error parse SMS message", c_str());
+    	    return 1;
+	}
+	Debug(DebugAll, "[%s] Successfully parse SMS message", c_str());
+    }
+    return 0;
+}
+
