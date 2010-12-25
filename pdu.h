@@ -92,3 +92,5 @@ private:
 
 #endif
 
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

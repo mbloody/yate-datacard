@@ -53,22 +53,14 @@ MonitorThread::~MonitorThread()
 
 void MonitorThread::run()
 {
-//    at_res_t	at_res;
     at_queue_t*	e;
     int t;
-//    int res;
-//    struct iovec iov[2];
-//    int iovcnt;
-//    size_t size;
-//    size_t i = 0;
 
     /* start datacard initilization with the AT request */
     if (!m_device) 
         return;
     
     m_device->m_mutex.lock();
-
-//    m_device->timeout = 10000;
 
     if (m_device->at_send_at() || m_device->at_fifo_queue_add(CMD_AT, RES_OK))
     {
@@ -104,7 +96,6 @@ void MonitorThread::run()
             m_device->m_mutex.unlock();
             return;
 	}
-//        if (!m_device->at_wait(&t))
         if (res == 0)
         {
             m_device->m_mutex.lock();
@@ -141,24 +132,6 @@ void MonitorThread::run()
 
 //	Debug(DebugAll, "after m_device->handle_rd_data(); [%s]", m_device->c_str());
 
-/*        if (m_device->at_read())
-        {
-            m_device->disconnect();
-            m_device->m_mutex.unlock();
-            return;
-        }
-        while ((iovcnt = m_device->at_read_result_iov()) > 0)
-        {
-            at_res = m_device->at_read_result_classification(iovcnt);
-	    
-            if (m_device->at_response(iovcnt, at_res))
-            {
-                m_device->disconnect();
-                m_device->m_mutex.unlock();
-                return;
-            }
-        }
-*/
         m_device->m_mutex.unlock();
     } // End of Main loop
 }
@@ -325,11 +298,8 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_audio_fd = -1;
     m_incoming_pdu = false;
 
-//    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
-
     state = BLT_STATE_WANT_CONTROL;
     
-//    timeout = 10000;
     cusd_use_ucs2_decoding =  1;
     gsm_reg_status = -1;
 
@@ -435,8 +405,6 @@ bool CardDevice::disconnect()
     m_provider_name = "NONE";
     m_number = "Unknown";
     m_incoming_pdu = false;
-
-//    d_read_rb.rb_init(d_read_buf, sizeof (d_read_buf));
 
     m_atQueue.clear();
 
@@ -946,8 +914,6 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     dev->data_tty = data_tty;
     dev->audio_tty = audio_tty;
 
-    dev->rxgain = data->getIntValue("rxgain",0);
-    dev->txgain = data->getIntValue("txgain",0);
     dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
     dev->m_reset_datacard = data->getBoolValue("resetdatacard",true);
     dev->u2diag = data->getIntValue("u2diag",-1);
@@ -1126,3 +1092,6 @@ int Connection::sendAudio(char* data, int len)
 {
     return m_dev->sendAudio(data, len);
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

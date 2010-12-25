@@ -1258,3 +1258,4 @@ void PDU::setAlphabet(const Alphabet alphabet)
     m_alphabet = (int)alphabet;
 }
 
+/* vi: set ts=8 sw=4 sts=4 noet: */

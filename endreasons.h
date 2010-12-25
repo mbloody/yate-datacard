@@ -112,3 +112,6 @@
 #define DATACARD_FAILURE 12
 
 #endif
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

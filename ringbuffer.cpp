@@ -437,3 +437,6 @@ size_t RingBuffer::rb_write (char* buf, size_t len)
 
 	return len;
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

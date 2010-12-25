@@ -5,8 +5,6 @@
 enabled=yes
 audio=/dev/ttyUSB2
 data=/dev/ttyUSB3
-;rxgain=0
-;txgain=0
 ;autodeletesms=yes
 ;resetdatacard=yes
 ;disablesms=no

@@ -48,3 +48,5 @@ private:
 };
 
 #endif /* ____RINGBUFFER_H__ */
+
+/* vi: set ts=8 sw=4 sts=4 noet: */

@@ -7,13 +7,6 @@
    Dmitry Vagin <dmitry2004@yandex.ru>
 */
 
-/*!
- * \brief Wait for activity on an socket
- * \param pvt -- pvt struct
- * \param ms  -- pointer to an int containing a timeout in ms
- * \return 0 on timeout and the socket fd (non-zero) otherwise
- * \retval 0 timeout
- */
 #include "datacarddevice.h"
 #include <stdlib.h>
 #include <poll.h>
@@ -70,7 +63,7 @@ int CardDevice::handle_rd_data()
 }
 
 
-int CardDevice::at_wait (int* ms)
+int CardDevice::at_wait(int* ms)
 {
 
     struct pollfd fds;
@@ -233,3 +226,6 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 
 	return at_res;
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

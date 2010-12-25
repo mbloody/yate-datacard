@@ -35,7 +35,6 @@ int CardDevice::send_atcmd(const char * fmt, ...)
 
 /*!
  * \brief Write to data socket
- * \param pvt -- pvt structure
  * \param buf -- buffer to write
  * \param count -- number of bytes to write
  *
@@ -71,7 +70,6 @@ int CardDevice::at_write_full (char* buf, size_t count)
 
 /*!
  * \brief Send the AT command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_at()
@@ -81,7 +79,6 @@ int CardDevice::at_send_at()
 
 /*!
  * \brief Send ATA command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_ata()
@@ -91,7 +88,6 @@ int CardDevice::at_send_ata()
 
 /*!
  * \brief Send the AT+CGMI command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cgmi()
@@ -101,7 +97,6 @@ int CardDevice::at_send_cgmi()
 
 /*!
  * \brief Send the AT+CGMM command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cgmm ()
@@ -111,7 +106,6 @@ int CardDevice::at_send_cgmm ()
 
 /*!
  * \brief Send the AT+CGMR command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cgmr ()
@@ -121,7 +115,6 @@ int CardDevice::at_send_cgmr ()
 
 /*!
  * \brief Send the AT+CGSN command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cgsn ()
@@ -131,7 +124,6 @@ int CardDevice::at_send_cgsn ()
 
 /*!
  * \brief Send AT+CHUP command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_chup ()
@@ -141,7 +133,6 @@ int CardDevice::at_send_chup ()
 
 /*!
  * \brief Send AT+CIMI command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cimi ()
@@ -151,7 +142,6 @@ int CardDevice::at_send_cimi ()
 
 /*!
  * \brief Enable or disable calling line identification
- * \param pvt -- pvt structure
  * \param status -- enable or disable calling line identification (should be 1 or 0)
  */
 
@@ -162,7 +152,6 @@ int CardDevice::at_send_clip (int status)
 
 /*!
  * \brief Send AT+CLVL command
- * \param pvt -- pvt structure
  * \param volume -- level to send
  */
 
@@ -173,7 +162,6 @@ int CardDevice::at_send_clvl (int level)
 
 /*!
  * \brief Delete an SMS message
- * \param pvt -- pvt structure
  * \param index -- the location of the requested message
  */
 
@@ -184,7 +172,6 @@ int CardDevice::at_send_cmgd (int index)
 
 /*!
  * \brief Set the SMS mode
- * \param pvt -- pvt structure
  * \param mode -- the sms mode (0 = PDU, 1 = Text)
  */
 
@@ -195,7 +182,6 @@ int CardDevice::at_send_cmgf (int mode)
 
 /*!
  * \brief Read an SMS message
- * \param pvt -- pvt structure
  * \param index -- the location of the requested message
  */
 
@@ -206,7 +192,6 @@ int CardDevice::at_send_cmgr (int index)
 
 /*!
  * \brief Start sending an SMS message
- * \param pvt -- pvt structure
  * \param number -- the destination of the message
  */
 
@@ -227,7 +212,6 @@ int CardDevice::at_send_sms_text(const char* msg)
 
 /*!
  * \brief Setup SMS new message indication
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cnmi ()
@@ -237,7 +221,6 @@ int CardDevice::at_send_cnmi ()
 
 /*!
  * \brief Send the AT+CNUM command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cnum ()
@@ -247,7 +230,6 @@ int CardDevice::at_send_cnum ()
 
 /*!
  * \brief Send the AT+COPS? command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cops ()
@@ -257,7 +239,6 @@ int CardDevice::at_send_cops ()
 
 /*!
  * \brief Send the AT+COPS= command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cops_init (int mode, int format)
@@ -267,7 +248,6 @@ int CardDevice::at_send_cops_init (int mode, int format)
 
 /*!
  * \brief Send AT+CPIN? to ask the datacard if a pin code is required
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cpin_test ()
@@ -277,7 +257,6 @@ int CardDevice::at_send_cpin_test ()
 
 /*!
  * \brief Set storage location for incoming SMS
- * \param pvt -- pvt structure
  */
 
 
@@ -289,7 +268,6 @@ int CardDevice::at_send_cpms()
 
 /*!
  * \brief Send the AT+CREG? command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_creg()
@@ -299,7 +277,6 @@ int CardDevice::at_send_creg()
 
 /*!
  * \brief Send the AT+CREG=n command
- * \param pvt -- pvt structure
  * \param level -- verbose level of CREG
  */
 
@@ -310,7 +287,6 @@ int CardDevice::at_send_creg_init (int level)
 
 /*!
  * \brief Send AT+CSCS.
- * \param pvt -- pvt structure
  * \param encoding -- encoding for SMS text mode
  */
 
@@ -321,7 +297,6 @@ int CardDevice::at_send_cscs (const char* encoding)
 
 /*!
  * \brief Send AT+CSQ.
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_csq()
@@ -331,7 +306,6 @@ int CardDevice::at_send_csq()
 
 /*!
  * \brief Manage Supplementary Service Notification.
- * \param pvt -- pvt structure
  * \param cssi the value to send (0 = disabled, 1 = enabled)
  * \param cssu the value to send (0 = disabled, 1 = enabled)
  */
@@ -343,7 +317,6 @@ int CardDevice::at_send_cssn (int cssi, int cssu)
 
 /*!
  * \brief Send AT+CUSD.
- * \param pvt -- pvt structure
  * \param code the CUSD code to send
  */
 
@@ -382,7 +355,6 @@ int CardDevice::at_send_cusd (const char* code)
 
 /*!
  * \brief Check device for audio capabilities
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cvoice_test()
@@ -392,7 +364,6 @@ int CardDevice::at_send_cvoice_test()
 
 /*!
  * \brief Send ATD command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_atd (const char* number)
@@ -402,7 +373,6 @@ int CardDevice::at_send_atd (const char* number)
 
 /*!
  * \brief Enable transmitting of audio to the debug port (tty)
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_ddsetex()
@@ -412,7 +382,6 @@ int CardDevice::at_send_ddsetex()
 
 /*!
  * \brief Send a DTMF command
- * \param pvt -- pvt structure
  * \param digit -- the dtmf digit to send
  * \return the result of at_write() or -1 on an invalid digit being sent
  */
@@ -441,7 +410,6 @@ int CardDevice::at_send_dtmf (char digit)
 
 /*!
  * \brief Send the ATE0 command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_ate0()
@@ -451,18 +419,16 @@ int CardDevice::at_send_ate0()
 
 /*!
  * \brief Set the U2DIAG mode
- * \param pvt -- pvt structure
  * \param mode -- the U2DIAG mode (0 = Only modem functions)
  */
 
-int CardDevice::at_send_u2diag (int mode)
+int CardDevice::at_send_u2diag(int mode)
 {
 	return send_atcmd("AT^U2DIAG=%d", mode);
 }
 
 /*!
  * \brief Send the ATZ command
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_atz()
@@ -472,7 +438,6 @@ int CardDevice::at_send_atz()
 
 /*!
  * \brief Send the AT+CLIR command
- * \param pvt -- pvt structure
  * \param mode -- the CLIR mode
  */
 
@@ -483,7 +448,6 @@ int CardDevice::at_send_clir (int mode)
 
 /*!
  * \brief Send the AT+CCWA command (disable)
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_ccwa_disable()
@@ -493,7 +457,6 @@ int CardDevice::at_send_ccwa_disable()
 
 /*!
  * \brief Send the AT+CFUN command (Operation Mode Setting)
- * \param pvt -- pvt structure
  */
 
 int CardDevice::at_send_cfun (int fun, int rst)
@@ -503,7 +466,6 @@ int CardDevice::at_send_cfun (int fun, int rst)
 
 /*!
  * \brief Set error reporing verbosity level
- * \param pvt -- pvt structure
  * \param level -- the verbosity level
  */
 
@@ -512,8 +474,11 @@ int CardDevice::at_send_cmee (int level)
 	return send_atcmd("AT+CMEE=%d", level);
 }
 
+
 int CardDevice::at_send_csmp (int fo, int vp, int pid, int dcs)
 {
     return send_atcmd("AT+CSMP=%d,%d,%d,%d", fo, vp, pid, dcs);
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
 

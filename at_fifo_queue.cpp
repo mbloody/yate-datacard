@@ -13,25 +13,23 @@
 
 /*!
  * \brief Add an item to the back of the queue
- * \param pvt -- pvt structure
  * \param cmd -- the command that was sent to generate the response
  * \param res -- the expected response
  */
 
 int CardDevice::at_fifo_queue_add(at_cmd_t cmd, at_res_t res)
 {
-    return at_fifo_queue_add_ptr (cmd, res, NULL);
+    return at_fifo_queue_add_ptr(cmd, res, NULL);
 }
 
 /*!
  * \brief Add an item to the back of the queue with pointer data
- * \param pvt -- pvt structure
  * \param cmd -- the command that was sent to generate the response
  * \param res -- the expected response
  * \param data -- pointer data associated with this entry, it will be freed when the message is freed
  */
 
-int CardDevice::at_fifo_queue_add_ptr (at_cmd_t cmd, at_res_t res, void* data)
+int CardDevice::at_fifo_queue_add_ptr(at_cmd_t cmd, at_res_t res, void* data)
 {
 	at_queue_t* e = new at_queue_t();
 	
@@ -48,13 +46,12 @@ int CardDevice::at_fifo_queue_add_ptr (at_cmd_t cmd, at_res_t res, void* data)
 
 /*!
  * \brief Add an item to the back of the queue with pointer data
- * \param pvt -- pvt structure
  * \param cmd -- the command that was sent to generate the response
  * \param res -- the expected response
  * \param num -- numeric data
  */
 
-int CardDevice::at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
+int CardDevice::at_fifo_queue_add_num(at_cmd_t cmd, at_res_t res, int num)
 {
 	at_queue_t* e = new at_queue_t();
 
@@ -72,7 +69,6 @@ int CardDevice::at_fifo_queue_add_num (at_cmd_t cmd, at_res_t res, int num)
 
 /*!
  * \brief Remove an item from the front of the queue, and free it
- * \param pvt -- pvt structure
  */
 
 void CardDevice::at_fifo_queue_rem()
@@ -94,22 +90,21 @@ void CardDevice::at_fifo_queue_rem()
 
 /*!
  * \brief Remove all itmes from the queue and free them
- * \param pvt -- pvt structure
  */
 
-void CardDevice::at_fifo_queue_flush ()
+void CardDevice::at_fifo_queue_flush()
 {
     m_atQueue.clear();
 }
 
 /*!
  * \brief Get the head of a queue
- * \param pvt -- pvt structure
  * \return a pointer to the head of the given queue
  */
 
-at_queue_t* CardDevice::at_fifo_queue_head ()
+at_queue_t* CardDevice::at_fifo_queue_head()
 {
 	return static_cast<at_queue_t*>(m_atQueue.get());
 }
 
+/* vi: set ts=8 sw=4 sts=4 noet: */

@@ -228,10 +228,7 @@ public:
     String audio_tty;			/* tty for audio connection */
     String data_tty;			/* tty for AT commands */
     
-//    char			context[AST_MAX_CONTEXT];	/* the context for incoming calls */
 //    int group;				/* group number for group dialling */
-    int rxgain;				/* increase the incoming volume */
-    int txgain;				/* increase the outgoint volume */
     int u2diag;
     int callingpres;			/* calling presentation */
     bool m_auto_delete_sms;
@@ -241,8 +238,6 @@ public:
 		
     // AT command methods.
     int at_wait(int*);
-//    int at_read();
-//    int at_read_result_iov();
     at_res_t at_read_result_classification(char* command);
     
     int at_response(char* str, at_res_t);
@@ -421,42 +416,6 @@ private:
     bool m_run;
 };
 
-
-
-
-
-
-
-//AST_MUTEX_DEFINE_STATIC (unload_mtx);
-//static int			unloading_flag = 0;
-//static inline int		check_unloading ();
-
-
-/* Helpers */
-
-//static pvt_t*			find_device			(const char*);
-//static char*			complete_device			(const char*, const char*, int, int, int);
-//static inline int		get_at_clir_value		(pvt_t*, int);
-
-
-/*! Global jitterbuffer configuration - by default, jb is disabled */
-/*
-static struct ast_jb_conf jbconf_default = {
-	.flags			= 0,
-	.max_size		= -1,
-	.resync_threshold	= -1,
-	.impl			= "",
-	.target_extra		= -1,
-};
-
-static struct ast_jb_conf jbconf_global;
-*/
-//AST_MUTEX_DEFINE_STATIC (round_robin_mtx);
-//static pvt_t*	round_robin[256];
-//static char	silence_frame[FRAME_SIZE];
-
-
-//static int			device_status		(int);
-
 #endif
 
+/* vi: set ts=8 sw=4 sts=4 noet: */

@@ -222,3 +222,6 @@ ssize_t CardDevice::hexstr_7bit_to_char (const char* in, size_t in_length, char*
 
 	return x;
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
+

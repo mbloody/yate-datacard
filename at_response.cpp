@@ -12,7 +12,6 @@
 
 /*!                             
  * \brief Do response
- * \param pvt -- pvt structure
  * \param iovcnt -- number of elements array d_read_iov
  * \param at_res -- result type
  * \retval  0 success
@@ -151,7 +150,6 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 
 /*!
  * \brief Handle OK response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -587,7 +585,6 @@ e_return:
 
 /*!
  * \brief Handle ERROR response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -824,7 +821,6 @@ e_return:
 
 /*!
  * \brief Handle ^RSSI response Here we get the signal strength.
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -843,7 +839,6 @@ int CardDevice::at_response_rssi (char* str, size_t len)
 
 /*!
  * \brief Handle ^MODE response Here we get the link mode (GSM, UMTS, EDGE...).
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -857,7 +852,6 @@ int CardDevice::at_response_mode(char* str, size_t len)
 
 /*!
  * \brief Handle ^ORIG response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -900,7 +894,6 @@ int CardDevice::at_response_orig (char* str, size_t len)
 
 /*!
  * \brief Handle ^CEND response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -955,7 +948,6 @@ int CardDevice::at_response_cend (char* str, size_t len)
 
 /*!
  * \brief Handle ^CONN response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -993,7 +985,6 @@ int CardDevice::at_response_conn(char* str, size_t len)
 
 /*!
  * \brief Handle +CLIP response
- * \param pvt -- pvt structure
  * \param str -- null terminated strfer containing response
  * \param len -- string lenght
  * \retval  0 success
@@ -1005,7 +996,6 @@ int CardDevice::at_response_clip(char* str, size_t len)
 //TODO:
 //
 
-//	struct ast_channel*	channel;
 	char*			clip;
 
 	if (initialized && needring == 0)
@@ -1016,7 +1006,6 @@ int CardDevice::at_response_clip(char* str, size_t len)
 		{
 			Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
 		}
-//		if (!(channel = channel_new (AST_STATE_RING, clip)))
 		if(incomingCall(String(clip)) == false)
 		{
 			Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
@@ -1030,15 +1019,6 @@ int CardDevice::at_response_clip(char* str, size_t len)
 
 		needchup = 1;
 		needring = 1;
-/*
-		if (ast_pbx_start (channel))
-		{
-			Debug(DebugAll, "[%s] Unable to start pbx on incoming call", c_str());
-			channel_ast_hangup();
-
-			return -1;
-		}
-*/
 	}
 
 	return 0;
@@ -1046,7 +1026,6 @@ int CardDevice::at_response_clip(char* str, size_t len)
 
 /*!
  * \brief Handle RING response
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1074,7 +1053,6 @@ int CardDevice::at_response_ring ()
 
 /*!
  * \brief Handle +CMTI response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1168,7 +1146,6 @@ int CardDevice::at_response_sms_prompt()
 
 /*!
  * \brief Handle CUSD response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1274,7 +1251,6 @@ int CardDevice::at_response_no_carrier()
 
 /*!
  * \brief Handle +CPIN response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1288,7 +1264,6 @@ int CardDevice::at_response_cpin (char* str, size_t len)
 
 /*!
  * \brief Handle ^SMMEMFULL response This event notifies us, that the sms storage is full
- * \param pvt -- pvt structure
  * \retval  0 success
  * \retval -1 error
  */
@@ -1410,7 +1385,6 @@ int CardDevice::at_response_cgmi(char* str, size_t len)
 
 /*!
  * \brief Handle AT+CGMM response
- * \param pvt -- pvt structure
  * \param str -- string containing response (null terminated)
  * \param len -- string lenght
  * \retval  0 success
@@ -1486,4 +1460,6 @@ int CardDevice::at_response_pdu(char* str, size_t len)
     }
     return 0;
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
 
