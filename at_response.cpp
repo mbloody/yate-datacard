@@ -20,10 +20,10 @@
 
 int CardDevice::at_response(char* str, at_res_t at_res)
 {
-    size_t		len = strlen(str);
+    size_t len = strlen(str);
     at_queue_t*	e;
 
-    switch (at_res)
+    switch(at_res)
     {
 	case RES_BOOT:
 	case RES_CONF:
@@ -44,26 +44,26 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 	    return 0;
 
 	case RES_ORIG:
-	    return at_response_orig (str, len);
+	    return at_response_orig(str, len);
 
 	case RES_CEND:
-	    return at_response_cend (str, len);
+	    return at_response_cend(str, len);
 
 	case RES_CONN:
 	    return at_response_conn(str, len);
 
 	case RES_CREG:
 	    /* An error here is not fatal. Just keep going. */
-	    at_response_creg (str, len);
+	    at_response_creg(str, len);
 	    return 0;
 
 	case RES_COPS:
 	    /* An error here is not fatal. Just keep going. */
-	    at_response_cops (str, len);
+	    at_response_cops(str, len);
 	    return 0;
 
 	case RES_CSQ:
-	    return at_response_csq (str, len);
+	    return at_response_csq(str, len);
 
 	case RES_CMS_ERROR:
 	case RES_ERROR:
@@ -104,7 +104,7 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 
 	case RES_CNUM:
 	    /* An error here is not fatal. Just keep going. */
-	    at_response_cnum (str, len);
+	    at_response_cnum(str, len);
 	    return 0;
 
 	case RES_PARSE_ERROR:
@@ -114,7 +114,7 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 	case RES_UNKNOWN:
 	    if ((e = at_fifo_queue_head()))
 	    {
-		switch (e->cmd)
+		switch(e->cmd)
 		{
 		    case CMD_AT_CGMI:
 			Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)", c_str());
@@ -827,14 +827,13 @@ e_return:
  * \retval -1 error
  */
 
-int CardDevice::at_response_rssi (char* str, size_t len)
+int CardDevice::at_response_rssi(char* str, size_t len)
 {
-	if ((rssi = at_parse_rssi (str, len)) == -1)
-	{
-		return -1;
-	}
-
-	return 0;
+    if ((rssi = at_parse_rssi(str, len)) == -1)
+    {
+	return -1;
+    }
+    return 0;
 }
 
 /*!
@@ -847,7 +846,7 @@ int CardDevice::at_response_rssi (char* str, size_t len)
 
 int CardDevice::at_response_mode(char* str, size_t len)
 {
-	return at_parse_mode (str, len, &linkmode, &linksubmode);
+    return at_parse_mode(str, len, &linkmode, &linksubmode);
 }
 
 /*!
@@ -860,36 +859,36 @@ int CardDevice::at_response_mode(char* str, size_t len)
 
 int CardDevice::at_response_orig (char* str, size_t len)
 {
-	int call_index = 1;
-	int call_type  = 0;
+    int call_index = 1;
+    int call_type  = 0;
 
 //TODO:
 //	channel_queue_control (AST_CONTROL_PROGRESS);
-	/*
-	 * parse ORIG info in the following format:
-	 * ^ORIG:<call_index>,<call_type>
-	 */
+    /*
+     * parse ORIG info in the following format:
+     * ^ORIG:<call_index>,<call_type>
+     */
+     
+    if (!sscanf(str, "^ORIG:%d,%d", &call_index, &call_type))
+    {
+	Debug(DebugAll, "[%s] Error parsing ORIG event '%s'", c_str(), str);
+	return -1;
+    }
+    
+    Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
+    Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
+    if(m_conn)
+	m_conn->onProgress();
 
-	if (!sscanf (str, "^ORIG:%d,%d", &call_index, &call_type))
-	{
-		Debug(DebugAll, "[%s] Error parsing ORIG event '%s'", c_str(), str);
-		return -1;
-	}
 
-	Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
-	Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
-	if(m_conn)
-	    m_conn->onProgress();
+    if (at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
+    {
+	Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
+    }
 
+    volume_synchronized = 0;
 
-	if (at_send_clvl (1) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
-	}
-
-	volume_synchronized = 0;
-
-	return 0;
+    return 0;
 }
 
 /*!
@@ -900,50 +899,50 @@ int CardDevice::at_response_orig (char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_cend (char* str, size_t len)
+int CardDevice::at_response_cend(char* str, size_t len)
 {
-	int call_index = 0;
-	int duration   = 0;
-	int end_status = 0;
-	int cc_cause   = 0;
+    int call_index = 0;
+    int duration   = 0;
+    int end_status = 0;
+    int cc_cause   = 0;
 
-	/*
-	 * parse CEND info in the following format:
-	 * ^CEND:<call_index>,<duration>,<end_status>[,<cc_cause>]
-	 */
+    /*
+     * parse CEND info in the following format:
+     * ^CEND:<call_index>,<duration>,<end_status>[,<cc_cause>]
+     */
 
-	if (!sscanf (str, "^CEND:%d,%d,%d,%d", &call_index, &duration, &end_status, &cc_cause))
-	{
-		Debug(DebugAll, "[%s] Could not parse all CEND parameters", c_str());
-	}
+    if (!sscanf (str, "^CEND:%d,%d,%d,%d", &call_index, &duration, &end_status, &cc_cause))
+    {
+    	Debug(DebugAll, "[%s] Could not parse all CEND parameters", c_str());
+    }
 
-	Debug(DebugAll, "[%s] CEND: call_index: %d", c_str(), call_index);
-	Debug(DebugAll, "[%s] CEND: duration:   %d", c_str(), duration);
-	Debug(DebugAll, "[%s] CEND: end_status: %d", c_str(), end_status);
-	Debug(DebugAll, "[%s] CEND: cc_cause:   %d", c_str(), cc_cause);
+    Debug(DebugAll, "[%s] CEND: call_index: %d", c_str(), call_index);
+    Debug(DebugAll, "[%s] CEND: duration:   %d", c_str(), duration);
+    Debug(DebugAll, "[%s] CEND: end_status: %d", c_str(), end_status);
+    Debug(DebugAll, "[%s] CEND: cc_cause:   %d", c_str(), cc_cause);
 
-	Debug(DebugAll, "[%s] Line disconnected", c_str());
+    Debug(DebugAll, "[%s] Line disconnected", c_str());
 	
-	needchup = 0;
+    needchup = 0;
 //TODO:
 
-	if (m_conn)
-	{
-		Debug(DebugAll, "[%s] hanging up owner", c_str());
+    if(m_conn)
+    {
+	Debug(DebugAll, "[%s] hanging up owner", c_str());
 		
-		int reason = getReason(end_status, cc_cause);
-				
-		if (Hangup(reason) == false)
-		{
-			Debug(DebugAll, "[%s] Error queueing hangup...", c_str());
-			return -1;
-		}
+	int reason = getReason(end_status, cc_cause);
+			
+	if(Hangup(reason) == false)
+	{
+	    Debug(DebugAll, "[%s] Error queueing hangup...", c_str());
+	    return -1;
 	}
-	incoming = 0;
-	outgoing = 0;
-	needring = 0;
-
-	return 0;
+    }
+    incoming = 0;
+    outgoing = 0;
+    needring = 0;
+    
+    return 0;
 }
 
 /*!
@@ -955,32 +954,31 @@ int CardDevice::at_response_cend (char* str, size_t len)
 int CardDevice::at_response_conn(char* str, size_t len)
 {
 //TODO:
-	int call_index =1;
-	int call_type =0;
-	if (!sscanf (str, "^CONN:%d,%d", &call_index, &call_type))
-	{
-		Debug(DebugAll, "[%s] Error parsing CONN event '%s'", c_str(), str);
-		return -1;
-	}
+    int call_index =1;
+    int call_type =0;
+    if (!sscanf (str, "^CONN:%d,%d", &call_index, &call_type))
+    {
+	Debug(DebugAll, "[%s] Error parsing CONN event '%s'", c_str(), str);
+	return -1;
+    }
 
-	Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
-	Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
+    Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
+    Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
 
 
 
-	if (outgoing)
-	{
-		Debug(DebugAll, "[%s] Remote end answered", c_str());
-		if(m_conn)
-		    m_conn->onAnswered();
+    if (outgoing)
+    {
+	Debug(DebugAll, "[%s] Remote end answered", c_str());
+	if(m_conn)
+	    m_conn->onAnswered();
 //		hannel_queue_control (AST_CONTROL_ANSWER);
-	}
-	else if (incoming && answered)
-	{
+    }
+    else if (incoming && answered)
+    {
 //		ast_setstate (owner, AST_STATE_UP);
-	}
-
-	return 0;
+    }
+    return 0;
 }
 
 /*!
@@ -996,32 +994,27 @@ int CardDevice::at_response_clip(char* str, size_t len)
 //TODO:
 //
 
-	char*			clip;
-
-	if (initialized && needring == 0)
+    char* clip;
+    if (initialized && needring == 0)
+    {
+	incoming = 1;
+	if ((clip = at_parse_clip(str, len)) == NULL)
 	{
-		incoming = 1;
-
-		if ((clip = at_parse_clip (str, len)) == NULL)
-		{
-			Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
-		}
-		if(incomingCall(String(clip)) == false)
-		{
-			Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
-
-			if (at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-			{
-				Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
-			}
-			return -1;
-		}
-
-		needchup = 1;
-		needring = 1;
+	    Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
 	}
-
-	return 0;
+	if(incomingCall(String(clip)) == false)
+	{
+	    Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
+	    if (at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
+	    {
+		Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
+	    }
+	    return -1;
+	}
+	needchup = 1;
+	needring = 1;
+    }
+    return 0;
 }
 
 /*!
@@ -1030,25 +1023,24 @@ int CardDevice::at_response_clip(char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_ring ()
+int CardDevice::at_response_ring()
 {
-	if (initialized)
+    if (initialized)
+    {
+	/* We only want to syncronize volume on the first ring */
+	if (!incoming)
 	{
-		/* We only want to syncronize volume on the first ring */
-		if (!incoming)
-		{
-			if (at_send_clvl (1) || at_fifo_queue_add (CMD_AT_CLVL, RES_OK))
-			{
-				Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
-			}
-
-			volume_synchronized = 0;
-		}
-
-		incoming = 1;
+	    if (at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
+	    {
+		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
+	    }
+	    volume_synchronized = 0;
 	}
 
-	return 0;
+	incoming = 1;
+    }
+
+    return 0;
 }
 
 /*!
@@ -1061,35 +1053,32 @@ int CardDevice::at_response_ring ()
 
 int CardDevice::at_response_cmti(char* str, size_t len)
 {
-	int index = at_parse_cmti (str, len);
+    int index = at_parse_cmti(str, len);
 
-	if (index > -1)
+    if (index > -1)
+    {
+	Debug(DebugAll, "[%s] Incoming SMS message", c_str());
+	if (m_disablesms)
 	{
-		Debug(DebugAll, "[%s] Incoming SMS message", c_str());
-
-		if (m_disablesms)
-		{
-			Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
-		}
-		else
-		{
-		    // FIXME: replace it with correct CMGR parser
-			if (at_send_cmgr(index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_OK, index))
-			{
-				Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
-				return -1;
-			}
-
-			incoming_sms = 1;
-		}
-
-		return 0;
+	    Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
 	}
 	else
 	{
-		Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting", c_str());
+	    // FIXME: replace it with correct CMGR parser
+	    if (at_send_cmgr(index) || at_fifo_queue_add_num (CMD_AT_CMGR, RES_OK, index))
+	    {
+		Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
 		return -1;
+	    }
+	    incoming_sms = 1;
 	}
+	return 0;
+    }
+    else
+    {
+	Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting", c_str());
+	return -1;
+    }
 }
 
 /*!
@@ -1119,29 +1108,26 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 
 int CardDevice::at_response_sms_prompt()
 {
-	at_queue_t* e;
+    at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+    if ((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+    {
+	if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add(CMD_AT_CMGS, RES_OK))
 	{
-		if (e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add (CMD_AT_CMGS, RES_OK))
-		{
-			Debug(DebugAll, "[%s] Error sending sms message", c_str());
-			return -1;
-		}
-
-		at_fifo_queue_rem();
+	    Debug(DebugAll, "[%s] Error sending sms message", c_str());
+	    return -1;
 	}
-	else if (e)
-	{
-		Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(),
-				at_res2str (e->res), at_cmd2str (e->cmd));
-	}
-	else
-	{
-		Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
-	}
-
-	return 0;
+	at_fifo_queue_rem();
+    }
+    else if (e)
+    {
+	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (e->res), at_cmd2str (e->cmd));
+    }
+    else
+    {
+	Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
+    }
+    return 0;
 }
 
 /*!
@@ -1152,50 +1138,49 @@ int CardDevice::at_response_sms_prompt()
  * \retval -1 error
  */
 
-int CardDevice::at_response_cusd (char* str, size_t len)
+int CardDevice::at_response_cusd(char* str, size_t len)
 {
 //TODO:
-	ssize_t		res;
-	char*		cusd;
-	unsigned char	dcs;
-	char		cusd_utf8_str[1024];
+    ssize_t res;
+    char* cusd;
+    unsigned char dcs;
+    char cusd_utf8_str[1024];
 
-	if (at_parse_cusd (str, len, &cusd, &dcs))
-	{
-		Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'", c_str(), (int) len, str);
-		return 0;
-	}
+    if (at_parse_cusd (str, len, &cusd, &dcs))
+    {
+	Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'", c_str(), (int) len, str);
+	return 0;
+    }
 
-	if ((dcs == 0 || dcs == 15) && !cusd_use_ucs2_decoding)
+    if ((dcs == 0 || dcs == 15) && !cusd_use_ucs2_decoding)
+    {
+	res = hexstr_7bit_to_char(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	if (res > 0)
 	{
-		res = hexstr_7bit_to_char (cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
-		if (res > 0)
-		{
-			cusd = cusd_utf8_str;
-		}
-		else
-		{
-			Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd);
-			return -1;
-		}
+	    cusd = cusd_utf8_str;
 	}
 	else
 	{
-		res = hexstr_ucs2_to_utf8 (cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
-		if (res > 0)
-		{
-			cusd = cusd_utf8_str;
-		}
-		else
-		{
-			Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd);
-			return -1;
-		}
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd);
+	    return -1;
 	}
-
-	Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
-	m_endpoint->onReceiveUSSD(this, cusd);
-	return 0;
+    }
+    else
+    {
+	res = hexstr_ucs2_to_utf8 (cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	if (res > 0)
+	{
+	    cusd = cusd_utf8_str;
+	}
+	else
+	{
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd);
+	    return -1;
+	}
+    }
+    Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
+    m_endpoint->onReceiveUSSD(this, cusd);
+    return 0;
 }
 
 /*!
@@ -1206,11 +1191,11 @@ int CardDevice::at_response_cusd (char* str, size_t len)
 
 int CardDevice::at_response_busy ()
 {
-	needchup = 1;
+    needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_BUSY);
-	Hangup(DATACARD_BUSY);
-	return 0;
+    Hangup(DATACARD_BUSY);
+    return 0;
 }
  
 /*!
@@ -1221,14 +1206,13 @@ int CardDevice::at_response_busy ()
 
 int CardDevice::at_response_no_dialtone()
 {
-	Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
+    Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
 
-	needchup = 1;
+    needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_CONGESTION);
-	Hangup(DATACARD_CONGESTION);
-
-	return 0;
+    Hangup(DATACARD_CONGESTION);
+    return 0;
 }
 
 /*!
@@ -1239,14 +1223,13 @@ int CardDevice::at_response_no_dialtone()
 
 int CardDevice::at_response_no_carrier()
 {
-	Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
+    Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
 
-	needchup = 1;
+    needchup = 1;
 //TODO:
 //	channel_queue_control (AST_CONTROL_CONGESTION);
-	Hangup(DATACARD_CONGESTION);
-
-	return 0;
+    Hangup(DATACARD_CONGESTION);
+    return 0;
 }
 
 /*!
@@ -1259,7 +1242,7 @@ int CardDevice::at_response_no_carrier()
 
 int CardDevice::at_response_cpin (char* str, size_t len)
 {
-	return at_parse_cpin (str, len);
+    return at_parse_cpin (str, len);
 }
 
 /*!
@@ -1270,8 +1253,8 @@ int CardDevice::at_response_cpin (char* str, size_t len)
 
 int CardDevice::at_response_smmemfull()
 {
-	Debug(DebugAll,  "[%s] SMS storage is full", c_str());
-	return 0;
+    Debug(DebugAll,  "[%s] SMS storage is full", c_str());
+    return 0;
 }
 
 /*!
@@ -1283,7 +1266,7 @@ int CardDevice::at_response_smmemfull()
  */
 int CardDevice::at_response_csq (char* str, size_t len)
 {
-	return at_parse_csq (str, len, &rssi);
+    return at_parse_csq (str, len, &rssi);
 }
 
 /*!
@@ -1296,17 +1279,15 @@ int CardDevice::at_response_csq (char* str, size_t len)
 
 int CardDevice::at_response_cnum(char* str, size_t len)
 {
-	char* number = at_parse_cnum (str, len);
+    char* number = at_parse_cnum(str, len);
+    if (number)
+    {
+	m_number = number;
+	return 0;
+    }
+    m_number = "Unknown";
 
-	if (number)
-	{
-	    m_number = number;
-	    return 0;
-	}
-
-	m_number = "Unknown";
-
-	return -1;
+    return -1;
 }
 
 /*!
@@ -1320,13 +1301,11 @@ int CardDevice::at_response_cnum(char* str, size_t len)
 int CardDevice::at_response_cops(char* str, size_t len)
 {
     char* provider_name = at_parse_cops (str, len);
-
     if (provider_name)
     {
 	m_provider_name = provider_name;
 	return 0;
     }
-
     m_provider_name = "NONE";
     return -1;
 }
@@ -1339,34 +1318,34 @@ int CardDevice::at_response_cops(char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_creg (char* str, size_t len)
+int CardDevice::at_response_creg(char* str, size_t len)
 {
-	int	d;
-	char*	lac;
-	char*	ci;
+    int d;
+    char* lac;
+    char* ci;
 
-	if (at_send_cops() || at_fifo_queue_add (CMD_AT_COPS, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
-	}
+    if(at_send_cops() || at_fifo_queue_add(CMD_AT_COPS, RES_OK))
+    {
+	Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
+    }
 
-	if (at_parse_creg (str, len, &d, &gsm_reg_status, &lac, &ci))
-	{
-		Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'", c_str(), (int) len, str);
-		return 0;
-	}
-
-	if (d)
-	    gsm_registered = 1;
-	else
-	    gsm_registered = 0;
-
-	if (lac)
-	    m_location_area_code = lac;
-	if (ci)
-	    m_cell_id = ci;
-
+    if(at_parse_creg(str, len, &d, &gsm_reg_status, &lac, &ci))
+    {
+	Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'", c_str(), (int) len, str);
 	return 0;
+    }
+
+    if(d)
+	gsm_registered = 1;
+    else
+	gsm_registered = 0;
+
+    if (lac)
+	m_location_area_code = lac;
+    if (ci)
+	m_cell_id = ci;
+
+    return 0;
 }
 
 /*!
@@ -1379,8 +1358,8 @@ int CardDevice::at_response_creg (char* str, size_t len)
 
 int CardDevice::at_response_cgmi(char* str, size_t len)
 {
-	m_manufacturer.assign(str,len);
-	return 0;
+    m_manufacturer.assign(str,len);
+    return 0;
 }
 
 /*!
@@ -1391,16 +1370,15 @@ int CardDevice::at_response_cgmi(char* str, size_t len)
  * \retval -1 error
  */
 
-int CardDevice::at_response_cgmm (char* str, size_t len)
+int CardDevice::at_response_cgmm(char* str, size_t len)
 {
-	m_model.assign(str,len);
-	
-	if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X")
-	{
-		cusd_use_7bit_encoding = 1;
-		cusd_use_ucs2_decoding = 0;
-	}
-	return 0;
+    m_model.assign(str,len);
+    if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X")
+    {
+	cusd_use_7bit_encoding = 1;
+	cusd_use_ucs2_decoding = 0;
+    }
+    return 0;
 }
 
 /*!
@@ -1462,4 +1440,3 @@ int CardDevice::at_response_pdu(char* str, size_t len)
 }
 
 /* vi: set ts=8 sw=4 sts=4 noet: */
-

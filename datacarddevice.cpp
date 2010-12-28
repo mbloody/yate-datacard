@@ -1094,4 +1094,3 @@ int Connection::sendAudio(char* data, int len)
 }
 
 /* vi: set ts=8 sw=4 sts=4 noet: */
-

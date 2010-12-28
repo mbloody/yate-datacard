@@ -202,6 +202,8 @@ public:
     String m_location_area_code;
     String m_cell_id;
 
+//FIXME: review all his flags. Simplify or implement it.
+
     /* flags */
     bool m_connected;			/* do we have an connection to a device */
     unsigned int initialized:1;			/* whether a service level connection exists or not */

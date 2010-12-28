@@ -388,7 +388,6 @@ void DatacardDriver::initialize()
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
     m_endpoint = new YDevEndPoint(discovery_interval);
-//    m_endpoint = new YDevEndPoint(DEF_DISCOVERY_INT);
 //    String preferred = s_cfg.getValue("formats","preferred");
 //    bool def = s_cfg.getBoolValue("formats","default",true);
     String name;
