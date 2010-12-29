@@ -584,6 +584,16 @@ bool CardDevice::Hangup(int reason)
 	return false;
     }
     m_conn = 0;
+//TODO: Review this!!!
+    if(needchup)
+    {
+	if(at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
+	{
+		Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
+	}
+	needchup = 0;
+    }
+
     return tmp->onHangup(reason);
 }
 
