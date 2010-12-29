@@ -1,15 +1,43 @@
+; This file keep datacard channel configuration
+; Each section (except for 'general' section) configure device
+; Name of the section will be used to route outgoing calls
+
+; This section keep general or default settings
 [general]
+
+; discovery-interval: int: 
 ;discovery-interval=60
 
+; Example of device
 [datacard0]
-enabled=yes
-audio=/dev/ttyUSB2
-data=/dev/ttyUSB3
-;autodeletesms=yes
-;resetdatacard=yes
-;disablesms=no
-;u2diag=-1
-;usecallingpres=no
-;callingpres=-1
-                                                                
 
+; enabled: bool: Allow creation of the component corresponding to the section
+enabled=yes
+
+; audio: string: tty for audio connection
+audio=/dev/ttyUSB2
+
+; data: string: tty for AT commands
+data=/dev/ttyUSB3
+
+; autodeletesms: bool: Delete incoming SMS from memory.
+;autodeletesms=yes
+
+; resetdatacard: bool: Reset datacard sending ATZ command.
+;resetdatacard=yes
+
+; disablesms: bool: Disable sending and receive SMS. NOT tested!!!
+;disablesms=no
+
+; u2diag: int: Send u2diag to enable or disable some features
+;u2diag=-1
+
+; usecallingpres: bool: Enable using of callingpres settings
+;usecallingpres=no
+
+; callingpres: int: Set CLI status for calls
+; Allowed values:
+;  0: presentation indicator is used according to the subscription of the CLIR service
+;  1: CLIR invocation (hide)
+;  2: CLIR suppression (show)
+;callingpres=-1

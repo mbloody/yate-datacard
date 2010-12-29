@@ -395,13 +395,11 @@ void DatacardDriver::initialize()
     for (unsigned int i = 0; i < n; i++) 
     {
 	NamedList* sect = s_cfg.getSection(i);
-	if (!sect)
+	if(!sect || sect->null() || *sect == "general")
+	    continue;
+	if(!sect->getBoolValue("enabled",true))
 	    continue;
 	name  = *sect;
-	if (!name.startsWith("datacard"))
-	    continue;
-	if(!sect->getBoolValue("enabled",false))
-	    continue;
 	m_endpoint->appendDevice(name, sect);
     }
     m_endpoint->startup();
