@@ -166,7 +166,7 @@ int CardDevice::at_response_ok()
 			case CMD_AT:
 				if (!initialized)
 				{
-					if (m_reset_datacard == 1)
+					if(m_reset_datacard)
 					{
 						if (at_send_atz() || at_fifo_queue_add(CMD_AT_Z, RES_OK))
 						{
@@ -196,9 +196,9 @@ int CardDevice::at_response_ok()
 			case CMD_AT_E:
 				if (!initialized)
 				{
-					if (u2diag != -1)
+					if (m_u2diag != -1)
 					{
-						if (at_send_u2diag (u2diag) || at_fifo_queue_add (CMD_AT_U2DIAG, RES_OK))
+						if (at_send_u2diag(m_u2diag) || at_fifo_queue_add (CMD_AT_U2DIAG, RES_OK))
 						{
 							Debug(DebugAll, "[%s] Error setting U2DIAG", c_str());
 							goto e_return;
@@ -503,7 +503,6 @@ int CardDevice::at_response_ok()
 
 			case CMD_AT_CMGS:
 				Debug(DebugAll, "[%s] Successfully sent sms message", c_str());
-				outgoing_sms = 0;
 				break;
 
 			case CMD_AT_DTMF:
@@ -520,7 +519,6 @@ int CardDevice::at_response_ok()
 
 			case CMD_AT_CMGR:
 				Debug(DebugAll, "[%s] SMS message read successfully", c_str());
-				incoming_sms = 0;
 				if (m_auto_delete_sms && e->ptype == 1)
 				{
 				    if (at_send_cmgd (e->param.num) || at_fifo_queue_add (CMD_AT_CMGD, RES_OK))
@@ -765,17 +763,14 @@ int CardDevice::at_response_error()
 
 			case CMD_AT_CMGR:
 				Debug(DebugAll, "[%s] Error reading SMS message", c_str());
-				incoming_sms = 0;
 				break;
 
 			case CMD_AT_CMGD:
 				Debug(DebugAll, "[%s] Error deleting SMS message", c_str());
-				incoming_sms = 0;
 				break;
 
 			case CMD_AT_CMGS:
 				Debug(DebugAll, "[%s] Error sending SMS message", c_str());
-				outgoing_sms = 0;
 				break;
 
 			case CMD_AT_DTMF:
@@ -965,16 +960,14 @@ int CardDevice::at_response_conn(char* str, size_t len)
     Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
     Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
 
-
-
-    if (outgoing)
+    if(outgoing)
     {
 	Debug(DebugAll, "[%s] Remote end answered", c_str());
 	if(m_conn)
 	    m_conn->onAnswered();
 //		hannel_queue_control (AST_CONTROL_ANSWER);
     }
-    else if (incoming && answered)
+    else if(incoming)
     {
 //		ast_setstate (owner, AST_STATE_UP);
     }
@@ -1025,18 +1018,17 @@ int CardDevice::at_response_clip(char* str, size_t len)
 
 int CardDevice::at_response_ring()
 {
-    if (initialized)
+    if(initialized)
     {
 	/* We only want to syncronize volume on the first ring */
-	if (!incoming)
+	if(!incoming)
 	{
-	    if (at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
+	    if(at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
 	    {
 		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
 	    }
 	    volume_synchronized = 0;
 	}
-
 	incoming = 1;
     }
 
@@ -1070,7 +1062,6 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 		Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
 		return -1;
 	    }
-	    incoming_sms = 1;
 	}
 	return 0;
     }
@@ -1167,7 +1158,7 @@ int CardDevice::at_response_cusd(char* str, size_t len)
     }
     else
     {
-	res = hexstr_ucs2_to_utf8 (cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	res = hexstr_ucs2_to_utf8(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
 	{
 	    cusd = cusd_utf8_str;
@@ -1426,7 +1417,7 @@ int CardDevice::at_response_cimi(char* str, size_t len)
 int CardDevice::at_response_pdu(char* str, size_t len)
 {
     //FIXME: check error in parsing
-    if (m_incoming_pdu)
+    if(m_incoming_pdu)
     {
 	m_incoming_pdu = false;
 	if(!receiveSMS(str, len))

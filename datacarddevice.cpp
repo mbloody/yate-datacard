@@ -221,61 +221,58 @@ void MediaThread::run()
 
 	    if (len) 
 	    {
-		    m_device->forwardAudio(buf, len);
+		m_device->forwardAudio(buf, len);
 ///		
 ///    		write(pfd.fd, buf, len);
 ///
 	    }
 	    used = m_device->a_write_rb.rb_used ();
-        if (used >= FRAME_SIZE)
+	    if (used >= FRAME_SIZE)
 	    {
-            iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
-            m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
-        }
-        else if (used > 0)
-        {
-            Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
+		iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
+		m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
+	    }
+	    else if (used > 0)
+	    {
+		Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
+		iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
+		m_device->a_write_rb.rb_read_upd(used);
 
-            iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
-            m_device->a_write_rb.rb_read_upd(used);
-
-            iov[iovcnt].iov_base = silence_frame;
-            iov[iovcnt].iov_len	= FRAME_SIZE - used;
-		    iovcnt++;
+		iov[iovcnt].iov_base = silence_frame;
+		iov[iovcnt].iov_len = FRAME_SIZE - used;
+		iovcnt++;
 	    }
 	    else
 	    {
-		    Debug(DebugAll, "[%s] write silence", m_device->c_str());
-
-    		iov[0].iov_base = silence_frame;
-	    	iov[0].iov_len = FRAME_SIZE;
-	    	iovcnt = 1;
+		Debug(DebugAll, "[%s] write silence", m_device->c_str());
+		iov[0].iov_base = silence_frame;
+		iov[0].iov_len = FRAME_SIZE;
+		iovcnt = 1;
 	    }
-        count = 0;
-        while ((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
-        {
-    	    if (count++ > 10)
-    	    {
-		        Debug(DebugAll,"Deadlock avoided for write!");
-		        break;
-	        }
-	        usleep (1);
+	    count = 0;
+	    while((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
+	    {
+		if(count++ > 10)
+		{
+		    Debug(DebugAll,"Deadlock avoided for write!");
+		    break;
+		}
+		usleep(1);
 	    }
-
 	    if (res < 0 || res != FRAME_SIZE)
 	    {
-	        Debug(DebugAll,"[%s] Write error!",m_device->c_str());
+		Debug(DebugAll,"[%s] Write error!",m_device->c_str());
 	    }
-    
+
 	    m_device->m_mutex.unlock();
 	} 
 	else if (pfd.revents) 
 	{
 	    Debug(DebugAll, "MediaThread poll exception datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
-        m_device->disconnect();
-        m_device->m_mutex.unlock();
-        return;
+	    m_device->disconnect();
+	    m_device->m_mutex.unlock();
+	    return;
 	} 
 	else 
 	{
@@ -289,8 +286,6 @@ void MediaThread::run()
 void MediaThread::cleanup()
 {
 }
-
-
 
 CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_mutex(true), m_conn(0), m_connected(false)
 {
@@ -313,8 +308,8 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_number = "Unknown";
 
     m_reset_datacard = true;
-    u2diag = -1;
-    callingpres = -1;
+    m_u2diag = -1;
+    m_callingpres = -1;
 
     
     m_atQueue.clear();
@@ -327,8 +322,8 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     outgoing = 0;
     needring = 0;
     needchup = 0;
-
 }
+
 bool CardDevice::startMonitor() 
 { 
     //TODO: Running flag
@@ -337,7 +332,6 @@ bool CardDevice::startMonitor()
     m_media->startup();
     m_monitor = new MonitorThread(this);
     return m_monitor->startup();
-//    return true;
 }
 
 bool CardDevice::tryConnect()
@@ -345,10 +339,10 @@ bool CardDevice::tryConnect()
     m_mutex.lock();
     if (!m_connected)
     {
-	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...", safe(), data_tty.safe());
-	if ((m_data_fd = opentty((char*)data_tty.safe())) > -1)
+	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...", safe(), m_data_tty.safe());
+	if ((m_data_fd = opentty((char*)m_data_tty.safe())) > -1)
 	{
-		if ((m_audio_fd = opentty((char*)audio_tty.safe())) > -1)
+		if ((m_audio_fd = opentty((char*)m_audio_tty.safe())) > -1)
 		{
 		    if (startMonitor())
 		    {
@@ -439,13 +433,11 @@ void CardDevice::stopRunning()
     // m_mutex.unlock();
 }
 
-
 bool CardDevice::getStatus(NamedList * list)
 {
     m_mutex.lock();
     list->addParam("device",c_str());
     
-//		ast_cli (a->fd, "  Group                   : %d\n", pvt->group);
 //		ast_cli (a->fd, "  GSM Registration Status : %s\n",
 //			(pvt->gsm_reg_status == 0) ? "Not registered, not searching" :
 //			(pvt->gsm_reg_status == 1) ? "Registered, home network" :
@@ -497,10 +489,9 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
     // TODO: Check called & sms
     // Check if msg will be desrtoyed
     
-
     if (m_connected && initialized && gsm_registered)
     {
-        if (has_sms)
+        if(has_sms)
         {
             PDU pdu;
             pdu.setMessage(sms.safe());
@@ -509,13 +500,13 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.generate();
             
             char *msg = strdup(pdu.getPDU());
-            if (at_send_cmgs(pdu.getMessageLen()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
+            if(at_send_cmgs(pdu.getMessageLen()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
             {
-                free(msg);
-                Debug(DebugAll, "[%s] Error sending SMS message", c_str());
-                return false;
-		    }
+    		free(msg);
+        	Debug(DebugAll, "[%s] Error sending SMS message", c_str());
+        	return false;
 	    }
+	}
         else
         {
             Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent", c_str());
@@ -589,7 +580,7 @@ bool CardDevice::Hangup(int reason)
     {
 	if(at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
 	{
-		Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
+	    Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
 	}
 	needchup = 0;
     }
@@ -622,37 +613,11 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (m_usecallingpres)
     {
-//    	Hangup(DATACARD_FAILURE);
-//    	return false;
     //TODO:
-    /*
-	AT+CLIR=[<n>]
-
-	<n>: (this setting effects CLI status for following calls)
-
-	    0 presentation indicator is used according to the subscription of the CLIR service
-	    1 CLIR invocation (hide)
-	    2 CLIR suppression (show)
-	    
-	if (pvt->callingpres < 0)
-	{
-		#if ASTERISK_VERSION_NUM >= 10800
-		clir = channel->connected.id.number.presentation;
-		#else
-		clir = channel->cid.cid_pres;
-		#endif
-	}
-	else
-	{
-		clir = pvt->callingpres;
-	}
-
-	clir = get_at_clir_value (pvt, clir);
-	*/
-	if(callingpres < 0)
+	if(m_callingpres < 0)
 	    clir = 0;
 	else
-	    clir = callingpres;
+	    clir = m_callingpres;
 	char* dest_number = strdup(called.c_str());
 	if (at_send_clir(clir) || at_fifo_queue_add_ptr (CMD_AT_CLIR, RES_OK, dest_number))
 	{
@@ -802,24 +767,6 @@ int CardDevice::getReason(int end_status, int cc_cause)
 	    }
     }
     return DATACARD_FAILURE;
-    
-    
-/*	
-//Datacard reasons
-#define DATACARD_NORMAL 0
-#define DATACARD_INCOMPLETE 1
-#define DATACARD_NOROUTE 2
-#define DATACARD_NOCONN 3
-#define DATACARD_NOMEDIA 4
-#define DATACARD_NOCALL 5
-#define DATACARD_BUSY 6
-#define DATACARD_NOANSWER 7
-#define DATACARD_REJECTED 8
-#define DATACARD_FORBIDDEN 9
-#define DATACARD_OFFLINE 10
-#define DATACARD_CONGESTION 11
-#define DATACARD_FAILURE 12
-*/    
 }
 
 
@@ -850,11 +797,11 @@ int CardDevice::sendAudio(char* data, int len)
 }
 
 //EndPoint
-
 DevicesEndPoint::DevicesEndPoint(int interval):Thread("DeviceEndPoint"),m_mutex(true),m_interval(interval),m_run(true)
 {
     m_devices.clear();
 }
+
 DevicesEndPoint::~DevicesEndPoint()
 {
 }
@@ -921,32 +868,16 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     String data_tty = data->getValue("data");
     
     CardDevice * dev = new CardDevice(name, this);
-    dev->data_tty = data_tty;
-    dev->audio_tty = audio_tty;
+    dev->m_data_tty = data_tty;
+    dev->m_audio_tty = audio_tty;
 
     dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
     dev->m_reset_datacard = data->getBoolValue("resetdatacard",true);
-    dev->u2diag = data->getIntValue("u2diag",-1);
-    if (dev->u2diag == 0)
-	dev->u2diag = -1;
+    dev->m_u2diag = data->getIntValue("u2diag",-1);
+    if (dev->m_u2diag == 0)
+	dev->m_u2diag = -1;
     dev->m_usecallingpres = data->getBoolValue("usecallingpres",false);
-    dev->callingpres = data->getIntValue("callingpres",-1);
-
-//TODO:	
-//		else if (!strcasecmp (v->name, "callingpres"))
-//		{
-//			dev->callingpres = ast_parse_caller_presentation (v->value);
-//			if (dev->callingpres == -1)
-//			{
-//				errno = 0;
-//				dev->callingpres = (int) strtol (v->value, (char**) NULL, 10);	/* callingpres is set to -1 if invalid */
-//				if (pvt->callingpres == 0 && errno == EINVAL)
-//				{
-//					dev->callingpres = -1;
-//				}
-//			}
-//		}
-//    dev->callingpres = -1;
+    dev->m_callingpres = data->getIntValue("callingpres",-1);
     dev->m_disablesms = data->getBoolValue("disablesms",false);  
     
     m_mutex.lock();
@@ -1028,12 +959,12 @@ bool Connection::sendAnswer()
 	{
 	    Debug(DebugAll, "[%s] Error sending ATA command", m_dev->c_str());
 	}
-	m_dev->answered = 1;
     }
     m_dev->m_mutex.unlock();
 
     return true;
 }
+
 bool Connection::sendHangup()
 {
     if (!m_dev)

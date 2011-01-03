@@ -325,19 +325,18 @@ int CardDevice::at_send_cusd(const char* code)
     ssize_t res;
     char buf[256];
 
-
-    if (cusd_use_7bit_encoding)
+    if(cusd_use_7bit_encoding)
     {
-	res = char_to_hexstr_7bit(code, strlen (code), buf, sizeof (buf));
+	res = char_to_hexstr_7bit(code, strlen(code), buf, sizeof(buf));
 	if (res <= 0)
 	{
 	    Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code);
 	    return -1;
 	}
     }
-    else if (use_ucs2_encoding)
+    else if(use_ucs2_encoding)
     {
-	res = utf8_to_hexstr_ucs2(code, strlen (code), buf, sizeof (buf));
+	res = utf8_to_hexstr_ucs2(code, strlen(code), buf, sizeof(buf));
 	if (res <= 0)
 	{
 	    Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code);
@@ -346,8 +345,7 @@ int CardDevice::at_send_cusd(const char* code)
     }
     else
     {
-	res = MIN(strlen (code), sizeof (buf));
-	memmove(buf, code, res);
+	return send_atcmd("AT+CUSD=1,\"%s\",15", code);
     }
 
     return send_atcmd("AT+CUSD=1,\"%s\",15", buf);

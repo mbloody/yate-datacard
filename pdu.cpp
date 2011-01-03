@@ -10,13 +10,13 @@
 const int max_number = 64;
 const int max_number_type = 1024;
 const int max_smsc = 64;
-const int max_message = 128;
 const int max_date = 32;
 const int max_time = 32;
 const int max_udh_data = 512;
 const int max_udh_type = 512;
 const int max_err = 1024;
 const int maxsms_binary = 140;
+const int max_message = maxsms_binary*4;
 const int validity_period = 255;
 const int max_pdu = 160;
 

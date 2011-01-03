@@ -267,15 +267,12 @@ bool DatacardChannel::onIncoming(const String &caller)
     m->setParam("called","123");
 //TODO: enable tonedetect, must be configure????
     m->setParam("tonedetect_in","true");
-//    m->addParam("formats",m_remoteFormats);
     m_dev->getStatus(m);
  
     if (startRouter(m))
 	return true;
     Debug(this,DebugWarn,"Error starting routing thread! [%p]",this);
     return false;
-    
-//    return true;
 }
 
 bool DatacardChannel::onProgress()
@@ -334,7 +331,7 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
 
 bool DatacardDriver::received(Message& msg, int id)
 {
-//TODO: implement it
+//TODO: implement this
     if (id == Status) 
     {
 	String target = msg.getValue("module");

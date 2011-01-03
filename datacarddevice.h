@@ -4,27 +4,20 @@
 #include "ringbuffer.h"
 #include "endreasons.h"
 
-#ifndef MIN
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
-#endif
 
-#define FRAME_SIZE		320
-
+#define FRAME_SIZE 320
+#define RDBUFF_MAX      1024
 
 using namespace TelEngine;
 
-
-#define RDBUFF_MAX      1024
-
 typedef enum {
-  BLT_STATE_WANT_CONTROL   = 0,
+  BLT_STATE_WANT_CONTROL = 0,
   BLT_STATE_WANT_CMD = 1,
 } blt_state_t;
 
 
 typedef enum {
 	CMD_UNKNOWN = 0,
-
 	CMD_AT,
 	CMD_AT_A,
 	CMD_AT_CCWA,
@@ -69,7 +62,6 @@ typedef enum {
 typedef enum {
 	RES_PARSE_ERROR = -1,
 	RES_UNKNOWN = 0,
-
 	RES_BOOT,
 	RES_BUSY,
 	RES_CEND,
@@ -156,26 +148,19 @@ public:
 
     bool getStatus(NamedList * list);
 
-//private:
+private:
     bool startMonitor();
     int devStatus(int fd);
 
     DevicesEndPoint* m_endpoint;
     MonitorThread* m_monitor;
     MediaThread* m_media;
-    
+
+public:
     Mutex m_mutex;
     Connection* m_conn;
 
-
-
-    int handle_rd_data();
-    blt_state_t state;
-    char rd_buff[RDBUFF_MAX];
-    int rd_buff_pos;
-
-    int send_atcmd(const char * fmt, ...);
-    
+public:
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
@@ -183,6 +168,7 @@ public:
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
 
+private:
     unsigned int has_sms:1;
     unsigned int has_voice:1;
     unsigned int use_ucs2_encoding:1;
@@ -204,44 +190,50 @@ public:
 
 //FIXME: review all his flags. Simplify or implement it.
 
+public:
     /* flags */
     bool m_connected;			/* do we have an connection to a device */
     unsigned int initialized:1;			/* whether a service level connection exists or not */
     unsigned int gsm_registered:1;		/* do we have an registration to a GSM */
     unsigned int outgoing:1;			/* outgoing call */
     unsigned int incoming:1;			/* incoming call */
-    unsigned int outgoing_sms:1;			/* outgoing sms */
-    unsigned int incoming_sms:1;			/* incoming sms */
     unsigned int needchup:1;			/* we need to send a CHUP */
     unsigned int needring:1;			/* we need to send a RING */
-    unsigned int answered:1;			/* we sent/received an answer */
     unsigned int volume_synchronized:1;		/* we have synchronized the volume */
-    unsigned int group_last_used:1;		/* mark the last used device */
-    unsigned int prov_last_used:1;		/* mark the last used device */
-    unsigned int sim_last_used:1;		/* mark the last used device */
 	
     // TODO: Running flag. Do we need to stop every MonitorThread or set one 
     // flag on module level? Do we need syncronization?
+private:
     bool m_running;
+
+public:
     bool isRunning() const;
     void stopRunning();
-	    
+
+
     /* Config */
-    String audio_tty;			/* tty for audio connection */
-    String data_tty;			/* tty for AT commands */
-    
-//    int group;				/* group number for group dialling */
-    int u2diag;
-    int callingpres;			/* calling presentation */
+    String m_audio_tty;			/* tty for audio connection */
+    String m_data_tty;			/* tty for AT commands */
+    int m_u2diag;
+    int m_callingpres;			/* calling presentation */
     bool m_auto_delete_sms;
     bool m_reset_datacard;
     bool m_usecallingpres;
     bool m_disablesms;
-		
+
+private:		
+    blt_state_t state;
+    char rd_buff[RDBUFF_MAX];
+    int rd_buff_pos;
+
     // AT command methods.
+public:
     int at_wait(int*);
+    int handle_rd_data();
+
+private:
     at_res_t at_read_result_classification(char* command);
-    
+
     int at_response(char* str, at_res_t);
     int at_response_cend(char*, size_t);
     int at_response_cgmi(char*, size_t);
@@ -273,9 +265,11 @@ public:
     int at_response_busy();
     int at_response_pdu(char*, size_t);
 
+public:
     const char* at_cmd2str(at_cmd_t);
     const char* at_res2str(at_res_t);
 
+private:
     char* at_parse_clip(char*, size_t);
     int at_parse_cmgr(char*, size_t, int*, int*);
     int at_parse_cmti(char*, size_t);
@@ -289,9 +283,10 @@ public:
     int at_parse_mode(char*, size_t, int*, int*);
     int at_parse_rssi(char*, size_t);
 
-
     int at_write_full(char*, size_t);
+    int send_atcmd(const char * fmt, ...);
 
+public:
     int at_send_at();
     int at_send_ata();
     int at_send_atd(const char* number);
@@ -332,13 +327,16 @@ public:
     int at_send_cpms();
     int at_send_csmp(int, int, int, int);
 
-    ObjList m_atQueue;
+public:
     int	at_fifo_queue_add(at_cmd_t, at_res_t);
     int	at_fifo_queue_add_ptr(at_cmd_t, at_res_t, void*);
     int	at_fifo_queue_add_num(at_cmd_t, at_res_t, int);
     void at_fifo_queue_rem();
     void at_fifo_queue_flush();
     at_queue_t* at_fifo_queue_head();
+
+private:
+    ObjList m_atQueue;
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
@@ -348,6 +346,7 @@ public:
     ssize_t char_to_hexstr_7bit(const char* in, size_t in_length, char* out, size_t out_size);
     ssize_t hexstr_7bit_to_char(const char* in, size_t in_length, char* out, size_t out_size);
 
+public:
 // SMS and USSD
     bool sendSMS(const String &called, const String &sms);
     bool sendUSSD(const String &ussd);   
