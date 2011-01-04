@@ -47,6 +47,7 @@ static int opentty (char* dev)
 MonitorThread::MonitorThread(CardDevice* dev):m_device(dev)
 {
 }
+
 MonitorThread::~MonitorThread()
 {
 }
@@ -140,13 +141,11 @@ void MonitorThread::cleanup()
 {
 }
 
-
-
 //MediaThread
-
 MediaThread::MediaThread(CardDevice* dev):m_device(dev)
 {
 }
+
 MediaThread::~MediaThread()
 {
 }
@@ -175,19 +174,6 @@ void MediaThread::run()
     // Main loop
     while (m_device->isRunning())
     {
-//        m_device->m_mutex.lock();
-
-//        if (m_device->dataStatus() || m_device->audioStatus())
-//        {
-//            Debug(DebugAll, "Lost connection to Datacard %s", m_device->c_str());
-//		goto e_cleanup;
-//            m_device->disconnect();
-//            m_device->m_mutex.unlock();
-//            return;
-//        }
-//        m_device->m_mutex.unlock();
-
-
         m_device->m_mutex.lock();
 
 	pfd.fd = m_device->m_audio_fd;
@@ -211,7 +197,7 @@ void MediaThread::run()
     	    continue;
 
 
-	if (pfd.revents & POLLIN) 
+	if(pfd.revents & POLLIN) 
 	{
 	    m_device->m_mutex.lock();
 
@@ -219,7 +205,7 @@ void MediaThread::run()
 
 	    len = read(pfd.fd, buf, FRAME_SIZE);
 
-	    if (len) 
+	    if(len) 
 	    {
 		m_device->forwardAudio(buf, len);
 ///		
@@ -227,12 +213,12 @@ void MediaThread::run()
 ///
 	    }
 	    used = m_device->a_write_rb.rb_used ();
-	    if (used >= FRAME_SIZE)
+	    if(used >= FRAME_SIZE)
 	    {
 		iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
 		m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
 	    }
-	    else if (used > 0)
+	    else if(used > 0)
 	    {
 		Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
 		iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
@@ -259,14 +245,14 @@ void MediaThread::run()
 		}
 		usleep(1);
 	    }
-	    if (res < 0 || res != FRAME_SIZE)
+	    if(res < 0 || res != FRAME_SIZE)
 	    {
 		Debug(DebugAll,"[%s] Write error!",m_device->c_str());
 	    }
 
 	    m_device->m_mutex.unlock();
 	} 
-	else if (pfd.revents) 
+	else if(pfd.revents) 
 	{
 	    Debug(DebugAll, "MediaThread poll exception datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
@@ -295,7 +281,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
 
     state = BLT_STATE_WANT_CONTROL;
     
-    cusd_use_ucs2_decoding =  1;
+    cusd_use_ucs2_decoding = 1;
     gsm_reg_status = -1;
 
     m_manufacturer.clear();
@@ -337,19 +323,19 @@ bool CardDevice::startMonitor()
 bool CardDevice::tryConnect()
 {
     m_mutex.lock();
-    if (!m_connected)
+    if(!m_connected)
     {
 	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...", safe(), m_data_tty.safe());
-	if ((m_data_fd = opentty((char*)m_data_tty.safe())) > -1)
+	if((m_data_fd = opentty((char*)m_data_tty.safe())) > -1)
 	{
-		if ((m_audio_fd = opentty((char*)m_audio_tty.safe())) > -1)
+	    if((m_audio_fd = opentty((char*)m_audio_tty.safe())) > -1)
+	    {
+		if(startMonitor())
 		{
-		    if (startMonitor())
-		    {
-			m_connected = true;
-			Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...", safe());
-		    }
+		    m_connected = true;
+		    Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...", safe());
 		}
+	    }
 	}
     }
     m_mutex.unlock();
@@ -433,30 +419,38 @@ void CardDevice::stopRunning()
     // m_mutex.unlock();
 }
 
-bool CardDevice::getStatus(NamedList * list)
+bool CardDevice::getParams(NamedList* list)
 {
     m_mutex.lock();
     list->addParam("device",c_str());
     
-//		ast_cli (a->fd, "  GSM Registration Status : %s\n",
-//			(pvt->gsm_reg_status == 0) ? "Not registered, not searching" :
-//			(pvt->gsm_reg_status == 1) ? "Registered, home network" :
-//			(pvt->gsm_reg_status == 2) ? "Not registered, but searching" :
-//			(pvt->gsm_reg_status == 3) ? "Registration denied" :
-//			(pvt->gsm_reg_status == 5) ? "Registered, roaming" : "Unknown"
-//		);
-//		ast_cli (a->fd, "  State                   : %s\n",
-//			(!pvt->connected) ? "Not connected" :
-//			(!pvt->initialized) ? "Not initialized" :
-//			(!pvt->gsm_registered) ? "GSM not registered" :
-//			(pvt->outgoing || pvt->incoming) ? "Busy" :
-//			(pvt->outgoing_sms || pvt->incoming_sms) ? "SMS" : "Free"
-//		);
-//		ast_cli (a->fd, "  Voice                   : %s\n", (pvt->has_voice) ? "Yes" : "No");
-//		ast_cli (a->fd, "  SMS                     : %s\n", (pvt->has_sms) ? "Yes" : "No");
-//		ast_cli (a->fd, "  RSSI                    : %d\n", pvt->rssi);
-//		ast_cli (a->fd, "  Mode                    : %d\n", pvt->linkmode);
-//		ast_cli (a->fd, "  Submode                 : %d\n", pvt->linksubmode);
+    String reg_status = "unknown";
+    switch(gsm_reg_status)
+    {
+	case 0:
+	    reg_status = "not registered, not searching";
+	    break;
+	case 1:
+	    reg_status = "registered, home network";
+	    break;
+	case 2:
+	    reg_status = "not registered, but searching";
+	    break;
+	case 3:
+	    reg_status = "registration denied";
+	    break;
+	case 5:
+	    reg_status = "registered, roaming";
+	    break;
+	default:
+	    reg_status = "unknown";
+	    break;
+    }
+    
+    list->addParam("gsm_reg_status",reg_status);
+    list->addParam("rssi", String(rssi));
+    list->addParam("linkmode", String(linkmode));
+    list->addParam("linksubmode", String(linksubmode));
     list->addParam("providername", m_provider_name);
     list->addParam("manufacturer", m_manufacturer);
     list->addParam("model", m_model);
@@ -464,18 +458,70 @@ bool CardDevice::getStatus(NamedList * list)
     list->addParam("imei", m_imei);
     list->addParam("imsi", m_imsi);
     list->addParam("number", m_number);
+    list->addParam("lar", m_location_area_code);
+    list->addParam("cellid", m_cell_id);
+    m_mutex.unlock();
+    return true;
+}
+
+String CardDevice::getStatus()
+{
+//TODO: Implement this
+    m_mutex.lock();
+    String ret = c_str();
+    ret << "|";
+    switch(gsm_reg_status)
+    {
+	case 0:
+	    ret << "not registered, not searching";
+	    break;
+	case 1:
+	    ret << "registered, home network";
+	    break;
+	case 2:
+	    ret << "not registered, but searching";
+	    break;
+	case 3:
+	    ret << "registration denied";
+	    break;
+	case 5:
+	    ret << "registered, roaming";
+	    break;
+	default:
+	    ret << "unknown";
+	    break;
+    }
+    ret << "|";
+//		ast_cli (a->fd, "  State                   : %s\n",
+//			(!pvt->connected) ? "Not connected" :
+//			(!pvt->initialized) ? "Not initialized" :
+//			(!pvt->gsm_registered) ? "GSM not registered" :
+//			(pvt->outgoing || pvt->incoming) ? "Busy" : "Free"
+//		);
+//    list->addParam("has_voice", has_voice?"true":"false");
+//    list->addParam("has_sms", has_sms?"true":"false");
+//    list->addParam("rssi", String(rssi));
+//    list->addParam("linkmode", String(linkmode));
+//    list->addParam("linksubmode", String(linksubmode));
+//    list->addParam("providername", m_provider_name);
+//    list->addParam("manufacturer", m_manufacturer);
+//    list->addParam("model", m_model);
+//    list->addParam("firmware", m_firmware);
+//    list->addParam("imei", m_imei);
+//    list->addParam("imsi", m_imsi);
+//    list->addParam("number", m_number);
 
 //    ast_cli (a->fd, "  Use CallingPres         : %s\n", pvt->usecallingpres ? "Yes" : "No");
 //    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
 //    ast_cli (a->fd, "  Use UCS-2 encoding      : %s\n", pvt->use_ucs2_encoding ? "Yes" : "No");
 //    ast_cli (a->fd, "  USSD use 7 bit encoding : %s\n", pvt->cusd_use_7bit_encoding ? "Yes" : "No");
 //    ast_cli (a->fd, "  USSD use UCS-2 decoding : %s\n", pvt->cusd_use_ucs2_decoding ? "Yes" : "No");
-    list->addParam("lar", m_location_area_code);
-    list->addParam("cellid", m_cell_id);
+//    list->addParam("lar", m_location_area_code);
+//    list->addParam("cellid", m_cell_id);
 //    ast_cli (a->fd, "  Auto delete SMS         : %s\n", pvt->auto_delete_sms ? "Yes" : "No");
 //    ast_cli (a->fd, "  Disable SMS             : %s\n\n", pvt->disablesms ? "Yes" : "No");
     m_mutex.unlock();
-    return true;
+    return ret;
 }
 
 
@@ -604,7 +650,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (!initialized || incoming || outgoing)
     {
-	Debug(DebugAll, "[%s] Error device already in use", c_str());
+	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
 	Hangup(DATACARD_BUSY);
 	return false;
     }
@@ -613,13 +659,13 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     if (m_usecallingpres)
     {
-    //TODO:
+//TODO:
 	if(m_callingpres < 0)
 	    clir = 0;
 	else
 	    clir = m_callingpres;
 	char* dest_number = strdup(called.c_str());
-	if (at_send_clir(clir) || at_fifo_queue_add_ptr (CMD_AT_CLIR, RES_OK, dest_number))
+	if (at_send_clir(clir) || at_fifo_queue_add_ptr(CMD_AT_CLIR, RES_OK, dest_number))
 	{
 		Debug(DebugAll, "[%s] Error sending AT+CLIR command", c_str());
 		Hangup(DATACARD_FAILURE);
@@ -783,13 +829,13 @@ void CardDevice::forwardAudio(char* data, int len)
 
 int CardDevice::sendAudio(char* data, int len)
 {
-//    TODO:
+//TODO:
     size_t count = a_write_rb.rb_free();
     
     m_mutex.lock();
     if (count < (size_t) len)
     {
-	    a_write_rb.rb_read_upd(len - count);
+	a_write_rb.rb_read_upd(len - count);
     }
     a_write_rb.rb_write(data, len);
     m_mutex.unlock();
@@ -867,7 +913,7 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     String audio_tty = data->getValue("audio");
     String data_tty = data->getValue("data");
     
-    CardDevice * dev = new CardDevice(name, this);
+    CardDevice* dev = new CardDevice(name, this);
     dev->m_data_tty = data_tty;
     dev->m_audio_tty = audio_tty;
 
@@ -913,6 +959,7 @@ Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
 {
     return 0;
 }
+
 bool DevicesEndPoint::MakeCall(CardDevice* dev, const String &called, void* usrData)
 {
     
@@ -921,7 +968,6 @@ bool DevicesEndPoint::MakeCall(CardDevice* dev, const String &called, void* usrD
         Debug(DebugAll, "DevicesEndPoint::MakeCall error: dev is NULL");
 	return false;
     }
-
     return dev->newCall(called, usrData);
 }
 
@@ -943,6 +989,7 @@ bool Connection::onAnswered()
 {
     return true;
 }
+
 bool Connection::onHangup(int reason)
 {
     return true;
@@ -955,7 +1002,7 @@ bool Connection::sendAnswer()
 
     if (m_dev->incoming)
     {
-	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add (CMD_AT_A, RES_OK))
+	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add(CMD_AT_A, RES_OK))
 	{
 	    Debug(DebugAll, "[%s] Error sending ATA command", m_dev->c_str());
 	}
@@ -979,11 +1026,6 @@ bool Connection::sendHangup()
 
     tmp->m_mutex.lock();
 
-//	if (pvt->a_timer)
-//	{
-//		ast_timer_close (pvt->a_timer);
-//		pvt->a_timer = NULL;
-//	}
 
     if (tmp->needchup)
     {
@@ -1022,8 +1064,6 @@ bool Connection::sendDTMF(char digit)
 
     return true;
 }
-
-
 
 void Connection::forwardAudio(char* data, int len)
 {

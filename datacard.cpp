@@ -40,7 +40,7 @@ public:
 	m->addParam("module","datacard");
 //	m->addParam("device",*dev);
 	m->addParam("text",ussd);
-	dev->getStatus(m);
+	dev->getParams(m);
 	Engine::enqueue(m);
     }
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
@@ -52,7 +52,7 @@ public:
 //	m->addParam("device",*dev);
 	m->addParam("caller",caller);
 	m->addParam("text",sms);
-	dev->getStatus(m);
+	dev->getParams(m);
 	Engine::enqueue(m);
     }
     virtual Connection* createConnection(CardDevice* dev, void* usrData);
@@ -261,13 +261,12 @@ bool DatacardChannel::onIncoming(const String &caller)
     Debug(this,DebugAll,"DatacardChannel::onIncoming(%s)", caller.c_str());
     
     Message *m = message("call.preroute",false,true);
-    m->setParam("callername",caller);
-    m->setParam("caller",caller);
-//    called = s_cfg.getValue("incoming","called");
-    m->setParam("called","123");
+    m->setParam("callername", caller);
+    m->setParam("caller", caller);
+    m->setParam("called", m_dev->getNumber());
 //TODO: enable tonedetect, must be configure????
-    m->setParam("tonedetect_in","true");
-    m_dev->getStatus(m);
+    m->setParam("tonedetect_in", "true");
+    m_dev->getParams(m);
  
     if (startRouter(m))
 	return true;

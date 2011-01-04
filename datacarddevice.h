@@ -146,7 +146,8 @@ public:
     int audioStatus()
 	{ return devStatus(m_audio_fd);}
 
-    bool getStatus(NamedList * list);
+    bool getParams(NamedList* list);
+    String getStatus();
 
 private:
     bool startMonitor();
@@ -167,6 +168,9 @@ public:
 
     char a_write_buf[FRAME_SIZE * 5];
     RingBuffer a_write_rb;
+
+    String getNumber()
+	{ return m_number; }
 
 private:
     unsigned int has_sms:1;
@@ -201,9 +205,9 @@ public:
     unsigned int needring:1;			/* we need to send a RING */
     unsigned int volume_synchronized:1;		/* we have synchronized the volume */
 	
+private:
     // TODO: Running flag. Do we need to stop every MonitorThread or set one 
     // flag on module level? Do we need syncronization?
-private:
     bool m_running;
 
 public:
