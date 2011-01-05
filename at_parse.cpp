@@ -697,21 +697,31 @@ int CardDevice::at_parse_cusd(char* str, size_t len, char** cusd, unsigned char*
 
 int CardDevice::at_parse_cpin(char* str, size_t len)
 {
-	if (memmem(str, len, "READY", 5))
+	if(memmem(str, len, "READY", 5))
 	{
 		return 0;
 	}
-	if (memmem(str, len, "SIM PIN", 7))
+	if(memmem(str, len, "SIM PIN", 7))
 	{
 		Debug(DebugAll, "Datacard %s needs PIN code!\n", c_str());
 		return 1;
 	}
-	if (memmem(str, len, "SIM PUK", 7))
+	if(memmem(str, len, "SIM PUK", 7))
 	{
 		Debug(DebugAll, "Datacard %s needs PUK code!\n", c_str());
 		return 2;
 	}
-
+	if(memmem(str, len, "SIM PIN2", 7))
+	{
+		Debug(DebugAll, "Datacard %s needs PIN2 code!\n", c_str());
+		return 3;
+	}
+	if(memmem(str, len, "SIM PUK2", 7))
+	{
+		Debug(DebugAll, "Datacard %s needs PUK2 code!\n", c_str());
+		return 4;
+	}
+	
 	Debug(DebugAll, "[%s] Error parsing +CPIN message: %s\n", c_str(), str);
 
 	return -1;
