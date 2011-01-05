@@ -11,23 +11,10 @@
 #include <stdlib.h>
 
 
-/*!
- * \brief Add an item to the back of the queue
- * \param cmd -- the command that was sent to generate the response
- * \param res -- the expected response
- */
-
 int CardDevice::at_fifo_queue_add(at_cmd_t cmd, at_res_t res)
 {
     return at_fifo_queue_add_ptr(cmd, res, NULL);
 }
-
-/*!
- * \brief Add an item to the back of the queue with pointer data
- * \param cmd -- the command that was sent to generate the response
- * \param res -- the expected response
- * \param data -- pointer data associated with this entry, it will be freed when the message is freed
- */
 
 int CardDevice::at_fifo_queue_add_ptr(at_cmd_t cmd, at_res_t res, void* data)
 {
@@ -44,13 +31,6 @@ int CardDevice::at_fifo_queue_add_ptr(at_cmd_t cmd, at_res_t res, void* data)
     return 0;
 }
 
-/*!
- * \brief Add an item to the back of the queue with pointer data
- * \param cmd -- the command that was sent to generate the response
- * \param res -- the expected response
- * \param num -- numeric data
- */
-
 int CardDevice::at_fifo_queue_add_num(at_cmd_t cmd, at_res_t res, int num)
 {
     at_queue_t* e = new at_queue_t();
@@ -63,13 +43,8 @@ int CardDevice::at_fifo_queue_add_num(at_cmd_t cmd, at_res_t res, int num)
     m_atQueue.append(e);
 
     Debug(DebugAll, "[%s] add command '%s' expected response '%s'\n", c_str(), at_cmd2str(e->cmd), at_res2str(e->res));
-
     return 0;
 }
-
-/*!
- * \brief Remove an item from the front of the queue, and free it
- */
 
 void CardDevice::at_fifo_queue_rem()
 {
@@ -87,19 +62,10 @@ void CardDevice::at_fifo_queue_rem()
     }
 }
 
-/*!
- * \brief Remove all itmes from the queue and free them
- */
-
 void CardDevice::at_fifo_queue_flush()
 {
     m_atQueue.clear();
 }
-
-/*!
- * \brief Get the head of a queue
- * \return a pointer to the head of the given queue
- */
 
 at_queue_t* CardDevice::at_fifo_queue_head()
 {

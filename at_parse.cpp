@@ -141,12 +141,6 @@ const char* CardDevice::at_cmd2str(at_cmd_t cmd)
 	}
 }
 
-/*!
- * \brief Get the string representation of the given AT response
- * \param res -- the response to process
- * \return a string describing the given response
- */
-
 const char* CardDevice::at_res2str(at_res_t res)
 {
 	switch (res)
@@ -243,16 +237,6 @@ const char* CardDevice::at_res2str(at_res_t res)
 	}
 }
 
-
-
-/*!
- * \brief Parse a CLIP event
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * @note str will be modified when the CID string is parsed
- * \return NULL on error (parse error) or a pointer to the caller id inforamtion in str on success
- */
-
 char* CardDevice::at_parse_clip(char* str, size_t len)
 {
 	size_t	i;
@@ -297,14 +281,6 @@ char* CardDevice::at_parse_clip(char* str, size_t len)
 
 	return clip;
 }
-
-/*!
- * \brief Parse a CNUM response
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * @note str will be modified when the CNUM message is parsed
- * \return NULL on error (parse error) or a pointer to the subscriber number
- */
 
 char* CardDevice::at_parse_cnum(char* str, size_t len)
 {
@@ -365,14 +341,6 @@ char* CardDevice::at_parse_cnum(char* str, size_t len)
 	return number;
 }
 
-/*!
- * \brief Parse a COPS response
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * @note str will be modified when the COPS message is parsed
- * \return NULL on error (parse error) or a pointer to the provider name
- */
-
 char* CardDevice::at_parse_cops(char* str, size_t len)
 {
 	size_t	i;
@@ -417,19 +385,6 @@ char* CardDevice::at_parse_cops(char* str, size_t len)
 
 	return provider;
 }
-
-/*!
- * \brief Parse a CREG response
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * \param gsm_reg -- a pointer to a int
- * \param gsm_reg_status -- a pointer to a int
- * \param lac -- a pointer to a char pointer which will store the location area code in hex format
- * \param ci  -- a pointer to a char pointer which will store the cell id in hex format
- * @note str will be modified when the CREG message is parsed
- * \retval  0 success
- * \retval -1 parse error
- */
 
 int CardDevice::at_parse_creg(char* str, size_t len, int* gsm_reg, int* gsm_reg_status, char** lac, char** ci)
 {
@@ -556,14 +511,6 @@ int CardDevice::at_parse_creg(char* str, size_t len, int* gsm_reg, int* gsm_reg_
 	return 0;
 }
 
-/*!
- * \brief Parse a CMTI notification
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * @note str will be modified when the CMTI message is parsed
- * \return -1 on error (parse error) or the index of the new sms message
- */
-
 int CardDevice::at_parse_cmti(char* str, size_t len)
 {
 	int index = -1;
@@ -582,15 +529,6 @@ int CardDevice::at_parse_cmti(char* str, size_t len)
 	return index;
 }
 
-/*!
- * \brief Parse a CMGR message
- * \param len -- string lenght
- * \param stat -- 
- * \param length -- 
- * \retval  0 success
- * \retval -1 parse error
- */
-
 int CardDevice::at_parse_cmgr(char* str, size_t len, int* stat, int* pdulen)
 {
 
@@ -603,20 +541,10 @@ int CardDevice::at_parse_cmgr(char* str, size_t len, int* stat, int* pdulen)
 	if (!sscanf(str, "+CMGR: %d,,%d", stat, pdulen))
 	{
 	    Debug(DebugAll, "[%s] Error parsing CMGR event '%s'\n", c_str(), str);
-		return -1;
+	    return -1;
 	}
-	
 	return 0;
 }
-
- /*!
- * \brief Parse a CUSD answer
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * @note str will be modified when the CUSD string is parsed
- * \retval  0 success
- * \retval -1 parse error
- */
 
 int CardDevice::at_parse_cusd(char* str, size_t len, char** cusd, unsigned char* dcs)
 {
@@ -685,16 +613,6 @@ int CardDevice::at_parse_cusd(char* str, size_t len, char** cusd, unsigned char*
 	return 0;
 }
 
-/*!
- * \brief Parse a CPIN notification
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * \return  2 if PUK required
- * \return  1 if PIN required
- * \return  0 if no PIN required
- * \return -1 on error (parse error) or card lock
- */
-
 int CardDevice::at_parse_cpin(char* str, size_t len)
 {
 	if(memmem(str, len, "READY", 5))
@@ -727,14 +645,6 @@ int CardDevice::at_parse_cpin(char* str, size_t len)
 	return -1;
 }
 
-/*!
- * \brief Parse +CSQ response
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * \retval  0 success
- * \retval -1 error
- */
-
 int CardDevice::at_parse_csq(char* str, size_t len, int* rssi)
 {
 	/*
@@ -753,13 +663,6 @@ int CardDevice::at_parse_csq(char* str, size_t len, int* rssi)
 	return 0;
 }
 
-/*!
- * \brief Parse a ^RSSI notification
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * \return -1 on error (parse error) or the rssi value
- */
-
 int CardDevice::at_parse_rssi(char* str, size_t len)
 {
 	int rssi = -1;
@@ -777,13 +680,6 @@ int CardDevice::at_parse_rssi(char* str, size_t len)
 
 	return rssi;
 }
-
-/*!
- * \brief Parse a ^MODE notification (link mode)
- * \param str -- string to parse (null terminated)
- * \param len -- string lenght
- * \return -1 on error (parse error) or the the link mode value
- */
 
 int CardDevice::at_parse_mode(char* str, size_t len, int* mode, int* submode)
 {
