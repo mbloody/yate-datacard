@@ -1,3 +1,16 @@
+/* 
+Copyright (C) 2010- Alexander Chudnovets <effractor@gmail.com>
+
+Based on SMS Server Tools 3
+Copyright (C) 2006- Keijo Kasvi
+http://smstools3.kekekasvi.com/
+
+This program is free software unless you got it under another license directly
+from the author. You can redistribute it and/or modify it under the terms of
+the GNU General Public License as published by the Free Software Foundation.
+Either version 2 of the License, or (at your option) any later version.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,7 +29,7 @@ const int max_udh_data = 512;
 const int max_udh_type = 512;
 const int max_err = 1024;
 const int maxsms_binary = 140;
-const int max_message = maxsms_binary*4;
+const int max_message = maxsms_binary * 4;
 const int validity_period = 255;
 const int max_pdu = 160;
 
@@ -184,6 +197,60 @@ int explain_udh(char *udh_type, const char *pdu)
     }
 
     return udh_length;
+}
+
+void explain_status(char *dest, size_t size_dest, int status)
+{
+	const char *p = "unknown";
+	switch (status)
+	{
+		case 0: p = "Ok, short message received by the SME"; break;
+		case 1: p = "Ok, short message forwarded by the SC to the SME but the SC is unable to confirm delivery"; break;
+		case 2: p = "Ok, short message replaced by the SC"; break;
+
+		// Temporary error, SC still trying to transfer SM
+		case 32: p = "Still trying, congestion"; break;
+		case 33: p = "Still trying, SME busy"; break;
+		case 34: p = "Still trying, no response sendr SME"; break;
+		case 35: p = "Still trying, service rejected"; break;
+		case 36: p = "Still trying, quality of service not available"; break;
+		case 37: p = "Still trying, error in SME"; break;
+		// 38...47: Reserved
+		// 48...63: Values specific to each SC
+
+		// Permanent error, SC is not making any more transfer attempts
+		case 64: p = "Error, remote procedure error"; break;
+		case 65: p = "Error, incompatible destination"; break;
+		case 66: p = "Error, connection rejected by SME"; break;
+		case 67: p = "Error, not obtainable"; break;
+		case 68: p = "Error, quality of service not available"; break;
+		case 69: p = "Error, no interworking available"; break;
+		case 70: p = "Error, SM validity period expired"; break;
+		case 71: p = "Error, SM deleted by originating SME"; break;
+		case 72: p = "Error, SM deleted by SC administration"; break;
+		case 73: p = "Error, SM does not exist"; break;
+		// 74...79: Reserved
+		// 80...95: Values specific to each SC
+
+		// Permanent error, SC is not making any more transfer attempts
+		case 96: p = "Error, congestion"; break;
+		case 97: p = "Error, SME busy"; break;
+		case 98: p = "Error, no response sendr SME"; break;
+		case 99: p = "Error, service rejected"; break;
+		case 100: p = "Error, quality of service not available"; break;
+		case 101: p = "Error, error in SME"; break;
+		// 102...105: Reserved
+		// 106...111: Reserved
+		// 112...127: Values specific to each SC
+		// 128...255: Reserved
+
+		default:
+			if (status >= 48 && status <= 63)
+				p = "Temporary error, SC specific, unknown";
+			else if ((status >= 80 && status <= 95) || (status >= 112 && status <= 127))
+				p = "Permanent error, SC specific, unknown";
+		}
+		snprintf(dest, size_dest, "%s", p);
 }
 
 int pdu2text(const char *pdu, char *text, int *text_length, int *expected_length,
@@ -565,6 +632,7 @@ PDU::~PDU()
     
     if (m_message)
         free(m_message);
+    m_message = 0;
     
     if (m_date)
         free(m_date);
@@ -641,7 +709,7 @@ int PDU::convert(const char *tocode, const char *fromcode)
     if (cd == (iconv_t)(-1) || !m_message)
         return -1;
         
-    size_t inbytesleft = m_message_len, outbytesleft = maxsms_binary;
+    size_t inbytesleft = m_message_len, outbytesleft = maxsms_binary * 2;
     
     char *tmp = (char*)malloc(outbytesleft);
     char *msg = m_message;
@@ -653,7 +721,7 @@ int PDU::convert(const char *tocode, const char *fromcode)
     if (m_message)
         free(m_message);
     m_message = tmp;
-        
+    
     iconv_close(cd);
     
     m_message_len = maxsms_binary - outbytesleft;
@@ -1000,8 +1068,8 @@ bool PDU::parseDeliver()
     char str_buf[100];
     sprintf(str_buf, "%c%c-%c%c-%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
             m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
-    if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) 
-        || !isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
+    if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+    	!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
     {
         sprintf(m_err, "Invalid character(s) in date of Service Centre Time Stamp");
         return false;
@@ -1086,6 +1154,198 @@ bool PDU::parseDeliver()
 
 bool PDU::parseStatusReport()
 {
+	// There should be at least message-id, address-length and address-type:
+	if (strlen(m_pdu_ptr) < 6)
+	{
+        sprintf(m_err, "Reading message id, address length and address type: PDU is too short");
+        return false;
+    }
+    
+    int messageid;
+    if ((messageid = octet2bin_check(m_pdu_ptr)) < 0)
+	{
+		sprintf(m_err, "Invalid message id");
+		return false;
+	}
+
+	// get recipient address
+	m_pdu_ptr += 2;
+	int length = octet2bin_check(m_pdu_ptr);
+	if (length < 1 || length > max_number)
+	{
+		sprintf(m_err, "Invalid recipient address length");
+		return false;
+	}
+	int padding = length % 2;
+	m_pdu_ptr += 2;
+	
+	int addr_type = explainAddressType(m_pdu_ptr, 0);
+	if (addr_type < 0)
+	{
+		sprintf(m_err, "Invalid recipient address type");
+		return false;
+	}
+	if (addr_type < 0x80)
+	{
+		sprintf(m_err, "Missing bit 7 in recipient address type");
+		return false;
+	}
+	
+	m_pdu_ptr += 2;
+	if ((addr_type & 112) == 80) // Sender is alphanumeric
+	{
+		if (strlen(m_pdu_ptr) < (size_t)(length + padding))
+		{
+			sprintf(m_err, "Reading sender address (alphanumeric): PDU is too short");
+			return false;
+		}
+		char tmpsender[100];
+		char sender[100];
+		snprintf(tmpsender, length + padding + 3, "%02X%s", length * 4 / 7, m_pdu_ptr);
+		if (pdu2text0(tmpsender, sender) < 0)
+		{
+			sprintf(m_err, "Reading alphanumeric sender address: Invalid character(s)");
+			return false;
+		}
+		strcpy(m_number, sender);
+	}
+	else // Sender is numeric
+	{
+		strncpy(m_number, m_pdu_ptr, length + padding);
+		m_number[length + padding] = '\0';
+		swapchars(m_number);
+           
+		int end = length + padding - 1;
+		if (padding)
+		{
+			if (m_number[end] != 'F')
+				sprintf(m_err, "Length of numeric sender address is odd, but not terminated with 'F'.\n");
+			else
+				m_number[end] = '\0';
+		}
+		else
+		{
+			if (m_number[end] == 'F')
+			{
+				sprintf(m_err, "Length of numeric sender address is even, but still was terminated with 'F'.\n");
+				m_number[end] = '\0';
+			}
+		}
+            
+		for (size_t i = 0; i < strlen(m_number); i++)
+		{
+			if (!isdigit(m_number[i]))
+			{
+				sprintf(m_err, "Invalid character(s) in sender address.\n");
+				break;
+			}
+		}
+	}
+
+    m_pdu_ptr += length + padding;
+	if (strlen(m_pdu_ptr) < 14)
+	{
+		sprintf(m_err, "While trying to read SMSC Timestamp: PDU is too short");
+		return false;
+	}
+	// get SMSC timestamp
+	char str_buf[100];
+	sprintf(str_buf, "%c%c-%c%c-%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
+			m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
+	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
+	{
+		sprintf(m_err, "Invalid character(s) in date of SMSC Timestamp");
+		return false;
+	}
+	else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31)
+	{
+		sprintf(m_err, "Invalid value(s) in date of SMSC Timestamp.");
+	}
+	sprintf(m_date, str_buf);
+	
+	m_pdu_ptr += 6;
+	sprintf(str_buf, "%c%c:%c%c:%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
+			m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
+	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
+	{
+		sprintf(m_err, "Invalid character(s) in time of SMSC Timestamp");
+		return false;
+	}
+	else if (atoi(str_buf) > 23 || atoi(str_buf + 3) > 59 || atoi(str_buf + 6) > 59)
+	{
+		sprintf(m_err, "Invalid value(s) in time of SMSC Timestamp.");
+	}
+	sprintf(m_time, str_buf);
+
+	m_pdu_ptr += 6;
+	// Time zone is not used but bytes are checked:
+	if (octet2bin_check(m_pdu_ptr) < 0)
+	{
+		sprintf(m_err, "Invalid character(s) in Time Zone of SMSC Time Stamp");
+		return false;
+	}
+	m_pdu_ptr += 2;
+
+
+	if (strlen(m_pdu_ptr) < 14)
+	{
+		sprintf(m_err, "While trying to read Discharge Timestamp: PDU is too short");
+		return false;
+	}
+
+	// get Discharge timestamp
+	sprintf(str_buf, "%c%c-%c%c-%c%c %c%c:%c%c:%c%c", m_pdu_ptr[1], 
+			m_pdu_ptr[0], m_pdu_ptr[3], m_pdu_ptr[2], m_pdu_ptr[5], 
+			m_pdu_ptr[4], m_pdu_ptr[7], m_pdu_ptr[6], m_pdu_ptr[9], 
+			m_pdu_ptr[8], m_pdu_ptr[11], m_pdu_ptr[10]);
+	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]) || 
+		!isdigit(str_buf[9]) || !isdigit(str_buf[10]) || 
+		!isdigit(str_buf[12]) || !isdigit(str_buf[13]) || 
+		!isdigit(str_buf[15]) || !isdigit(str_buf[16]))
+	{
+		sprintf(m_err, "Invalid character(s) in Discharge Timestamp");
+		return false;
+	}
+	else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31 || 
+			 atoi(str_buf + 9) > 24 || atoi(str_buf + 12) > 59 || 
+			 atoi(str_buf + 16) > 59)
+	{
+		sprintf(m_err, "Invalid values(s) in Discharge Timestamp.");
+	}
+
+	m_pdu_ptr += 12;
+	// Time zone is not used but bytes are checked:
+	if (octet2bin_check(m_pdu_ptr) < 0)
+	{
+		sprintf(m_err, "Invalid character(s) in Time Zone of Discharge Time Stamp");
+		return false;
+	}
+	m_pdu_ptr += 2;
+	
+	char discharge_timestamp[128];
+	sprintf(discharge_timestamp, "%s", str_buf);
+	
+	if (strlen(m_pdu_ptr) < 2)
+	{
+		sprintf(m_err, "While trying to read Status octet: PDU is too short");
+		return false;
+	}
+	
+	int status;
+	if ((status = octet2bin_check(m_pdu_ptr)) < 0)
+	{
+		sprintf(m_err, "Invalid Status octet");
+		return false;
+	}
+
+	explain_status(str_buf, sizeof(str_buf), status);
+	
+	sprintf(m_message, "Discharge timestamp: %s\nMessage ID: %d\nStatus: %s",
+			discharge_timestamp, messageid, str_buf);
+	
     return true;
 }
 
@@ -1258,4 +1518,3 @@ void PDU::setAlphabet(const Alphabet alphabet)
     m_alphabet = (int)alphabet;
 }
 
-/* vi: set ts=8 sw=4 sts=4 noet: */
