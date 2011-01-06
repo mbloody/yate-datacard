@@ -1,6 +1,4 @@
 /* 
-Copyright (C) 2010- Alexander Chudnovets <effractor@gmail.com>
-
 Based on SMS Server Tools 3
 Copyright (C) 2006- Keijo Kasvi
 http://smstools3.kekekasvi.com/
@@ -709,7 +707,7 @@ int PDU::convert(const char *tocode, const char *fromcode)
     if (cd == (iconv_t)(-1) || !m_message)
         return -1;
         
-    size_t inbytesleft = m_message_len, outbytesleft = maxsms_binary * 2;
+    size_t inbytesleft = m_message_len, outbytesleft = max_message;
     
     char *tmp = (char*)malloc(outbytesleft);
     char *msg = m_message;
@@ -1517,4 +1515,6 @@ void PDU::setAlphabet(const Alphabet alphabet)
 {
     m_alphabet = (int)alphabet;
 }
+
+/* vi: set ts=8 sw=4 sts=4 noet: */
 
