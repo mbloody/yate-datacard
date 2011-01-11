@@ -232,13 +232,30 @@ private:
 
     // AT command methods.
 public:
-    int at_wait(int*);
+
+    /**
+     * Wait for AT command
+     * @param ms -- wait timeout
+     * @return file descriptor or -1 on error
+     */    
+    int at_wait(int* ms);
+
+    /**
+     * Read and handle data
+     * @return 0 on success or -1 on error
+     */    
     int handle_rd_data();
 
 private:
+
+    /**
+     * Convert command to result type
+     * @param command -- received command
+     * @return result type
+     */
     at_res_t at_read_result_classification(char* command);
 
-    /**                             
+    /**
      * Do response
      * @param str -- response string
      * @param at_res -- result type
@@ -589,7 +606,13 @@ private:
      * @return 0 success or -1 on error
      */
     int at_write_full(char* buf, size_t count);
-    
+
+    /**
+     * Formatted output to data socket
+     * @param fmt -- format string
+     * @param ... - params according to format string
+     * @return 0 success or -1 on error
+     */    
     int send_atcmd(const char* fmt, ...);
 
 public:
