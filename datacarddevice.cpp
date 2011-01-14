@@ -449,8 +449,6 @@ bool CardDevice::getParams(NamedList* list)
     
     list->addParam("gsm_reg_status",reg_status);
     list->addParam("rssi", String(rssi));
-    list->addParam("linkmode", String(linkmode));
-    list->addParam("linksubmode", String(linksubmode));
     list->addParam("providername", m_provider_name);
     list->addParam("manufacturer", m_manufacturer);
     list->addParam("model", m_model);

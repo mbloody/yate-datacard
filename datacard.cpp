@@ -107,7 +107,9 @@ public:
     virtual void initialize();
     virtual bool msgExecute(Message& msg, String& dest);
     virtual bool received(Message& msg, int id);
-
+    
+    bool doCommand(String& line, String& rval);
+    void doComplete(const String& partLine, const String& partWord, String& rval);
 private:
     YDevEndPoint* m_endpoint;
 };
@@ -328,24 +330,48 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
 
 
 // perform command line completion
-static void doCompletion(Message &msg, const String& partLine, const String& partWord)
+void DatacardDriver::doComplete(const String& partLine, const String& partWord, String& rval)
 {
     if (partLine.null() || (partLine == "help") || (partLine == "status"))
-	Module::itemComplete(msg.retValue(),"datacard",partWord);
+	Module::itemComplete(rval,"datacard",partWord);
     else if (partLine == "datacard") {
-//	Module::itemComplete(msg.retValue(),"config",partWord);
-	Module::itemComplete(msg.retValue(),"test",partWord);
+//	Module::itemComplete(rval,"config",partWord);
+	Module::itemComplete(rval,"ussd",partWord);
     }
-//    else if ((partLine == "datacard config")) {
-//	for (unsigned int i=0;i<s_cfg.sections();i++) 
-//	{
-//	    NamedList* dev = s_cfg.getSection(i);
-//	    if(dev && dev->getBoolValue("enabled",true))
-//		Module::itemComplete(msg.retValue(),*dev,partWord);
-//	}
-//    }
+    else if ((partLine == "datacard ussd")) {
+	for (unsigned int i=0;i<s_cfg.sections();i++) 
+	{
+	    NamedList* dev = s_cfg.getSection(i);
+	    if(dev && dev->getBoolValue("enabled",true) && (*dev != "general"))
+		Module::itemComplete(rval,*dev,partWord);
+	}
+    }
 }
 
+bool DatacardDriver::doCommand(String& line, String& rval)
+{
+    if(line.startSkip("ussd")) 
+    {
+	int q = line.find(' ');
+	if(q >= 0) 
+	{
+    	    String ussd = line.substr(q+1).trimBlanks();
+	    line = line.substr(0,q).trimBlanks();
+	    
+	    CardDevice* dev = m_endpoint->findDevice(line);
+            if(dev && m_endpoint->sendUSSD(dev, ussd))
+	        rval << "USSD send success!";
+	    else
+		rval << "Error: USSD not send.";
+	}
+	else 
+        {
+	    rval << "USSD command error";
+	}
+    }
+    rval << "\r\n";
+    return true;
+}
 
 bool DatacardDriver::received(Message& msg, int id)
 {
@@ -377,13 +403,13 @@ bool DatacardDriver::received(Message& msg, int id)
 	String line = msg.getValue("line");
 	if (line.null()) 
 	{
-	    doCompletion(msg,msg.getValue("partline"),msg.getValue("partword"));
+	    doComplete(msg.getValue("partline"), msg.getValue("partword"), msg.retValue());
 	    return false;
 	}
         if (!line.startSkip("datacard"))
             return false;
-            
-        msg.retValue() = "Datacard operation failed: " + line + "\r\n";
+        if(!doCommand(line, msg.retValue()))
+    	    msg.retValue() = "Datacard operation failed: " + line + "\r\n";
         return true;                                                    
     }
     return Driver::received(msg,id);
