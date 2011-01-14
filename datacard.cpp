@@ -76,7 +76,6 @@ private:
     YDevEndPoint* m_ep;
 };
 
-
 class DatacardChannel;
 
 class DatacardConsumer : public DataConsumer
@@ -205,7 +204,6 @@ bool USSDHandler::received(Message &msg)
     return m_ep->sendUSSD(dev, text);
 }
 
-
 DatacardConsumer::DatacardConsumer(DatacardChannel* conn, const char* format): DataConsumer(format), m_connection(conn)
 {
 }
@@ -328,6 +326,27 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     return false;
 }
 
+
+// perform command line completion
+static void doCompletion(Message &msg, const String& partLine, const String& partWord)
+{
+    if (partLine.null() || (partLine == "help") || (partLine == "status"))
+	Module::itemComplete(msg.retValue(),"datacard",partWord);
+    else if (partLine == "datacard") {
+//	Module::itemComplete(msg.retValue(),"config",partWord);
+	Module::itemComplete(msg.retValue(),"test",partWord);
+    }
+//    else if ((partLine == "datacard config")) {
+//	for (unsigned int i=0;i<s_cfg.sections();i++) 
+//	{
+//	    NamedList* dev = s_cfg.getSection(i);
+//	    if(dev && dev->getBoolValue("enabled",true))
+//		Module::itemComplete(msg.retValue(),*dev,partWord);
+//	}
+//    }
+}
+
+
 bool DatacardDriver::received(Message& msg, int id)
 {
 //TODO: implement this
@@ -352,6 +371,20 @@ bool DatacardDriver::received(Message& msg, int id)
 	    msg.retValue() << ";" << detail;
 	msg.retValue() << "\r\n";
 	return true;
+    }
+    else if (id == Command)
+    {
+	String line = msg.getValue("line");
+	if (line.null()) 
+	{
+	    doCompletion(msg,msg.getValue("partline"),msg.getValue("partword"));
+	    return false;
+	}
+        if (!line.startSkip("datacard"))
+            return false;
+            
+        msg.retValue() = "Datacard operation failed: " + line + "\r\n";
+        return true;                                                    
     }
     return Driver::received(msg,id);
 }

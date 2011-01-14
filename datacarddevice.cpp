@@ -638,7 +638,7 @@ bool CardDevice::Hangup(int reason)
 bool CardDevice::newCall(const String &called, void* usrData)
 {
     int clir = 0;
-
+//    isE164
 //1 2 3 4 5 6 7 8 9 0 * # + A B C
 
     m_conn = m_endpoint->createConnection(this, usrData);
