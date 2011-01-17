@@ -265,7 +265,7 @@ bool DatacardChannel::onIncoming(const String &caller)
     m->setParam("caller", caller);
     m->setParam("called", m_dev->getNumber());
 //TODO: enable tonedetect, must be configure????
-    m->setParam("tonedetect_in", "true");
+//    m->setParam("tonedetect_in", "true");
     m_dev->getParams(m);
  
     if (startRouter(m))
