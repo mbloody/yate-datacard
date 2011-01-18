@@ -38,7 +38,6 @@ public:
 	Message* m = new Message("datacard.ussd");
 	m->addParam("type","incoming");
 	m->addParam("module","datacard");
-//	m->addParam("device",*dev);
 	m->addParam("text",ussd);
 	dev->getParams(m);
 	Engine::enqueue(m);
@@ -49,7 +48,6 @@ public:
 	Message* m = new Message("datacard.sms");
 	m->addParam("type","incoming");
 	m->addParam("module","datacard");
-//	m->addParam("device",*dev);
 	m->addParam("caller",caller);
 	m->addParam("text",sms);
 	dev->getParams(m);
@@ -264,8 +262,6 @@ bool DatacardChannel::onIncoming(const String &caller)
     m->setParam("callername", caller);
     m->setParam("caller", caller);
     m->setParam("called", m_dev->getNumber());
-//TODO: enable tonedetect, must be configure????
-//    m->setParam("tonedetect_in", "true");
     m_dev->getParams(m);
  
     if (startRouter(m))
@@ -304,9 +300,8 @@ bool DatacardChannel::onHangup(int reason)
 void DatacardChannel::forwardAudio(char* data, int len)
 {
     DatacardSource* s = static_cast<DatacardSource*>(getSource());
-    if(!s)
-     return;
-    s->Forward(DataBlock(data, len));
+    if(s && s->valid())
+	s->Forward(DataBlock(data, len));
 }
 
 
@@ -443,8 +438,6 @@ void DatacardDriver::initialize()
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
     m_endpoint = new YDevEndPoint(discovery_interval);
-//    String preferred = s_cfg.getValue("formats","preferred");
-//    bool def = s_cfg.getBoolValue("formats","default",true);
     String name;
     unsigned int n = s_cfg.sections();
     for (unsigned int i = 0; i < n; i++) 
