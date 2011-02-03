@@ -32,12 +32,11 @@ data=/dev/ttyUSB3
 ; u2diag: int: Send u2diag to enable or disable some features
 ;u2diag=-1
 
-; usecallingpres: bool: Enable using of callingpres settings
-;usecallingpres=no
-
 ; callingpres: int: Set CLI status for calls
 ; Allowed values:
 ;  0: presentation indicator is used according to the subscription of the CLIR service
 ;  1: CLIR invocation (hide)
 ;  2: CLIR suppression (show)
+; Other values not valid, do not use callingpres.
+; Default value -1
 ;callingpres=-1

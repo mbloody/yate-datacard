@@ -296,7 +296,6 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_reset_datacard = true;
     m_u2diag = -1;
     m_callingpres = -1;
-
     
     m_atQueue.clear();
     
@@ -509,7 +508,6 @@ String CardDevice::getStatus()
 //    list->addParam("imsi", m_imsi);
 //    list->addParam("number", m_number);
 
-//    ast_cli (a->fd, "  Use CallingPres         : %s\n", pvt->usecallingpres ? "Yes" : "No");
 //    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
 //    ast_cli (a->fd, "  Use UCS-2 encoding      : %s\n", pvt->use_ucs2_encoding ? "Yes" : "No");
 //    ast_cli (a->fd, "  USSD use 7 bit encoding : %s\n", pvt->cusd_use_7bit_encoding ? "Yes" : "No");
@@ -635,7 +633,6 @@ bool CardDevice::Hangup(int reason)
 
 bool CardDevice::newCall(const String &called, void* usrData)
 {
-    int clir = 0;
 //    isE164
 //1 2 3 4 5 6 7 8 9 0 * # + A B C
 
@@ -657,13 +654,13 @@ bool CardDevice::newCall(const String &called, void* usrData)
 
     Debug(DebugAll, "[%s] Calling '%s'", c_str(), called.c_str());
 
-    if (m_usecallingpres)
+//  0: presentation indicator is used according to the subscription of the CLIR service
+//  1: CLIR invocation (hide)
+//  2: CLIR suppression (show)
+//  Other values not valid, Do not use callingpres
+    if((m_callingpres >= 0) && (m_callingpres <= 2))
     {
-//TODO:
-	if(m_callingpres < 0)
-	    clir = 0;
-	else
-	    clir = m_callingpres;
+	int clir = m_callingpres;
 	char* dest_number = strdup(called.c_str());
 	if (at_send_clir(clir) || at_fifo_queue_add_ptr(CMD_AT_CLIR, RES_OK, dest_number))
 	{
@@ -922,7 +919,6 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     dev->m_u2diag = data->getIntValue("u2diag",-1);
     if (dev->m_u2diag == 0)
 	dev->m_u2diag = -1;
-    dev->m_usecallingpres = data->getBoolValue("usecallingpres",false);
     dev->m_callingpres = data->getIntValue("callingpres",-1);
     dev->m_disablesms = data->getBoolValue("disablesms",false);  
     

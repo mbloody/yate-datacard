@@ -222,7 +222,6 @@ public:
     int m_callingpres;			/* calling presentation */
     bool m_auto_delete_sms;
     bool m_reset_datacard;
-    bool m_usecallingpres;
     bool m_disablesms;
 
 private:		
