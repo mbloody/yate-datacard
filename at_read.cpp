@@ -62,36 +62,91 @@ int CardDevice::handle_rd_data()
     return 0;
 }
 
-
-int CardDevice::at_wait(int* ms)
+void CardDevice::processATEvents()
 {
+    at_queue_t*	e;
     struct pollfd fds;
-    fds.fd = m_data_fd;
-    fds.events = POLLIN;
-    fds.revents = 0;
 
-    int res = poll(&fds, 1, *ms);
-    if (res < 0) {
-        /* Simulate a timeout if we were interrupted */
-        if (errno != EINTR)
-            return -1;
-	return 0;
-    }
-    else if(res == 0)
+    m_mutex.lock();
+
+    if (at_send_at() || at_fifo_queue_add(CMD_AT, RES_OK))
     {
-	return 0;
+        Debug(DebugAll, "[%s] Error sending AT", c_str());
+        disconnect();
+        m_mutex.unlock();
+        return;
     }
-    if((fds.revents & POLLIN))
+    m_mutex.unlock();
+
+    // Main loop
+    while (isRunning())
     {
-        //incoming data
-        return fds.fd;
-    }	
-    else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
-    {
-        //exeption
-        return -1;
-    }
-    return 0;
+        m_mutex.lock();
+        if (dataStatus() || audioStatus())
+        {
+            Debug(DebugAll, "Lost connection to Datacard %s", c_str());
+            disconnect();
+            m_mutex.unlock();
+            return;
+        }
+        m_mutex.unlock();
+
+	fds.fd = m_data_fd;
+	fds.events = POLLIN;
+	fds.revents = 0;
+
+	int res = poll(&fds, 1, 1000);
+	if (res < 0) {
+    	    if (errno == EINTR)
+        	continue;
+	    m_mutex.lock();
+	    disconnect();
+            m_mutex.unlock();
+	    return;
+	}
+	else if(res == 0)
+	{
+	    m_mutex.lock();
+            if (!initialized)
+            {
+                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
+
+		if ((e = at_fifo_queue_head()))
+		{
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str (e->res), at_cmd2str (e->cmd));
+                }
+                Debug(DebugAll, "Error initializing Datacard %s", c_str());
+                disconnect();
+                m_mutex.unlock();
+                return;
+            }
+            else
+            {
+                m_mutex.unlock();
+                continue;
+            }
+	}
+	if((fds.revents & POLLIN))
+	{
+    	    //incoming data
+    	    m_mutex.lock();
+	    if (handle_rd_data())
+	    {
+        	disconnect();
+        	m_mutex.unlock();
+        	return;
+	    }
+    	    m_mutex.unlock();
+	}	
+	else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
+	{
+    	    //exeption
+    	    m_mutex.lock();
+	    disconnect();
+            m_mutex.unlock();
+    	    return;
+	}
+    } // End of Main loop
 }
 
 at_res_t CardDevice::at_read_result_classification (char* command)
