@@ -19,7 +19,7 @@ MODSTRIP:= @YATE_STR@
 OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o char_conv.o at_read.o pdu.o
 
 PROGS:= datacard.yate 
-INCFILES := 
+INCFILES:= datacarddevice.h ringbuffer.h pdu.h
 
 MKDEPS := ./config.status
 CLEANS = $(PROGS) core $(OBJS)
@@ -135,7 +135,8 @@ rpm: tarball
 
    
 	
-datacard.yate : datacarddevice.h ringbuffer.h
+datacard.yate : INCFILES:= datacarddevice.h ringbuffer.h pdu.h
+datacard.yate : $(INCFILES)
 datacard.yate : OBJS:= datacarddevice.o at_send.o ringbuffer.o at_parse.o at_response.o at_fifo_queue.o at_read.o char_conv.o pdu.o
 datacard.yate : $(OBJS)
 

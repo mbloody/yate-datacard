@@ -67,15 +67,20 @@ void CardDevice::processATEvents()
     at_queue_t*	e;
     struct pollfd fds;
 
-    m_mutex.lock();
+//    ObjList m_commandQueue;
 
-    if (at_send_at() || at_fifo_queue_add(CMD_AT, RES_OK))
+    m_mutex.lock();
+/*    if (at_send_at() || at_fifo_queue_add(CMD_AT, RES_OK))
     {
         Debug(DebugAll, "[%s] Error sending AT", c_str());
         disconnect();
         m_mutex.unlock();
         return;
     }
+*/
+    m_commandQueue.clear();
+    m_commandQueue.append(new ATCommand("AT", CMD_AT, RES_OK));
+    
     m_mutex.unlock();
 
     // Main loop
@@ -94,6 +99,10 @@ void CardDevice::processATEvents()
 	fds.fd = m_data_fd;
 	fds.events = POLLIN;
 	fds.revents = 0;
+	
+	if((m_commandQueue.count() > 0) && !m_lastcmd)
+	    fds.events |= POLLOUT;
+	    
 
 	int res = poll(&fds, 1, 1000);
 	if (res < 0) {
@@ -138,6 +147,23 @@ void CardDevice::processATEvents()
 	    }
     	    m_mutex.unlock();
 	}	
+	else if (fds.revents & POLLOUT)
+	{
+	    m_mutex.lock();
+	    if(!m_lastcmd)
+	    {
+	    
+		ATCommand* cmd = static_cast<ATCommand*>(m_commandQueue.get());
+	    
+		if(cmd)
+		{
+		    at_write_full((char*)cmd->m_command.safe(),cmd->m_command.length());
+		    m_commandQueue.remove(cmd, false);
+		    m_lastcmd = cmd;
+		}
+	    }
+    	    m_mutex.unlock();
+	}
 	else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
 	{
     	    //exeption

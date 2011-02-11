@@ -92,6 +92,7 @@ typedef enum {
 	RES_SRVST,
 } at_res_t;
 
+
 class at_queue_t : public GenObject
 {
 public:
@@ -106,6 +107,21 @@ public:
 	int num;
     } param;
 };
+
+
+class ATCommand : public GenObject
+{
+public:
+    ATCommand(String command, at_cmd_t cmd, at_res_t res):m_command(command),m_cmd(cmd),m_res(res){}
+    ~ATCommand(){}
+
+public:
+    String m_command;
+    at_cmd_t m_cmd;
+    at_res_t m_res;
+};
+
+
 
 class CardDevice;
 class DevicesEndPoint;
@@ -864,6 +880,8 @@ public:
 private:
     ObjList m_atQueue;
 
+
+
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
     ssize_t ucs2char_to_hexstr(const char* in, size_t in_length, char* out, size_t out_size);
@@ -888,6 +906,10 @@ private:
     bool Hangup(int error);
     int getReason(int end_status, int cc_cause);
     bool m_incoming_pdu;
+
+    ObjList m_commandQueue;
+    
+    ATCommand* m_lastcmd;
 };
 
 

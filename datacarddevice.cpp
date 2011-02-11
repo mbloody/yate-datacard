@@ -206,6 +206,9 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     outgoing = 0;
     needring = 0;
     needchup = 0;
+    
+    
+    m_lastcmd = 0;
 }
 
 bool CardDevice::startMonitor() 
@@ -278,6 +281,8 @@ bool CardDevice::disconnect()
     m_incoming_pdu = false;
 
     m_atQueue.clear();
+    
+    initialized = 0;
 
     Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
     return m_connected;

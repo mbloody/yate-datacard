@@ -21,8 +21,7 @@ int CardDevice::send_atcmd(const char* fmt, ...)
 
     va_start(ap, fmt);
     len = vsnprintf(buf, 1023, fmt, ap);
-    va_end(ap);
-    
+    va_end(ap);    
     return at_write_full(buf, len);
 }
 

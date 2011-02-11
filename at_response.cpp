@@ -104,9 +104,9 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 	    return -1;
 
 	case RES_UNKNOWN:
-	    if ((e = at_fifo_queue_head()))
+	    if (m_lastcmd)
 	    {
-		switch(e->cmd)
+		switch(m_lastcmd->m_cmd)
 		{
 		    case CMD_AT_CGMI:
 			Debug(DebugAll,  "[%s] Got AT_CGMI data (manufacturer info)", c_str());
@@ -144,39 +144,23 @@ int CardDevice::at_response_ok()
 {
     at_queue_t* e;
 
-    if ((e = at_fifo_queue_head()) && (e->res == RES_OK))
+    if(m_lastcmd && (m_lastcmd->m_res == RES_OK))
     {
-	switch (e->cmd)
+	switch (m_lastcmd->m_cmd)
 	{
 	    /* initilization stuff */
 	    case CMD_AT:
 		if(!initialized)
 		{
 		    if(m_reset_datacard)
-		    {
-			if(at_send_atz() || at_fifo_queue_add(CMD_AT_Z, RES_OK))
-			{
-			    Debug(DebugAll, "[%s] Error reset datacard", c_str());
-			    goto e_return;
-			}
-		    }
+		    	m_commandQueue.append(new ATCommand("ATZ", CMD_AT_Z, RES_OK));
 		    else
-		    {
-			if(at_send_ate0() || at_fifo_queue_add(CMD_AT_E, RES_OK))
-			{
-			    Debug(DebugAll, "[%s] Error disabling echo", c_str());
-			    goto e_return;
-			}
-		    }
+			m_commandQueue.append(new ATCommand("ATE0", CMD_AT_E, RES_OK));
 		}
 		break;
 		
 	    case CMD_AT_Z:
-		if(at_send_ate0() || at_fifo_queue_add(CMD_AT_E, RES_OK))
-		{
-		    Debug(DebugAll, "[%s] Error disabling echo", c_str());
-		    goto e_return;
-		}
+	        m_commandQueue.append(new ATCommand("ATE0", CMD_AT_E, RES_OK));
 		break;
 
 	    case CMD_AT_E:
@@ -184,221 +168,111 @@ int CardDevice::at_response_ok()
 		{
 		    if(m_u2diag != -1)
 		    {
-			if(at_send_u2diag(m_u2diag) || at_fifo_queue_add(CMD_AT_U2DIAG, RES_OK))
-			{
-			    Debug(DebugAll, "[%s] Error setting U2DIAG", c_str());
-			    goto e_return;
-			}
+			//if(at_send_u2diag(m_u2diag) || at_fifo_queue_add(CMD_AT_U2DIAG, RES_OK))
+			//{
+			//    Debug(DebugAll, "[%s] Error setting U2DIAG", c_str());
+			//    goto e_return;
+			//}
 		    }
 		    else
-		    {
-			if(at_send_cgmi() || at_fifo_queue_add(CMD_AT_CGMI, RES_OK))
-			{
-			    Debug(DebugAll, "[%s] Error asking datacard for manufacturer info", c_str());
-			    goto e_return;
-			}
-		    }
+		        m_commandQueue.append(new ATCommand("AT+CGMI", CMD_AT_CGMI, RES_OK));
 		}
 		break;
+
 	    case CMD_AT_U2DIAG:
 		if(!initialized)
-		{
-		    if(at_send_cgmi() || at_fifo_queue_add(CMD_AT_CGMI, RES_OK))
-		    {
-						Debug(DebugAll, "[%s] Error asking datacard for manufacturer info", c_str());
-						goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CGMI", CMD_AT_CGMI, RES_OK));
 		break;
 
 	    case CMD_AT_CGMI:
 		if(!initialized)
-		{
-		    if(at_send_cgmm() || at_fifo_queue_add(CMD_AT_CGMM, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error asking datacard for model info", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CGMM", CMD_AT_CGMM, RES_OK));
 		break;
 
 	    case CMD_AT_CGMM:
 		if(!initialized)
-		{
-		    if(at_send_cgmr() || at_fifo_queue_add(CMD_AT_CGMR, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error asking datacard for firmware info", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CGMR", CMD_AT_CGMR, RES_OK));
 		break;
 
 	    case CMD_AT_CGMR:
 		if(!initialized)
-		{
-		    if(at_send_cmee(0) || at_fifo_queue_add(CMD_AT_CMEE, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error setting error verbosity level", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CMEE=0", CMD_AT_CMEE, RES_OK));
 		break;
 		
 	    case CMD_AT_CMEE:
 		if(!initialized)
-		{
-		    if(at_send_cgsn() || at_fifo_queue_add(CMD_AT_CGSN, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error asking datacard for IMEI number", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CGSN", CMD_AT_CGSN, RES_OK));
 		break;
 
 	    case CMD_AT_CGSN:
 		if(!initialized)
-		{
-		    if(at_send_cimi() || at_fifo_queue_add(CMD_AT_CIMI, RES_OK))
-		    {
-			Debug(DebugAll,  "[%s] Error asking datacard for IMSI number", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI, RES_OK));
 		break;
 
 	    case CMD_AT_CIMI:
 		if(!initialized)
-		{
-		    if(at_send_cpin_test() || at_fifo_queue_add(CMD_AT_CPIN, RES_OK))
-		    {
-			Debug(DebugAll,  "[%s] Error asking datacard for PIN state", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN, RES_OK));
 		break;
 
 	    case CMD_AT_CPIN:
 		if(!initialized)
-		{
-		    if(at_send_cops_init(0, 0) || at_fifo_queue_add(CMD_AT_COPS_INIT, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error setting operator select parameters", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT, RES_OK));
 		break;
 
 	    case CMD_AT_COPS_INIT:
 		Debug(DebugAll, "[%s] Operator select parameters set", c_str());
 		if(!initialized)
-		{
-		    if(at_send_creg_init(2) || at_fifo_queue_add(CMD_AT_CREG_INIT, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error enabeling registration info", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CREG=2", CMD_AT_CREG_INIT, RES_OK));
 		break;
 
 	    case CMD_AT_CREG_INIT:
 		Debug(DebugAll,  "[%s] registration info enabled", c_str());
 		if(!initialized)
-		{
-		    if(at_send_creg() || at_fifo_queue_add(CMD_AT_CREG, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error sending registration query", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CREG?", CMD_AT_CREG, RES_OK));
 		break;
 
 	    case CMD_AT_CREG:
 		Debug(DebugAll, "[%s] registration query sent", c_str());
 		if(!initialized)
-		{
-		    if(at_send_cnum() || at_fifo_queue_add(CMD_AT_CNUM, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM, RES_OK));
 		break;
 
 	    case CMD_AT_CNUM:
 		Debug(DebugAll, "[%s] Subscriber phone number query successed", c_str());
 		if(!initialized)
-		{
-		    if(at_send_cvoice_test() || at_fifo_queue_add(CMD_AT_CVOICE, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error checking voice capabilities", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT^CVOICE?", CMD_AT_CVOICE, RES_OK));
 		break;
 
 	    case CMD_AT_CVOICE:
 		Debug(DebugAll, "[%s] Datacard has voice support", c_str());
 		has_voice = 1;
 		if(!initialized)
-		{
-		    if(at_send_clip(1) || at_fifo_queue_add(CMD_AT_CLIP, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error enabling calling line notification", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CLIP=1", CMD_AT_CLIP, RES_OK));
 		break;
 
 	    case CMD_AT_CLIP:
 		Debug(DebugAll, "[%s] Calling line indication enabled", c_str());
 		if(!initialized)
-		{
-		    if(at_send_cssn(1, 1) || at_fifo_queue_add(CMD_AT_CSSN, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error activating Supplementary Service Notification", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CSSN=1,1", CMD_AT_CSSN, RES_OK));
 		break;
 
 	    case CMD_AT_CSSN:
 		Debug(DebugAll, "[%s] Supplementary Service Notification enabled successful", c_str());
 		if(!initialized)
-		{
-		    /* set the SMS operating mode to PDU mode */
-		    if (at_send_cmgf(0) || at_fifo_queue_add(CMD_AT_CMGF, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error setting CMGF", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF, RES_OK));
 		break;
 
 	    case CMD_AT_CMGF:
 		Debug(DebugAll, "[%s] SMS PDU mode enabled", c_str());
 		use_ucs2_encoding = 1;
 		if(!initialized)
-		{
-		    /* set SMS storage location */
-		    if(at_send_cpms() || at_fifo_queue_add(CMD_AT_CPMS, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error setting CPMS", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS, RES_OK));
 		break;
 
 	    case CMD_AT_CPMS:
 		Debug(DebugAll,  "[%s] SMS storage location is established", c_str());
 		if(!initialized)
-		{
-		    /* turn on SMS new message indication */
-		    if(at_send_cnmi() || at_fifo_queue_add(CMD_AT_CNMI, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error sending CNMI", c_str());
-			goto e_return;
-		    }
-		}
+		    m_commandQueue.append(new ATCommand("AT+CNMI=2,1,0,0,0", CMD_AT_CNMI, RES_OK));
 		break;
 
 	    case CMD_AT_CNMI:
@@ -406,18 +280,10 @@ int CardDevice::at_response_ok()
 		Debug(DebugAll, "[%s] Datacard has sms support", c_str());
 		has_sms = 1;
 		if(!initialized)
-		{
-		    if(at_send_csq() || at_fifo_queue_add(CMD_AT_CSQ, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error querying signal strength", c_str());
-			goto e_return;
-		    }
-		    initialized = 1;
-		    Debug(DebugAll, "Datacard %s initialized and ready", c_str());
-		}
+		    m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ, RES_OK));
 		break;
 	    /* end initilization stuff */
-
+	    	
 	    case CMD_AT_A:
 		Debug(DebugAll,  "[%s] Answer sent successfully", c_str());
 		if(at_send_ddsetex() || at_fifo_queue_add(CMD_AT_DDSETEX, RES_OK))
@@ -513,8 +379,10 @@ int CardDevice::at_response_ok()
 		Debug(DebugAll, "[%s] Received 'OK' for unhandled command '%s'", c_str(), at_cmd2str (e->cmd));
 		break;
 	}
+	
+	m_lastcmd->destruct();
+	m_lastcmd = 0;
 
-	at_fifo_queue_rem();
     }
     else if (e)
     {
@@ -1110,10 +978,11 @@ int CardDevice::at_response_creg(char* str, size_t len)
     char* lac;
     char* ci;
 
-    if(at_send_cops() || at_fifo_queue_add(CMD_AT_COPS, RES_OK))
-    {
-	Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
-    }
+//    if(at_send_cops() || at_fifo_queue_add(CMD_AT_COPS, RES_OK))
+//    {
+//	Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
+//    }
+    m_commandQueue.append(new ATCommand("AT+COPS?", CMD_AT_COPS, RES_OK));
     
     if(at_parse_creg(str, len, &d, &gsm_reg_status, &lac, &ci))
     {
