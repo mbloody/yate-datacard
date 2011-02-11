@@ -438,13 +438,8 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.setAlphabet(PDU::UCS2);
             pdu.generate();
             
-            char *msg = strdup(pdu.getPDU());
-            if(at_send_cmgs(pdu.getMessageLen()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
-            {
-    		free(msg);
-        	Debug(DebugAll, "[%s] Error sending SMS message", c_str());
-        	return false;
-	    }
+            String* msg = new String(pdu.getPDU());
+            m_commandQueue.append(new ATCommand("AT+CMGS=" + pdu.getMessageLen(), CMD_AT_CMGS, RES_SMS_PROMPT, msg));
 	}
         else
         {
@@ -517,10 +512,7 @@ bool CardDevice::Hangup(int reason)
 //TODO: Review this!!!
     if(needchup)
     {
-	if(at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-	{
-	    Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
-	}
+	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP, RES_OK));
 	needchup = 0;
     }
 
@@ -557,24 +549,11 @@ bool CardDevice::newCall(const String &called, void* usrData)
 //  Other values not valid, Do not use callingpres
     if((m_callingpres >= 0) && (m_callingpres <= 2))
     {
-	int clir = m_callingpres;
-	char* dest_number = strdup(called.c_str());
-	if (at_send_clir(clir) || at_fifo_queue_add_ptr(CMD_AT_CLIR, RES_OK, dest_number))
-	{
-		Debug(DebugAll, "[%s] Error sending AT+CLIR command", c_str());
-		Hangup(DATACARD_FAILURE);
-		return false;
-	}
+	String* dest_number = new String(called);
+	m_commandQueue.append(new ATCommand("AT+CLIR=" + m_callingpres, CMD_AT_CLIR, RES_OK, dest_number));
     }
     else
-    {
-	if (at_send_atd(called.c_str()) || at_fifo_queue_add(CMD_AT_D, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error sending ATD command", c_str());
-		Hangup(DATACARD_FAILURE);
-		return false;
-	}
-    }
+        m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D, RES_OK));
 
     a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
 
@@ -892,14 +871,8 @@ bool Connection::sendAnswer()
 {
 
     m_dev->m_mutex.lock();
-
     if (m_dev->incoming)
-    {
-	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add(CMD_AT_A, RES_OK))
-	{
-	    Debug(DebugAll, "[%s] Error sending ATA command", m_dev->c_str());
-	}
-    }
+	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A, RES_OK));
     m_dev->m_mutex.unlock();
 
     return true;
@@ -922,10 +895,7 @@ bool Connection::sendHangup()
 
     if (tmp->needchup)
     {
-	if (tmp->at_send_chup() || tmp->at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error sending AT+CHUP command", tmp->c_str());
-	}
+	m_dev->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP, RES_OK));
 	tmp->needchup = 0;
     }
 

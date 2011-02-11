@@ -142,7 +142,7 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 
 int CardDevice::at_response_ok()
 {
-    at_queue_t* e;
+//    at_queue_t* e;
 
     if(m_lastcmd && (m_lastcmd->m_res == RES_OK))
     {
@@ -280,35 +280,30 @@ int CardDevice::at_response_ok()
 		Debug(DebugAll, "[%s] Datacard has sms support", c_str());
 		has_sms = 1;
 		if(!initialized)
+		{
 		    m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ, RES_OK));
+		    initialized = 1;
+		}
 		break;
 	    /* end initilization stuff */
 	    	
 	    case CMD_AT_A:
 		Debug(DebugAll,  "[%s] Answer sent successfully", c_str());
-		if(at_send_ddsetex() || at_fifo_queue_add(CMD_AT_DDSETEX, RES_OK))
-		{
-		    Debug(DebugAll, "[%s] Error sending AT^DDSETEX", c_str());
-		    goto e_return;
-		}
+		m_commandQueue.append(new ATCommand("AT^DDSETEX=2", CMD_AT_DDSETEX, RES_OK));
 		break;
 
 	    case CMD_AT_CLIR:
 		Debug(DebugAll, "[%s] CLIR sent successfully", c_str());
-		if(e->ptype != 0 || at_send_atd((char*)(e->param.data)) || at_fifo_queue_add (CMD_AT_D, RES_OK))
+		if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
 		{
-		    Debug(DebugAll, "[%s] Error sending ATD command", c_str());
-		    goto e_return;
-		}
+		    String* num = static_cast<String*>(m_lastcmd->m_param.obj);
+		    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
+		}		
 		break;
 
 	    case CMD_AT_D:
 		Debug(DebugAll,  "[%s] Dial sent successfully", c_str());
-		if(at_send_ddsetex() || at_fifo_queue_add(CMD_AT_DDSETEX, RES_OK))
-		{
-		    Debug(DebugAll, "[%s] Error sending AT^DDSETEX", c_str());
-		    goto e_return;
-		}
+		m_commandQueue.append(new ATCommand("AT^DDSETEX=2", CMD_AT_DDSETEX, RES_OK));
 		break;
 
 	    case CMD_AT_DDSETEX:
@@ -337,13 +332,8 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CMGR:
 		Debug(DebugAll, "[%s] SMS message read successfully", c_str());
-		if(m_auto_delete_sms && e->ptype == 1)
-		{
-		    if(at_send_cmgd(e->param.num) || at_fifo_queue_add(CMD_AT_CMGD, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error sending CMGD to delete SMS message", c_str());
-		    }
-		}
+		if(m_auto_delete_sms && (m_lastcmd->m_ptype == 1))
+		    m_commandQueue.append(new ATCommand("AT+CMGD=" + m_lastcmd->m_param.num, CMD_AT_CMGD, RES_OK));
 		break;
 
 	    case CMD_AT_CMGD:
@@ -366,17 +356,12 @@ int CardDevice::at_response_ok()
 		if (volume_synchronized == 0)
 		{
 		    volume_synchronized = 1;
-
-		    if(at_send_clvl(5) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
-		    {
-			Debug(DebugAll, "[%s] Error syncronizing audio level (part 2/2)", c_str());
-			goto e_return;
-		    }
+		    m_commandQueue.append(new ATCommand("AT+CLVL=5", CMD_AT_CLVL, RES_OK));
 		}
 		break;
 
 	    default:
-		Debug(DebugAll, "[%s] Received 'OK' for unhandled command '%s'", c_str(), at_cmd2str (e->cmd));
+		Debug(DebugAll, "[%s] Received 'OK' for unhandled command '%s'", c_str(), at_cmd2str (m_lastcmd->m_cmd));
 		break;
 	}
 	
@@ -384,36 +369,31 @@ int CardDevice::at_response_ok()
 	m_lastcmd = 0;
 
     }
-    else if (e)
+    else if (m_lastcmd)
     {
-	Debug(DebugAll, "[%s] Received 'OK' when expecting '%s', ignoring", c_str(), at_res2str (e->res));
+	Debug(DebugAll, "[%s] Received 'OK' when expecting '%s', ignoring", c_str(), at_res2str(m_lastcmd->m_res));
     }
     else
     {
 	Debug(DebugAll,  "[%s] Received unexpected 'OK'", c_str());
     }
     return 0;
-
-e_return:
-    at_fifo_queue_rem();
-    return -1;
 }
 
 int CardDevice::at_response_error()
 {
-	at_queue_t* e;
+//	at_queue_t* e;
 
-	if ((e = at_fifo_queue_head()) && (e->res == RES_OK || e->res == RES_ERROR ||
-			e->res == RES_CMS_ERROR || e->res == RES_SMS_PROMPT))
+	if(m_lastcmd && (m_lastcmd->m_res == RES_OK || m_lastcmd->m_res == RES_ERROR || m_lastcmd->m_res == RES_CMS_ERROR || m_lastcmd->m_res == RES_SMS_PROMPT))
 	{
-		switch (e->cmd)
-		{
+	    switch (m_lastcmd->m_cmd)
+	    {
         		/* initilization stuff */
 			case CMD_AT:
 			case CMD_AT_Z:
 			case CMD_AT_E:
 			case CMD_AT_U2DIAG:
-				Debug(DebugAll,  "[%s] Command '%s' failed", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll,  "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
 				goto e_return;
 
 			case CMD_AT_CGMI:
@@ -454,15 +434,8 @@ int CardDevice::at_response_error()
 
 			case CMD_AT_CREG:
 				Debug(DebugAll, "[%s] Error getting registration info", c_str());
-
 				if (!initialized)
-				{
-					if (at_send_cnum() || at_fifo_queue_add (CMD_AT_CNUM, RES_OK))
-					{
-						Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
-						goto e_return;
-					}
-				}
+				    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM, RES_OK));
 				break;
 
 			case CMD_AT_CNUM:
@@ -472,17 +445,9 @@ int CardDevice::at_response_error()
 
 			case CMD_AT_CVOICE:
 				Debug(DebugAll, "[%s] Datacard has NO voice support", c_str());
-
 				has_voice = 0;
-
 				if (!initialized)
-				{
-					if (at_send_cmgf (1) || at_fifo_queue_add (CMD_AT_CMGF, RES_OK))
-					{
-						Debug(DebugAll, "[%s] Error setting CMGF", c_str());
-						goto e_return;
-					}
-				}
+				    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF, RES_OK));
 				break;
 
 			case CMD_AT_CLIP:
@@ -496,43 +461,27 @@ int CardDevice::at_response_error()
 			case CMD_AT_CMGF:
 			case CMD_AT_CPMS:
 			case CMD_AT_CNMI:
-				Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
 				Debug(DebugAll, "[%s] No SMS support", c_str());
-
 				has_sms = 0;
-
 				if (!initialized)
 				{
 					if (has_voice)
 					{
-						if (at_send_csq() || at_fifo_queue_add (CMD_AT_CSQ, RES_OK))
-						{
-							Debug(DebugAll, "[%s] Error querying signal strength", c_str());
-							goto e_return;
-						}
-
-						initialized = 1;
-						Debug(DebugAll, "Datacard %s initialized and ready", c_str());
+					    m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ, RES_OK));
+					    initialized = 1;
+					    Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 					}
-
 					goto e_return;
 				}
 				break;
 
 			case CMD_AT_CSCS:
 				Debug(DebugAll, "[%s] No UCS-2 encoding support", c_str());
-
 				use_ucs2_encoding = 0;
-
+				/* set SMS storage location */
 				if (!initialized)
-				{
-					/* set SMS storage location */
-					if (at_send_cpms() || at_fifo_queue_add (CMD_AT_CPMS, RES_OK))
-					{
-						Debug(DebugAll, "[%s] Error setting SMS storage location", c_str());
-						goto e_return;
-					}
-				}
+					m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS, RES_OK));
 				break;
 
 			/* end initilization stuff */
@@ -548,11 +497,11 @@ int CardDevice::at_response_error()
 				Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
 
 				/* continue dialing */
-				if (e->ptype != 0 || at_send_atd((char*)e->param.data) || at_fifo_queue_add (CMD_AT_D, RES_OK))
+				if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
 				{
-					Debug(DebugAll, "[%s] Error sending ATD command", c_str());
-					goto e_return;
-				}
+				    String* num = static_cast<String*>(m_lastcmd->m_param.obj);
+				    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
+				}		
 				break;
 
 			case CMD_AT_D:
@@ -602,15 +551,16 @@ int CardDevice::at_response_error()
 				break;
 
 			default:
-				Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'", c_str(), at_cmd2str (e->cmd));
+				Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'", c_str(), at_cmd2str (m_lastcmd->m_cmd));
 				break;
 		}
 
-		at_fifo_queue_rem();
+		m_lastcmd->destruct();
+		m_lastcmd = 0;
 	}
-	else if (e)
+	else if (m_lastcmd)
 	{
-		Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring", c_str(), at_res2str (e->res));
+		Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res));
 	}
 	else
 	{
@@ -620,8 +570,9 @@ int CardDevice::at_response_error()
 	return 0;
 
 e_return:
-	at_fifo_queue_rem();
-
+	m_lastcmd->destruct();
+	m_lastcmd = 0;
+	
 	return -1;
 }
 
@@ -662,12 +613,7 @@ int CardDevice::at_response_orig(char* str, size_t len)
     if(m_conn)
 	m_conn->onProgress();
 
-
-    if (at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
-    {
-	Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
-    }
-
+    m_commandQueue.append(new ATCommand("AT+CLVL=1", CMD_AT_CLVL, RES_OK));
     volume_synchronized = 0;
 
     return 0;
@@ -762,10 +708,7 @@ int CardDevice::at_response_clip(char* str, size_t len)
 	if(incomingCall(String(clip)) == false)
 	{
 	    Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
-	    if (at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-	    {
-		Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
-	    }
+	    m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP, RES_OK));
 	    return -1;
 	}
 	needchup = 1;
@@ -781,10 +724,7 @@ int CardDevice::at_response_ring()
 	/* We only want to syncronize volume on the first ring */
 	if(!incoming)
 	{
-	    if(at_send_clvl(1) || at_fifo_queue_add(CMD_AT_CLVL, RES_OK))
-	    {
-		Debug(DebugAll, "[%s] Error syncronizing audio level (part 1/2)", c_str());
-	    }
+	    m_commandQueue.append(new ATCommand("AT+CLVL=1", CMD_AT_CLVL, RES_OK));
 	    volume_synchronized = 0;
 	}
 	incoming = 1;
@@ -807,11 +747,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 	else
 	{
 	    // FIXME: replace it with correct CMGR parser
-	    if (at_send_cmgr(index) || at_fifo_queue_add_num(CMD_AT_CMGR, RES_OK, index))
-	    {
-		Debug(DebugAll, "[%s] Error sending CMGR to retrieve SMS message", c_str());
-		return -1;
-	    }
+	    m_commandQueue.append(new ATCommand("AT+CMGR=" + index, CMD_AT_CMGR, RES_OK));
 	}
 	return 0;
     }
@@ -978,10 +914,6 @@ int CardDevice::at_response_creg(char* str, size_t len)
     char* lac;
     char* ci;
 
-//    if(at_send_cops() || at_fifo_queue_add(CMD_AT_COPS, RES_OK))
-//    {
-//	Debug(DebugAll, "[%s] Error sending query for provider name", c_str());
-//    }
     m_commandQueue.append(new ATCommand("AT+COPS?", CMD_AT_COPS, RES_OK));
     
     if(at_parse_creg(str, len, &d, &gsm_reg_status, &lac, &ci))

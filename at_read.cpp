@@ -67,17 +67,7 @@ void CardDevice::processATEvents()
     at_queue_t*	e;
     struct pollfd fds;
 
-//    ObjList m_commandQueue;
-
     m_mutex.lock();
-/*    if (at_send_at() || at_fifo_queue_add(CMD_AT, RES_OK))
-    {
-        Debug(DebugAll, "[%s] Error sending AT", c_str());
-        disconnect();
-        m_mutex.unlock();
-        return;
-    }
-*/
     m_commandQueue.clear();
     m_commandQueue.append(new ATCommand("AT", CMD_AT, RES_OK));
     

@@ -112,13 +112,35 @@ public:
 class ATCommand : public GenObject
 {
 public:
-    ATCommand(String command, at_cmd_t cmd, at_res_t res):m_command(command),m_cmd(cmd),m_res(res){}
-    ~ATCommand(){}
+    ATCommand(String command, at_cmd_t cmd, at_res_t res, GenObject* obj = 0):m_command(command),m_cmd(cmd),m_res(res)
+    {
+    	m_ptype = 0;
+    	m_param.obj = obj;
+    }
+    ATCommand(String command, at_cmd_t cmd, at_res_t res, int num):m_command(command),m_cmd(cmd),m_res(res)
+    {
+    	m_ptype = 1;
+    	m_param.num = num;
+    }
+
+    ~ATCommand()
+    {
+	if((m_ptype == 0) && m_param.obj)
+	    m_param.obj->destruct();
+    }
 
 public:
     String m_command;
     at_cmd_t m_cmd;
     at_res_t m_res;
+    
+    int m_ptype;
+    union
+    {
+    	GenObject* obj;
+	int num;
+    } m_param;
+
 };
 
 
@@ -907,9 +929,10 @@ private:
     int getReason(int end_status, int cc_cause);
     bool m_incoming_pdu;
 
+    ATCommand* m_lastcmd;
+public:
     ObjList m_commandQueue;
     
-    ATCommand* m_lastcmd;
 };
 
 
