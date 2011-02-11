@@ -13,7 +13,6 @@
 int CardDevice::at_response(char* str, at_res_t at_res)
 {
     size_t len = strlen(str);
-    at_queue_t*	e;
 
     switch(at_res)
     {
@@ -167,13 +166,7 @@ int CardDevice::at_response_ok()
 		if(!initialized)
 		{
 		    if(m_u2diag != -1)
-		    {
-			//if(at_send_u2diag(m_u2diag) || at_fifo_queue_add(CMD_AT_U2DIAG, RES_OK))
-			//{
-			//    Debug(DebugAll, "[%s] Error setting U2DIAG", c_str());
-			//    goto e_return;
-			//}
-		    }
+		        m_commandQueue.append(new ATCommand("AT^U2DIAG=" + m_u2diag, CMD_AT_U2DIAG, RES_OK));
 		    else
 		        m_commandQueue.append(new ATCommand("AT+CGMI", CMD_AT_CGMI, RES_OK));
 		}
@@ -771,20 +764,17 @@ int CardDevice::at_response_cmgr(char* str, size_t len)
 
 int CardDevice::at_response_sms_prompt()
 {
-    at_queue_t* e;
-
-    if((e = at_fifo_queue_head()) && e->res == RES_SMS_PROMPT)
+    if(m_lastcmd && (m_lastcmd->m_cmd == CMD_AT_CMGS))
     {
-	if(e->ptype != 0 || !e->param.data || at_send_sms_text((char*)e->param.data) || at_fifo_queue_add(CMD_AT_CMGS, RES_OK))
+	if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
 	{
-	    Debug(DebugAll, "[%s] Error sending sms message", c_str());
-	    return -1;
+	    String* text = static_cast<String*>(m_lastcmd->m_param.obj);
+	    at_send_sms_text((char*)text->safe());
 	}
-	at_fifo_queue_rem();
     }
-    else if(e)
+    else if(m_lastcmd)
     {
-	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (e->res), at_cmd2str (e->cmd));
+	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
     }
     else
     {

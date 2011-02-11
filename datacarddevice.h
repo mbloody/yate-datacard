@@ -93,22 +93,6 @@ typedef enum {
 } at_res_t;
 
 
-class at_queue_t : public GenObject
-{
-public:
-    at_cmd_t cmd;
-    at_res_t res;
-
-    int ptype;
-
-    union
-    {
-    	void* data;
-	int num;
-    } param;
-};
-
-
 class ATCommand : public GenObject
 {
 public:
@@ -858,51 +842,7 @@ public:
      */
     int at_send_cpms();
     
-public:
-
-    /**
-     * Add an item to the back of the queue
-     * @param cmd the command that was sent to generate the response
-     * @param res the expected response
-     */
-    int	at_fifo_queue_add(at_cmd_t cmd, at_res_t res);
-    
-    /**
-     * Add an item to the back of the queue with pointer data
-     * @param cmd -- the command that was sent to generate the response
-     * @param res -- the expected response
-     * @param data -- pointer data associated with this entry, it will be freed when the message is freed
-     */
-    int	at_fifo_queue_add_ptr(at_cmd_t cmd, at_res_t res, void* data);
-    
-    /**
-     * Add an item to the back of the queue with pointer data
-     * @param cmd -- the command that was sent to generate the response
-     * @param res -- the expected response
-     * @param num -- numeric data
-     */
-    int	at_fifo_queue_add_num(at_cmd_t cmd, at_res_t res, int num);
-    
-    /**
-     * Remove an item from the front of the queue, and free it
-     */
-    void at_fifo_queue_rem();
-    
-    /**
-     * Remove all itmes from the queue and free them
-     */
-    void at_fifo_queue_flush();
-    
-    /**
-     * Get the head of a queue
-     * @return a pointer to the head of the given queue
-     */
-    at_queue_t* at_fifo_queue_head();
-
 private:
-    ObjList m_atQueue;
-
-
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
@@ -928,9 +868,12 @@ private:
     bool Hangup(int error);
     int getReason(int end_status, int cc_cause);
     bool m_incoming_pdu;
+    
 
     ATCommand* m_lastcmd;
 public:
+    bool isDTMFValid(char dtmf);
+    bool encodeUSSD(const String& code, String& ret);
     ObjList m_commandQueue;
     
 };

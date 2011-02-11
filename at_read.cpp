@@ -64,7 +64,6 @@ int CardDevice::handle_rd_data()
 
 void CardDevice::processATEvents()
 {
-    at_queue_t*	e;
     struct pollfd fds;
 
     m_mutex.lock();
@@ -109,11 +108,9 @@ void CardDevice::processATEvents()
             if (!initialized)
             {
                 Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
+		if (m_lastcmd)
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
 
-		if ((e = at_fifo_queue_head()))
-		{
-                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str (e->res), at_cmd2str (e->cmd));
-                }
                 Debug(DebugAll, "Error initializing Datacard %s", c_str());
                 disconnect();
                 m_mutex.unlock();
@@ -121,6 +118,11 @@ void CardDevice::processATEvents()
             }
             else
             {
+		if (m_lastcmd)
+		{
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+                    disconnect();
+                }
                 m_mutex.unlock();
                 continue;
             }

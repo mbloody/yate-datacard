@@ -196,9 +196,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_reset_datacard = true;
     m_u2diag = -1;
     m_callingpres = -1;
-    
-    m_atQueue.clear();
-    
+        
     initialized = 0;
     gsm_registered = 0;
     
@@ -207,7 +205,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     needring = 0;
     needchup = 0;
     
-    
+    m_commandQueue.clear();
     m_lastcmd = 0;
 }
 
@@ -280,7 +278,7 @@ bool CardDevice::disconnect()
     m_number = "Unknown";
     m_incoming_pdu = false;
 
-    m_atQueue.clear();
+    m_commandQueue.clear();
     
     initialized = 0;
 
@@ -439,7 +437,7 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.generate();
             
             String* msg = new String(pdu.getPDU());
-            m_commandQueue.append(new ATCommand("AT+CMGS=" + pdu.getMessageLen(), CMD_AT_CMGS, RES_SMS_PROMPT, msg));
+            m_commandQueue.append(new ATCommand("AT+CMGS=" + pdu.getMessageLen(), CMD_AT_CMGS, RES_OK, msg));
 	}
         else
         {
@@ -472,11 +470,10 @@ bool CardDevice::sendUSSD(const String &ussd)
     
     if (m_connected && initialized && gsm_registered)
     {
-        if (at_send_cusd(ussd.c_str()) || at_fifo_queue_add(CMD_AT_CUSD, RES_OK))
-        {
-            Debug(DebugAll, "[%s] Error sending USSD command", c_str());
-            return false;
-        }
+        String ussdenc;
+        if(!encodeUSSD(ussd, ussdenc))
+    	    return false;
+        m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD, RES_OK));
     }
     else
     {
@@ -688,6 +685,60 @@ int CardDevice::getReason(int end_status, int cc_cause)
     return DATACARD_FAILURE;
 }
 
+bool CardDevice::isDTMFValid(char digit)
+{
+    switch (digit)
+    {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	case '*':
+	case '#':
+	    return true;
+	default:
+	    return false;
+    }
+}
+
+bool CardDevice::encodeUSSD(const String& code, String& ret)
+{
+    ssize_t res;
+    char buf[256];
+
+    if(cusd_use_7bit_encoding)
+    {
+	res = char_to_hexstr_7bit(code.safe(), code.length(), buf, sizeof(buf));
+	if (res <= 0)
+	{
+	    Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code.safe());
+	    return false;
+	}
+    }
+    else if(use_ucs2_encoding)
+    {
+	res = utf8_to_hexstr_ucs2(code.safe(), code.length(), buf, sizeof(buf));
+	if (res <= 0)
+	{
+	    Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code.safe());
+	    return false;
+	}
+    }
+    else
+    {
+	ret = code;
+	return true;
+    }
+    ret = buf;
+    return true;
+
+}
 
 //audio
 void CardDevice::forwardAudio(char* data, int len)
@@ -913,16 +964,11 @@ bool Connection::sendHangup()
 
 bool Connection::sendDTMF(char digit)
 {
+    Debug(DebugAll, "[%s] Send DTMF %c", m_dev->c_str(), digit);
 
     m_dev->m_mutex.lock();
-    
-    if (m_dev->at_send_dtmf(digit) || m_dev->at_fifo_queue_add (CMD_AT_DTMF, RES_OK))
-    {
-	Debug(DebugAll, "[%s] Error sending DTMF %c", m_dev->c_str(), digit);
-	m_dev->m_mutex.unlock();
-	return -1;
-    }
-    Debug(DebugAll, "[%s] Send DTMF %c", m_dev->c_str(), digit);
+    if(m_dev->isDTMFValid(digit))
+	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_CPIN, RES_OK));
     m_dev->m_mutex.unlock();
 
     return true;
