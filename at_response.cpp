@@ -141,8 +141,6 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 
 int CardDevice::at_response_ok()
 {
-//    at_queue_t* e;
-
     if(m_lastcmd && (m_lastcmd->m_res == RES_OK))
     {
 	switch (m_lastcmd->m_cmd)
@@ -375,198 +373,190 @@ int CardDevice::at_response_ok()
 
 int CardDevice::at_response_error()
 {
-//	at_queue_t* e;
-
-	if(m_lastcmd && (m_lastcmd->m_res == RES_OK || m_lastcmd->m_res == RES_ERROR || m_lastcmd->m_res == RES_CMS_ERROR || m_lastcmd->m_res == RES_SMS_PROMPT))
+    if(m_lastcmd && (m_lastcmd->m_res == RES_OK || m_lastcmd->m_res == RES_ERROR || m_lastcmd->m_res == RES_CMS_ERROR || m_lastcmd->m_res == RES_SMS_PROMPT))
+    {
+	switch (m_lastcmd->m_cmd)
 	{
-	    switch (m_lastcmd->m_cmd)
-	    {
-        		/* initilization stuff */
-			case CMD_AT:
-			case CMD_AT_Z:
-			case CMD_AT_E:
-			case CMD_AT_U2DIAG:
-				Debug(DebugAll,  "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
-				goto e_return;
+	    /* initilization stuff */
+	    case CMD_AT:
+	    case CMD_AT_Z:
+	    case CMD_AT_E:
+	    case CMD_AT_U2DIAG:
+		Debug(DebugAll,  "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
+		goto e_return;
 
-			case CMD_AT_CGMI:
-				Debug(DebugAll, "[%s] Getting manufacturer info failed", c_str());
-				goto e_return;
+	    case CMD_AT_CGMI:
+		Debug(DebugAll, "[%s] Getting manufacturer info failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CGMM:
-				Debug(DebugAll,  "[%s] Getting model info failed", c_str());
-				goto e_return;
+	    case CMD_AT_CGMM:
+		Debug(DebugAll,  "[%s] Getting model info failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CGMR:
-				Debug(DebugAll,  "[%s] Getting firmware info failed", c_str());
-				goto e_return;
+	    case CMD_AT_CGMR:
+		Debug(DebugAll,  "[%s] Getting firmware info failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CMEE:
-				Debug(DebugAll,  "[%s] Setting error verbosity level failed", c_str());
-				goto e_return;
+	    case CMD_AT_CMEE:
+		Debug(DebugAll,  "[%s] Setting error verbosity level failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CGSN:
-				Debug(DebugAll,  "[%s] Getting IMEI number failed", c_str());
-				goto e_return;
+	    case CMD_AT_CGSN:
+		Debug(DebugAll,  "[%s] Getting IMEI number failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CIMI:
-				Debug(DebugAll,  "[%s] Getting IMSI number failed", c_str());
-				goto e_return;
+	    case CMD_AT_CIMI:
+		Debug(DebugAll,  "[%s] Getting IMSI number failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CPIN:
-				Debug(DebugAll,  "[%s] Error checking PIN state", c_str());
-				goto e_return;
+	    case CMD_AT_CPIN:
+		Debug(DebugAll,  "[%s] Error checking PIN state", c_str());
+		goto e_return;
 
-			case CMD_AT_COPS_INIT:
-				Debug(DebugAll,  "[%s] Error setting operator select parameters", c_str());
-				goto e_return;
+	    case CMD_AT_COPS_INIT:
+		Debug(DebugAll,  "[%s] Error setting operator select parameters", c_str());
+		goto e_return;
 
-			case CMD_AT_CREG_INIT:
-				Debug(DebugAll, "[%s] Error enableling registration info", c_str());
-				goto e_return;
+	    case CMD_AT_CREG_INIT:
+		Debug(DebugAll, "[%s] Error enableling registration info", c_str());
+		goto e_return;
 
-			case CMD_AT_CREG:
-				Debug(DebugAll, "[%s] Error getting registration info", c_str());
-				if (!initialized)
-				    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM, RES_OK));
-				break;
+	    case CMD_AT_CREG:
+		Debug(DebugAll, "[%s] Error getting registration info", c_str());
+		if (!initialized)
+		    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM, RES_OK));
+		break;
 
-			case CMD_AT_CNUM:
-				Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
-				Debug(DebugAll, "Datacard %s needs to be reinitialized. The SIM card is not ready yet", c_str());
-				goto e_return;
+	    case CMD_AT_CNUM:
+		Debug(DebugAll, "[%s] Error checking subscriber phone number", c_str());
+		Debug(DebugAll, "Datacard %s needs to be reinitialized. The SIM card is not ready yet", c_str());
+		goto e_return;
 
-			case CMD_AT_CVOICE:
-				Debug(DebugAll, "[%s] Datacard has NO voice support", c_str());
-				has_voice = 0;
-				if (!initialized)
-				    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF, RES_OK));
-				break;
+	    case CMD_AT_CVOICE:
+		Debug(DebugAll, "[%s] Datacard has NO voice support", c_str());
+		has_voice = 0;
+		if (!initialized)
+		    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF, RES_OK));
+		break;
 
-			case CMD_AT_CLIP:
-				Debug(DebugAll, "[%s] Error enabling calling line indication", c_str());
-				goto e_return;
+	    case CMD_AT_CLIP:
+		Debug(DebugAll, "[%s] Error enabling calling line indication", c_str());
+		goto e_return;
 
-			case CMD_AT_CSSN:
-				Debug(DebugAll, "[%s] Error Supplementary Service Notification activation failed", c_str());
-				goto e_return;
+	    case CMD_AT_CSSN:
+		Debug(DebugAll, "[%s] Error Supplementary Service Notification activation failed", c_str());
+		goto e_return;
 
-			case CMD_AT_CMGF:
-			case CMD_AT_CPMS:
-			case CMD_AT_CNMI:
-				Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
-				Debug(DebugAll, "[%s] No SMS support", c_str());
-				has_sms = 0;
-				if (!initialized)
-				{
-					if (has_voice)
-					{
-					    m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ, RES_OK));
-					    initialized = 1;
-					    Debug(DebugAll, "Datacard %s initialized and ready", c_str());
-					}
-					goto e_return;
-				}
-				break;
-
-			case CMD_AT_CSCS:
-				Debug(DebugAll, "[%s] No UCS-2 encoding support", c_str());
-				use_ucs2_encoding = 0;
-				/* set SMS storage location */
-				if (!initialized)
-					m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS, RES_OK));
-				break;
-
-			/* end initilization stuff */
-
-			case CMD_AT_A:
-				Debug(DebugAll, "[%s] Answer failed", c_str());
-//TODO:
-//				channel_queue_hangup(0);
-				Hangup(DATACARD_FAILURE);
-				break;
-
-			case CMD_AT_CLIR:
-				Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
-
-				/* continue dialing */
-				if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
-				{
-				    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
-				    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
-				}		
-				break;
-
-			case CMD_AT_D:
-				Debug(DebugAll, "[%s] Dial failed", c_str());
-				outgoing = 0;
-				needchup = 0;
-//TODO:
-//				channel_queue_control (AST_CONTROL_CONGESTION);
-				Hangup(DATACARD_CONGESTION);
-				break;
-
-			case CMD_AT_DDSETEX:
-				Debug(DebugAll, "[%s] AT^DDSETEX failed", c_str());
-				break;
-
-			case CMD_AT_CHUP:
-				Debug(DebugAll, "[%s] Error sending hangup, disconnecting", c_str());
-				goto e_return;
-
-			case CMD_AT_CMGR:
-				Debug(DebugAll, "[%s] Error reading SMS message", c_str());
-				break;
-
-			case CMD_AT_CMGD:
-				Debug(DebugAll, "[%s] Error deleting SMS message", c_str());
-				break;
-
-			case CMD_AT_CMGS:
-				Debug(DebugAll, "[%s] Error sending SMS message", c_str());
-				break;
-
-			case CMD_AT_DTMF:
-				Debug(DebugAll, "[%s] Error sending DTMF", c_str());
-				break;
-
-			case CMD_AT_COPS:
-				Debug(DebugAll, "[%s] Could not get provider name", c_str());
-				break;
-
-			case CMD_AT_CLVL:
-				Debug(DebugAll, "[%s] Error syncronizing audio level", c_str());
-				volume_synchronized = 0;
-				break;
-
-			case CMD_AT_CUSD:
-				Debug(DebugAll, "[%s] Could not send USSD code", c_str());
-				break;
-
-			default:
-				Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'", c_str(), at_cmd2str (m_lastcmd->m_cmd));
-				break;
+	    case CMD_AT_CMGF:
+	    case CMD_AT_CPMS:
+	    case CMD_AT_CNMI:
+		Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
+		Debug(DebugAll, "[%s] No SMS support", c_str());
+		has_sms = 0;
+		if (!initialized)
+		{
+		    if (has_voice)
+		    {
+			m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ, RES_OK));
+			initialized = 1;
+			Debug(DebugAll, "Datacard %s initialized and ready", c_str());
+		    }
+		    goto e_return;
 		}
+		break;
 
-		m_lastcmd->destruct();
-		m_lastcmd = 0;
-	}
-	else if (m_lastcmd)
-	{
-		Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res));
-	}
-	else
-	{
-		Debug(DebugAll, "[%s] Received unexpected 'ERROR'", c_str());
+	    case CMD_AT_CSCS:
+		Debug(DebugAll, "[%s] No UCS-2 encoding support", c_str());
+		use_ucs2_encoding = 0;
+		/* set SMS storage location */
+		if (!initialized)
+		    m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS, RES_OK));
+		break;
+	    /* end initilization stuff */
+
+	    case CMD_AT_A:
+		Debug(DebugAll, "[%s] Answer failed", c_str());
+		Hangup(DATACARD_FAILURE);
+		break;
+
+	    case CMD_AT_CLIR:
+		Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
+		/* continue dialing */
+		if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
+		{
+		    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
+		    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
+		}		
+		break;
+
+	    case CMD_AT_D:
+		Debug(DebugAll, "[%s] Dial failed", c_str());
+		outgoing = 0;
+		needchup = 0;
+		Hangup(DATACARD_CONGESTION);
+		break;
+
+	    case CMD_AT_DDSETEX:
+		Debug(DebugAll, "[%s] AT^DDSETEX failed", c_str());
+		break;
+
+	    case CMD_AT_CHUP:
+		Debug(DebugAll, "[%s] Error sending hangup, disconnecting", c_str());
+		goto e_return;
+
+	    case CMD_AT_CMGR:
+		Debug(DebugAll, "[%s] Error reading SMS message", c_str());
+		break;
+
+	    case CMD_AT_CMGD:
+		Debug(DebugAll, "[%s] Error deleting SMS message", c_str());
+		break;
+
+	    case CMD_AT_CMGS:
+		Debug(DebugAll, "[%s] Error sending SMS message", c_str());
+		break;
+
+	    case CMD_AT_DTMF:
+		Debug(DebugAll, "[%s] Error sending DTMF", c_str());
+		break;
+
+	    case CMD_AT_COPS:
+		Debug(DebugAll, "[%s] Could not get provider name", c_str());
+		break;
+
+	    case CMD_AT_CLVL:
+		Debug(DebugAll, "[%s] Error syncronizing audio level", c_str());
+		volume_synchronized = 0;
+		break;
+
+	    case CMD_AT_CUSD:
+		Debug(DebugAll, "[%s] Could not send USSD code", c_str());
+		break;
+
+	    default:
+		Debug(DebugAll, "[%s] Received 'ERROR' for unhandled command '%s'", c_str(), at_cmd2str (m_lastcmd->m_cmd));
+		break;
 	}
 
-	return 0;
-
-e_return:
 	m_lastcmd->destruct();
 	m_lastcmd = 0;
+    }
+    else if (m_lastcmd)
+    {
+	Debug(DebugAll, "[%s] Received 'ERROR' when expecting '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res));
+    }
+    else
+    {
+	Debug(DebugAll, "[%s] Received unexpected 'ERROR'", c_str());
+    }
+
+    return 0;
+
+e_return:
+    m_lastcmd->destruct();
+    m_lastcmd = 0;
 	
-	return -1;
+    return -1;
 }
 
 int CardDevice::at_response_rssi(char* str, size_t len)
@@ -588,8 +578,6 @@ int CardDevice::at_response_orig(char* str, size_t len)
     int call_index = 1;
     int call_type  = 0;
 
-//TODO:
-//	channel_queue_control (AST_CONTROL_PROGRESS);
     /*
      * parse ORIG info in the following format:
      * ^ORIG:<call_index>,<call_type>
@@ -608,7 +596,6 @@ int CardDevice::at_response_orig(char* str, size_t len)
 
     m_commandQueue.append(new ATCommand("AT+CLVL=1", CMD_AT_CLVL, RES_OK));
     volume_synchronized = 0;
-
     return 0;
 }
 
@@ -647,7 +634,7 @@ int CardDevice::at_response_cend(char* str, size_t len)
 			
 	if(Hangup(reason) == false)
 	{
-	    Debug(DebugAll, "[%s] Error queueing hangup...", c_str());
+	    Debug(DebugAll, "[%s] Error on hangup...", c_str());
 	    return -1;
 	}
     }
@@ -661,7 +648,7 @@ int CardDevice::at_response_cend(char* str, size_t len)
 int CardDevice::at_response_conn(char* str, size_t len)
 {
 //TODO:
-    int call_index =1;
+    int call_index = 1;
     int call_type =0;
     if (!sscanf (str, "^CONN:%d,%d", &call_index, &call_type))
     {
@@ -677,7 +664,6 @@ int CardDevice::at_response_conn(char* str, size_t len)
 	Debug(DebugAll, "[%s] Remote end answered", c_str());
 	if(m_conn)
 	    m_conn->onAnswered();
-//		hannel_queue_control (AST_CONTROL_ANSWER);
     }
     else if(incoming)
     {
@@ -688,8 +674,6 @@ int CardDevice::at_response_conn(char* str, size_t len)
 
 int CardDevice::at_response_clip(char* str, size_t len)
 {
-//TODO:
-//
     char* clip;
     if (initialized && needring == 0)
     {
@@ -734,14 +718,9 @@ int CardDevice::at_response_cmti(char* str, size_t len)
     {
 	Debug(DebugAll, "[%s] Incoming SMS message", c_str());
 	if (m_disablesms)
-	{
 	    Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
-	}
 	else
-	{
-	    // FIXME: replace it with correct CMGR parser
 	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, RES_OK, index));
-	}
 	return 0;
     }
     else
@@ -831,8 +810,6 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 int CardDevice::at_response_busy()
 {
     needchup = 1;
-//TODO:
-//	channel_queue_control (AST_CONTROL_BUSY);
     Hangup(DATACARD_BUSY);
     return 0;
 }
@@ -841,8 +818,6 @@ int CardDevice::at_response_no_dialtone()
 {
     Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
     needchup = 1;
-//TODO:
-//	channel_queue_control (AST_CONTROL_CONGESTION);
     Hangup(DATACARD_CONGESTION);
     return 0;
 }
@@ -851,8 +826,6 @@ int CardDevice::at_response_no_carrier()
 {
     Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
     needchup = 1;
-//TODO:
-//	channel_queue_control (AST_CONTROL_CONGESTION);
     Hangup(DATACARD_CONGESTION);
     return 0;
 }
@@ -882,13 +855,12 @@ int CardDevice::at_response_cnum(char* str, size_t len)
 	return 0;
     }
     m_number = "Unknown";
-
     return -1;
 }
 
 int CardDevice::at_response_cops(char* str, size_t len)
 {
-    char* provider_name = at_parse_cops (str, len);
+    char* provider_name = at_parse_cops(str, len);
     if(provider_name)
     {
 	m_provider_name = provider_name;
