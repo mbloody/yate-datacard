@@ -287,9 +287,9 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CLIR:
 		Debug(DebugAll, "[%s] CLIR sent successfully", c_str());
-		if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
+		if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
 		{
-		    String* num = static_cast<String*>(m_lastcmd->m_param.obj);
+		    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
 		    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
 		}		
 		break;
@@ -326,7 +326,7 @@ int CardDevice::at_response_ok()
 	    case CMD_AT_CMGR:
 		Debug(DebugAll, "[%s] SMS message read successfully", c_str());
 		if(m_auto_delete_sms && (m_lastcmd->m_ptype == 1))
-		    m_commandQueue.append(new ATCommand("AT+CMGD=" + m_lastcmd->m_param.num, CMD_AT_CMGD, RES_OK));
+		    m_commandQueue.append(new ATCommand("AT+CMGD=" + String((m_lastcmd->m_param).num), CMD_AT_CMGD, RES_OK));
 		break;
 
 	    case CMD_AT_CMGD:
@@ -490,9 +490,9 @@ int CardDevice::at_response_error()
 				Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
 
 				/* continue dialing */
-				if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
+				if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
 				{
-				    String* num = static_cast<String*>(m_lastcmd->m_param.obj);
+				    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
 				    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
 				}		
 				break;
@@ -740,7 +740,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 	else
 	{
 	    // FIXME: replace it with correct CMGR parser
-	    m_commandQueue.append(new ATCommand("AT+CMGR=" + index, CMD_AT_CMGR, RES_OK));
+	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, RES_OK, index));
 	}
 	return 0;
     }
@@ -766,9 +766,9 @@ int CardDevice::at_response_sms_prompt()
 {
     if(m_lastcmd && (m_lastcmd->m_cmd == CMD_AT_CMGS))
     {
-	if((m_lastcmd->m_ptype == 0) && m_lastcmd->m_param.obj)
+	if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
 	{
-	    String* text = static_cast<String*>(m_lastcmd->m_param.obj);
+	    String* text = static_cast<String*>((m_lastcmd->m_param).obj);
 	    at_send_sms_text((char*)text->safe());
 	}
     }

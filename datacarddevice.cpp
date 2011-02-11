@@ -436,8 +436,9 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.setAlphabet(PDU::UCS2);
             pdu.generate();
             
-            String* msg = new String(pdu.getPDU());
-            m_commandQueue.append(new ATCommand("AT+CMGS=" + pdu.getMessageLen(), CMD_AT_CMGS, RES_OK, msg));
+            const char* pdutext = pdu.getPDU();
+            String* msg = new String(pdutext);
+            m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, RES_OK, msg));
 	}
         else
         {

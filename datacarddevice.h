@@ -100,6 +100,11 @@ public:
     {
     	m_ptype = 0;
     	m_param.obj = obj;
+    	if(m_param.obj)
+    	{
+    	    String* data = static_cast<String*>(m_param.obj);
+    	    Debug(DebugAll, "ATCommand %s ", data->safe());
+    	}
     }
     ATCommand(String command, at_cmd_t cmd, at_res_t res, int num):m_command(command),m_cmd(cmd),m_res(res)
     {
@@ -119,7 +124,8 @@ public:
     at_res_t m_res;
     
     int m_ptype;
-    union
+//    union
+    struct
     {
     	GenObject* obj;
 	int num;
