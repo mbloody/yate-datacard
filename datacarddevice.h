@@ -634,14 +634,6 @@ private:
     int at_write_full(char* buf, size_t count);
 
     /**
-     * Formatted output to data socket
-     * @param fmt -- format string
-     * @param ... - params according to format string
-     * @return 0 success or -1 on error
-     */    
-    int send_atcmd(const char* fmt, ...);
-
-    /**
      * Send the SMS PDU message
      * @param pdu -- SMS PDU
      */

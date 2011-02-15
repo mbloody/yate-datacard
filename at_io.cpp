@@ -10,6 +10,8 @@
 #include "datacarddevice.h"
 #include <stdlib.h>
 #include <poll.h>
+#include <stdio.h>
+
 
 
 int CardDevice::handle_rd_data()
@@ -297,6 +299,40 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 	at_res = RES_UNKNOWN;
     }
     return at_res;
+}
+
+
+int CardDevice::at_write_full(char* buf, size_t count)
+{
+    char* p = buf;
+    ssize_t out_count;
+
+    Debug(DebugAll, "[%s] [%.*s]", c_str(), (int)count, buf);
+
+    while (count > 0)
+    {
+	if ((out_count = write(m_data_fd, p, count)) == -1)
+	{
+	    Debug(DebugAll, "[%s] write() error: %d", c_str(), errno);
+	    return -1;
+	}
+
+	count -= out_count;
+	p += out_count;
+    }
+    write(m_data_fd, "\r", 1);
+    
+    return 0;
+}
+
+int CardDevice::at_send_sms_text(const char* pdu)
+{
+    char buf[1024];
+    int ret = snprintf(buf, 1024, "%s\x1a", pdu);
+    if(ret == 1024)
+	return -1;
+
+    return at_write_full(buf, ret);
 }
 
 /* vi: set ts=8 sw=4 sts=4 noet: */
