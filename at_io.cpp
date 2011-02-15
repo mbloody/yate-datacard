@@ -69,7 +69,10 @@ void CardDevice::processATEvents()
     struct pollfd fds;
 
     m_mutex.lock();
+	//This may be unnecessary
     m_commandQueue.clear();
+	m_lastcmd = 0;
+	//--
     m_commandQueue.append(new ATCommand("AT", CMD_AT, RES_OK));
     
     m_mutex.unlock();

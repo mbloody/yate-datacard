@@ -258,6 +258,7 @@ bool CardDevice::disconnect()
     m_incoming_pdu = false;
 
     m_commandQueue.clear();
+	m_lastcmd = 0;
     
     initialized = 0;
 
