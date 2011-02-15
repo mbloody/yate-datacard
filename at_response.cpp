@@ -9,6 +9,7 @@
 
 #include "datacarddevice.h"
 #include <stdio.h>
+#include <string.h>
 
 int CardDevice::at_response(char* str, at_res_t at_res)
 {

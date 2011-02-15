@@ -1,7 +1,6 @@
 #ifndef DATACARDDEVICE_H
 #define DATACARDDEVICE_H
 #include <yatephone.h>
-#include "ringbuffer.h"
 #include "endreasons.h"
 
 
@@ -194,8 +193,7 @@ public:
     int m_data_fd;			/* data  descriptor */
 
 
-    char a_write_buf[FRAME_SIZE * 5];
-    RingBuffer a_write_rb;
+    DataBlock m_audio_buf;
 
     String getNumber()
 	{ return m_number; }

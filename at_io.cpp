@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <poll.h>
 #include <stdio.h>
-
+#include <string.h>
 
 
 int CardDevice::handle_rd_data()

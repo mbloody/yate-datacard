@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <poll.h>
+#include <string.h>
 #include "pdu.h"
 
 
@@ -68,19 +69,14 @@ void MediaThread::run()
     int len;
     char silence_frame[FRAME_SIZE];
 
-    size_t used;
-    int iovcnt;
-    struct iovec iov[3];
     ssize_t res;
-    size_t count;
-
     
     memset(silence_frame, 0, sizeof(silence_frame));
     
     if (!m_device) 
         return;
 
-    m_device->a_write_rb.rb_init(m_device->a_write_buf, sizeof(m_device->a_write_buf));
+    m_device->m_audio_buf.clear();
 
     // Main loop
     while (m_device->isRunning())
@@ -113,45 +109,28 @@ void MediaThread::run()
 	    len = read(pfd.fd, buf, FRAME_SIZE);
 	    if(len) 
 		m_device->forwardAudio(buf, len);
-	
-	    used = m_device->a_write_rb.rb_used ();
-	    if(used >= FRAME_SIZE)
+
+//TODO: Write full data
+	    
+	    unsigned int avail = m_device->m_audio_buf.length();	
+	    if(avail >= FRAME_SIZE)
 	    {
-		iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
-		m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
+		char* data = (char*)m_device->m_audio_buf.data();
+	    	write(pfd.fd, data, FRAME_SIZE);
+		m_device->m_audio_buf.cut(-FRAME_SIZE);
 	    }
-	    else if(used > 0)
+	    else if(avail > 0)
 	    {
 		Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
-		iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
-		m_device->a_write_rb.rb_read_upd(used);
-
-		iov[iovcnt].iov_base = silence_frame;
-		iov[iovcnt].iov_len = FRAME_SIZE - used;
-		iovcnt++;
+		char* data = (char*)m_device->m_audio_buf.data();
+	    	write(pfd.fd, data, avail);
+		m_device->m_audio_buf.cut(-avail);
 	    }
 	    else
 	    {
 		Debug(DebugAll, "[%s] write silence", m_device->c_str());
-		iov[0].iov_base = silence_frame;
-		iov[0].iov_len = FRAME_SIZE;
-		iovcnt = 1;
-	    }
-	    count = 0;
-	    while((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
-	    {
-		if(count++ > 10)
-		{
-		    Debug(DebugAll,"Deadlock avoided for write!");
-		    break;
-		}
-		usleep(1);
-	    }
-	    if(res < 0 || res != FRAME_SIZE)
-	    {
-		Debug(DebugAll,"[%s] Write error!",m_device->c_str());
-	    }
-
+		write(pfd.fd, silence_frame, FRAME_SIZE);
+	    }	    
 	    m_device->m_mutex.unlock();
 	} 
 	else if(pfd.revents) 
@@ -493,7 +472,9 @@ bool CardDevice::incomingCall(const String &caller)
         Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
 	return false;
     }
-    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
+    m_mutex.lock();
+    m_audio_buf.clear();
+    m_mutex.unlock();
     return m_conn->onIncoming(caller);
 }
 
@@ -531,6 +512,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
     }
 
     Lock lock(m_mutex);
+    m_audio_buf.clear();
 
     if (!initialized || incoming || outgoing)
     {
@@ -553,7 +535,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
     else
         m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D, RES_OK));
 
-    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
+    m_audio_buf.clear();
 
     outgoing = 1;
     needchup = 1;
@@ -755,14 +737,8 @@ void CardDevice::forwardAudio(char* data, int len)
 int CardDevice::sendAudio(char* data, int len)
 {
 //TODO:
-    size_t count = a_write_rb.rb_free();
-    
     m_mutex.lock();
-    if (count < (size_t) len)
-    {
-	a_write_rb.rb_read_upd(len - count);
-    }
-    a_write_rb.rb_write(data, len);
+    m_audio_buf.append(data, len);
     m_mutex.unlock();
     return 0;
 }

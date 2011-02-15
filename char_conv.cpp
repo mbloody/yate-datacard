@@ -8,6 +8,7 @@
 */
 #include "datacarddevice.h"
 #include <stdio.h>
+#include <string.h>
 #include <iconv.h>
 
 ssize_t CardDevice::convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to)

@@ -10,6 +10,9 @@
 #include "datacarddevice.h"
 #include <stdlib.h>
 #include <stdio.h>
+//TODO: Needed by memmem. Remove memmem from the code
+#define _GNU_SOURCE
+#include <string.h>
 
 
 const char* CardDevice::at_cmd2str(at_cmd_t cmd)
