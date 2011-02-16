@@ -16,6 +16,9 @@ CFLAGS := -O3 @YATE_INC@
 LDFLAGS:= @YATE_LIB@  -ldl -lpthread
 MODSTRIP:= @YATE_STR@
 
+SVNVERSION := $(shell LC_ALL=C svnversion -cn . 2>/dev/null | sed -e "s/.*://" -e "s/\([0-9]*\).*/\1/" | grep "[0-9]" || LC_ALL=C svn info . 2>/dev/null | awk '/^Revision:/ {print $$2 }' | grep "[0-9]" || LC_ALL=C git svn info . 2>/dev/null | awk '/^Revision:/ {print $$2 }' | grep "[0-9]" || echo unknown)
+SVNDEV := -D'SVN_REV="$(SVNVERSION)"'
+
 OBJS:= datacarddevice.o at_io.o at_parse.o at_response.o char_conv.o pdu.o
 
 PROGS:= datacard.yate 
@@ -23,7 +26,7 @@ INCFILES:= datacarddevice.h pdu.h
 
 MKDEPS := ./config.status
 CLEANS = $(PROGS) core $(OBJS)
-COMPILE = $(CXX) $(DEFS) $(DEBUG) $(INCLUDES) $(CFLAGS)
+COMPILE = $(CXX) $(DEFS) $(DEBUG) $(INCLUDES) $(CFLAGS) $(SVNDEV)
 MODCOMP = $(COMPILE) $(MODFLAGS) $(MODSTRIP) $(LDFLAGS)
 LINK = $(CXX) $(LDFLAGS)
 
