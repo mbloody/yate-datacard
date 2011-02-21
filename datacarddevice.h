@@ -5,7 +5,7 @@
 
 
 #define FRAME_SIZE 320
-#define RDBUFF_MAX      1024
+#define RDBUFF_MAX 1024
 
 using namespace TelEngine;
 
@@ -97,24 +97,23 @@ class ATCommand : public GenObject
 public:
     ATCommand(String command, at_cmd_t cmd, at_res_t res, GenObject* obj = 0):m_command(command),m_cmd(cmd),m_res(res)
     {
-    	m_ptype = 0;
-    	m_param.obj = obj;
-    	if(m_param.obj)
+	m_obj = obj;
+    	if(m_obj)
     	{
-    	    String* data = static_cast<String*>(m_param.obj);
+    	    String* data = static_cast<String*>(m_obj);
     	    Debug(DebugAll, "ATCommand %s ", data->safe());
     	}
     }
-    ATCommand(String command, at_cmd_t cmd, at_res_t res, int num):m_command(command),m_cmd(cmd),m_res(res)
-    {
-    	m_ptype = 1;
-    	m_param.num = num;
-    }
-
+    
     ~ATCommand()
     {
-	if((m_ptype == 0) && m_param.obj)
-	    m_param.obj->destruct();
+	if(m_obj)
+	    m_obj->destruct();
+    }
+    
+    GenObject* get()
+    {
+	return m_obj;
     }
 
 public:
@@ -122,14 +121,7 @@ public:
     at_cmd_t m_cmd;
     at_res_t m_res;
     
-    int m_ptype;
-//    union
-    struct
-    {
-    	GenObject* obj;
-	int num;
-    } m_param;
-
+    GenObject* m_obj;
 };
 
 

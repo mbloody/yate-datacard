@@ -165,7 +165,7 @@ int CardDevice::at_response_ok()
 		if(!initialized)
 		{
 		    if(m_u2diag != -1)
-		        m_commandQueue.append(new ATCommand("AT^U2DIAG=" + m_u2diag, CMD_AT_U2DIAG, RES_OK));
+		        m_commandQueue.append(new ATCommand("AT^U2DIAG=" + String(m_u2diag), CMD_AT_U2DIAG, RES_OK));
 		    else
 		        m_commandQueue.append(new ATCommand("AT+CGMI", CMD_AT_CGMI, RES_OK));
 		}
@@ -286,10 +286,10 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CLIR:
 		Debug(DebugAll, "[%s] CLIR sent successfully", c_str());
-		if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
+		if(m_lastcmd->get())
 		{
-		    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
-		    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
+		    String* number = static_cast<String*>(m_lastcmd->get());
+		    m_commandQueue.append(new ATCommand("ATD" + *number  + ";", CMD_AT_D, RES_OK));
 		}		
 		break;
 
@@ -324,8 +324,14 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CMGR:
 		Debug(DebugAll, "[%s] SMS message read successfully", c_str());
-		if(m_auto_delete_sms && (m_lastcmd->m_ptype == 1))
-		    m_commandQueue.append(new ATCommand("AT+CMGD=" + String((m_lastcmd->m_param).num), CMD_AT_CMGD, RES_OK));
+		if(m_auto_delete_sms)
+		{
+		    if(m_lastcmd->get())
+		    {
+			String* index = static_cast<String*>(m_lastcmd->get());
+			m_commandQueue.append(new ATCommand("AT+CMGD=" + *index, CMD_AT_CMGD, RES_OK));
+		    }
+		}
 		break;
 
 	    case CMD_AT_CMGD:
@@ -483,10 +489,10 @@ int CardDevice::at_response_error()
 	    case CMD_AT_CLIR:
 		Debug(DebugAll, "[%s] Setting CLIR failed", c_str());
 		/* continue dialing */
-		if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
+		if(m_lastcmd->get())
 		{
-		    String* num = static_cast<String*>((m_lastcmd->m_param).obj);
-		    m_commandQueue.append(new ATCommand("ATD" + *num  + ";", CMD_AT_D, RES_OK));
+		    String* number = static_cast<String*>(m_lastcmd->get());
+		    m_commandQueue.append(new ATCommand("ATD" + *number + ";", CMD_AT_D, RES_OK));
 		}		
 		break;
 
@@ -721,7 +727,7 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 	if (m_disablesms)
 	    Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
 	else
-	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, RES_OK, index));
+	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, RES_OK, new String(index)));
 	return 0;
     }
     else
@@ -746,19 +752,23 @@ int CardDevice::at_response_sms_prompt()
 {
     if(m_lastcmd && (m_lastcmd->m_cmd == CMD_AT_CMGS))
     {
-	if((m_lastcmd->m_ptype == 0) && (m_lastcmd->m_param).obj)
+	if(m_lastcmd->get())
 	{
-	    String* text = static_cast<String*>((m_lastcmd->m_param).obj);
+	    String* text = static_cast<String*>(m_lastcmd->get());
 	    at_send_sms_text((char*)text->safe());
 	}
     }
     else if(m_lastcmd)
     {
 	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+//FIXME: Send empty SMS text. To exit from SMS prompt.
+	at_send_sms_text("");
     }
     else
     {
 	Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
+//FIXME: Send empty SMS text. To exit from SMS prompt.
+	at_send_sms_text("");
     }
     return 0;
 }
