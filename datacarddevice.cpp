@@ -417,8 +417,7 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.generate();
             
             const char* pdutext = pdu.getPDU();
-            String* msg = new String(pdutext);
-            m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, RES_OK, msg));
+            m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, new String(pdutext)));
 	}
         else
         {
@@ -454,7 +453,7 @@ bool CardDevice::sendUSSD(const String &ussd)
         String ussdenc;
         if(!encodeUSSD(ussd, ussdenc))
     	    return false;
-        m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD, RES_OK));
+        m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD));
     }
     else
     {
@@ -492,7 +491,7 @@ bool CardDevice::Hangup(int reason)
 //TODO: Review this!!!
     if(needchup)
     {
-	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP, RES_OK));
+	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	needchup = 0;
     }
 
@@ -529,12 +528,9 @@ bool CardDevice::newCall(const String &called, void* usrData)
 //  2: CLIR suppression (show)
 //  Other values not valid, Do not use callingpres
     if((m_callingpres >= 0) && (m_callingpres <= 2))
-    {
-	String* dest_number = new String(called);
-	m_commandQueue.append(new ATCommand("AT+CLIR=" + m_callingpres, CMD_AT_CLIR, RES_OK, dest_number));
-    }
+	m_commandQueue.append(new ATCommand("AT+CLIR=" + m_callingpres, CMD_AT_CLIR, new String(called)));
     else
-        m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D, RES_OK));
+        m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D));
 
     m_audio_buf.clear();
 
@@ -901,7 +897,7 @@ bool Connection::sendAnswer()
 
     m_dev->m_mutex.lock();
     if (m_dev->incoming)
-	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A, RES_OK));
+	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A));
     m_dev->m_mutex.unlock();
 
     return true;
@@ -924,7 +920,7 @@ bool Connection::sendHangup()
 
     if (tmp->needchup)
     {
-	m_dev->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP, RES_OK));
+	m_dev->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	tmp->needchup = 0;
     }
 
@@ -946,7 +942,7 @@ bool Connection::sendDTMF(char digit)
 
     m_dev->m_mutex.lock();
     if(m_dev->isDTMFValid(digit))
-	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_CPIN, RES_OK));
+	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_CPIN));
     m_dev->m_mutex.unlock();
 
     return true;

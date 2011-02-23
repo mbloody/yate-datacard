@@ -92,12 +92,15 @@ typedef enum {
 } at_res_t;
 
 
+class CardDevice;
+class DevicesEndPoint;
+class Connection;
+
 class ATCommand : public GenObject
 {
 public:
-    ATCommand(String command, at_cmd_t cmd, at_res_t res, GenObject* obj = 0):m_command(command),m_cmd(cmd),m_res(res)
+    ATCommand(String command, at_cmd_t cmd, GenObject* obj = 0, at_res_t res = RES_OK):m_command(command),m_cmd(cmd),m_res(res),m_obj(obj)
     {
-	m_obj = obj;
     	if(m_obj)
     	{
     	    String* data = static_cast<String*>(m_obj);
@@ -125,10 +128,6 @@ public:
 };
 
 
-
-class CardDevice;
-class DevicesEndPoint;
-class Connection;
 
 class MonitorThread : public Thread
 {

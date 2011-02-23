@@ -10,10 +10,6 @@
 #include "datacarddevice.h"
 #include <stdlib.h>
 #include <stdio.h>
-//TODO: Needed by memmem. Remove memmem from the code
-#define _GNU_SOURCE
-#include <string.h>
-
 
 const char* CardDevice::at_cmd2str(at_cmd_t cmd)
 {
@@ -618,29 +614,34 @@ int CardDevice::at_parse_cusd(char* str, size_t len, char** cusd, unsigned char*
 
 int CardDevice::at_parse_cpin(char* str, size_t len)
 {
-	if(memmem(str, len, "READY", 5))
+//FIXME: Need additional check
+	String line(str,len);
+	line.startSkip("+CPIN:");
+	line.trimSpaces();
+
+	if(line == "READY")
 	{
-		return 0;
+	    return 0;
 	}
-	if(memmem(str, len, "SIM PIN", 7))
+	else if(line == "SIM PIN")
 	{
-		Debug(DebugAll, "Datacard %s needs PIN code!\n", c_str());
-		return 1;
+	    Debug(DebugAll, "Datacard %s needs PIN code!\n", c_str());
+	    return 1;
 	}
-	if(memmem(str, len, "SIM PUK", 7))
+	else if(line == "SIM PUK")
 	{
-		Debug(DebugAll, "Datacard %s needs PUK code!\n", c_str());
-		return 2;
+	    Debug(DebugAll, "Datacard %s needs PUK code!\n", c_str());
+	    return 2;
 	}
-	if(memmem(str, len, "SIM PIN2", 7))
+	else if(line == "SIM PIN2")
 	{
-		Debug(DebugAll, "Datacard %s needs PIN2 code!\n", c_str());
-		return 3;
+	    Debug(DebugAll, "Datacard %s needs PIN2 code!\n", c_str());
+	    return 3;
 	}
-	if(memmem(str, len, "SIM PUK2", 7))
+	else if(line == "SIM PUK2")
 	{
-		Debug(DebugAll, "Datacard %s needs PUK2 code!\n", c_str());
-		return 4;
+	    Debug(DebugAll, "Datacard %s needs PUK2 code!\n", c_str());
+	    return 4;
 	}
 	
 	Debug(DebugAll, "[%s] Error parsing +CPIN message: %s\n", c_str(), str);

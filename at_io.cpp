@@ -73,7 +73,7 @@ void CardDevice::processATEvents()
     m_commandQueue.clear();
 	m_lastcmd = 0;
 	//--
-    m_commandQueue.append(new ATCommand("AT", CMD_AT, RES_OK));
+    m_commandQueue.append(new ATCommand("AT", CMD_AT));
     
     m_mutex.unlock();
 
