@@ -136,11 +136,8 @@ rpm: tarball
 %.o: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
 	$(COMPILE) -c $<
 
-   
-	
-datacard.yate : INCFILES:= datacarddevice.h pdu.h
+
 datacard.yate : $(INCFILES)
-datacard.yate : OBJS:= datacarddevice.o at_io.o at_parse.o at_response.o char_conv.o pdu.o
 datacard.yate : $(OBJS)
 
 %.yate: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
