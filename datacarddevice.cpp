@@ -528,7 +528,7 @@ bool CardDevice::newCall(const String &called, void* usrData)
 //  2: CLIR suppression (show)
 //  Other values not valid, Do not use callingpres
     if((m_callingpres >= 0) && (m_callingpres <= 2))
-	m_commandQueue.append(new ATCommand("AT+CLIR=" + m_callingpres, CMD_AT_CLIR, new String(called)));
+	m_commandQueue.append(new ATCommand("AT+CLIR=" + String(m_callingpres), CMD_AT_CLIR, new String(called)));
     else
         m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D));
 
