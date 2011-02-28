@@ -512,7 +512,6 @@ bool CardDevice::newCall(const String &called, void* usrData)
     }
 
     Lock lock(m_mutex);
-    m_audio_buf.clear();
 
     if (!initialized || incoming || outgoing)
     {
@@ -917,6 +916,8 @@ bool Connection::sendHangup()
 
     tmp->m_mutex.lock();
 
+    m_dev = NULL;
+
 
     if (tmp->needchup)
     {
@@ -927,11 +928,7 @@ bool Connection::sendHangup()
     tmp->m_conn = NULL;
     tmp->needring = 0;
 
-    m_dev = NULL;
-
     tmp->m_mutex.unlock();
-
-//	ast_setstate (channel, AST_STATE_DOWN);
 
     return true;
 }
