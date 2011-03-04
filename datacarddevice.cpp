@@ -921,7 +921,7 @@ bool Connection::sendHangup()
 
     if (tmp->needchup)
     {
-	m_dev->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
+	tmp->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	tmp->needchup = 0;
     }
 
