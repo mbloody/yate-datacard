@@ -281,6 +281,8 @@ int CardDevice::at_response_ok()
 	    	
 	    case CMD_AT_A:
 		Debug(DebugAll,  "[%s] Answer sent successfully", c_str());
+		//FIXME: Clear audio bufer
+		m_audio_buf.clear();
 		m_commandQueue.append(new ATCommand("AT^DDSETEX=2", CMD_AT_DDSETEX));
 		break;
 
@@ -669,6 +671,8 @@ int CardDevice::at_response_conn(char* str, size_t len)
     if(outgoing)
     {
 	Debug(DebugAll, "[%s] Remote end answered", c_str());
+	//FIXME: Clear audio bufer
+	m_audio_buf.clear();
 	if(m_conn)
 	    m_conn->onAnswered();
     }

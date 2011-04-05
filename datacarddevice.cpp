@@ -689,7 +689,7 @@ bool CardDevice::isDTMFValid(char digit)
 bool CardDevice::encodeUSSD(const String& code, String& ret)
 {
     ssize_t res;
-    char buf[256];
+    char buf[512];
 
     if(cusd_use_7bit_encoding)
     {
@@ -896,11 +896,7 @@ bool Connection::sendAnswer()
 
     m_dev->m_mutex.lock();
     if (m_dev->incoming)
-    {
-    //FIXME: Clear audio buffer when call is answered. Need review
-	m_dev->m_audio_buf.clear();
 	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A));
-    }
     m_dev->m_mutex.unlock();
 
     return true;

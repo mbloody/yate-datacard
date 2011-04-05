@@ -5,7 +5,7 @@ using namespace TelEngine;
 namespace { // anonymous
 
 
-#define DEF_DISCOVERY_INT	60
+#define DEF_DISCOVERY_INT 60
 
 
 static TokenDict dict_errors[] = {
