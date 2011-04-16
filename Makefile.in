@@ -106,7 +106,7 @@ uninstall:
 
 .PHONY: snapshot tarball rpm
 snapshot tarball: check-topdir clean
-	@if [ $@ = snapshot ]; then ver="`date '+CVS-%Y%m%d'`"; else ver="@PACKAGE_VERSION@-@PACKAGE_RELEASE@"; fi ; \
+	@if [ $@ = snapshot ]; then ver="`date '+%Y%m%d'`"; else ver="@PACKAGE_VERSION@-@PACKAGE_RELEASE@"; fi ; \
 	wd=`pwd|sed 's,^.*/,,'`; \
 	mkdir -p tarballs; cd ..; \
 	echo $$wd/tar-exclude >$$wd/tar-exclude; \
@@ -119,10 +119,11 @@ snapshot tarball: check-topdir clean
 	if [ $@ = tarball ]; then \
 	    find $$wd -name CVS >>$$wd/tar-exclude; \
 	    find $$wd -name .cvsignore >>$$wd/tar-exclude; \
+	    find $$wd -name .svn >>$$wd/tar-exclude; \
 	else \
 	    find $$wd -name '*.spec' >>$$wd/tar-exclude; \
 	fi ; \
-	tar czf $$wd/tarballs/$$wd-$$ver.tar.gz \
+	tar czf $$wd/tarballs/$$wd-$$ver-r$(SVNVERSION).tar.gz \
 	--exclude $$wd/tarballs \
 	--exclude $$wd/config.status \
 	--exclude $$wd/config.log \
