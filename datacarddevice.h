@@ -1,12 +1,11 @@
 #ifndef DATACARDDEVICE_H
 #define DATACARDDEVICE_H
 #include <yatephone.h>
-#include "ringbuffer.h"
 #include "endreasons.h"
 
 
 #define FRAME_SIZE 320
-#define RDBUFF_MAX      1024
+#define RDBUFF_MAX 1024
 
 using namespace TelEngine;
 
@@ -92,24 +91,43 @@ typedef enum {
 	RES_SRVST,
 } at_res_t;
 
-class at_queue_t : public GenObject
-{
-public:
-    at_cmd_t cmd;
-    at_res_t res;
-
-    int ptype;
-
-    union
-    {
-    	void* data;
-	int num;
-    } param;
-};
 
 class CardDevice;
 class DevicesEndPoint;
 class Connection;
+
+class ATCommand : public GenObject
+{
+public:
+    ATCommand(String command, at_cmd_t cmd, GenObject* obj = 0, at_res_t res = RES_OK):m_command(command),m_cmd(cmd),m_res(res),m_obj(obj)
+    {
+    	if(m_obj)
+    	{
+    	    String* data = static_cast<String*>(m_obj);
+    	    Debug(DebugAll, "ATCommand %s ", data->safe());
+    	}
+    }
+    
+    ~ATCommand()
+    {
+	if(m_obj)
+	    m_obj->destruct();
+    }
+    
+    GenObject* get()
+    {
+	return m_obj;
+    }
+
+public:
+    String m_command;
+    at_cmd_t m_cmd;
+    at_res_t m_res;
+    
+    GenObject* m_obj;
+};
+
+
 
 class MonitorThread : public Thread
 {
@@ -166,8 +184,7 @@ public:
     int m_data_fd;			/* data  descriptor */
 
 
-    char a_write_buf[FRAME_SIZE * 5];
-    RingBuffer a_write_rb;
+    DataBlock m_audio_buf;
 
     String getNumber()
 	{ return m_number; }
@@ -607,263 +624,12 @@ private:
     int at_write_full(char* buf, size_t count);
 
     /**
-     * Formatted output to data socket
-     * @param fmt -- format string
-     * @param ... - params according to format string
-     * @return 0 success or -1 on error
-     */    
-    int send_atcmd(const char* fmt, ...);
-
-public:
-
-    /**
-     * Send the AT command
-     */
-    int at_send_at();
-    
-    /**
-     * Send ATA command
-     */
-    int at_send_ata();
-    
-    /**
-     * Send ATD command
-     * @param number
-     */
-    int at_send_atd(const char* number);
-    
-    /**
-     * Send the ATE0 command
-     */
-    int at_send_ate0();
-    
-    /**
-     * Send the ATZ command
-     */
-    int at_send_atz();
-    
-    /**
-     * Send the AT+CGMI command
-     */
-    int at_send_cgmi();
-    
-    /**
-     * Send the AT+CGMM command
-     */
-    int at_send_cgmm();
-    
-    /**
-     * Send the AT+CGMR command
-     */
-    int at_send_cgmr();
-    
-    /**
-     * Send the AT+CGSN command
-     */
-    int at_send_cgsn();
-    
-    /**
-     * Send AT+CHUP command
-     */
-    int at_send_chup();
-    
-    /**
-     * Send AT+CIMI command
-     */
-    int at_send_cimi();
-    
-    /**
-     * Enable or disable calling line identification
-     * @param status -- enable or disable calling line identification (should be 1 or 0)
-     */
-    int at_send_clip(int status);
-    
-    /**
-     * Send the AT+CLIR command
-     * @param mode -- the CLIR mode
-     */
-    int at_send_clir(int mode);
-
-    /**
-     * Send AT+CLVL command
-     * @param volume -- level to send
-     */
-    int at_send_clvl(int level);
-
-    /**
-     * Delete an SMS message
-     * @param index -- the location of the requested message
-     */
-    int at_send_cmgd(int index);
-    
-    /**
-     * Set the SMS mode
-     * @param mode -- the sms mode (0 = PDU, 1 = Text)
-     */
-    int at_send_cmgf(int mode);
-
-    /**
-     * Read an SMS message
-     * @param index -- the location of the requested message
-     */
-    int at_send_cmgr(int index);
-    
-    /**
-     * Start sending an SMS message
-     * @param len -- PDU length
-     */
-    int at_send_cmgs(const int len);
-
-    /**
-     * Setup SMS new message indication
-     */
-    int at_send_cnmi();
-    
-    /**
-     * Send the AT+CNUM command
-     */
-    int at_send_cnum();
-    
-    /**
-     * Send the AT+COPS? command
-     */
-    int at_send_cops();
-    
-    /**
-     * Send the AT+COPS= command
-     * @param mode
-     * @param format
-     */
-    int at_send_cops_init(int mode, int format);
-    
-    /**
-     * Send AT+CPIN? to ask the datacard if a pin code is required
-     */
-    int at_send_cpin_test();
-    
-    /**
-     * Send the AT+CREG? command
-     */
-    int at_send_creg();
-    
-    /**
-     * Send the AT+CREG=n command
-     * @param level -- verbose level of CREG
-     */
-    int at_send_creg_init(int level);
-    
-    /**
-     * Send AT+CSQ.
-     */
-    int at_send_csq();
-    
-    /**
-     * Manage Supplementary Service Notification.
-     * @param cssi the value to send (0 = disabled, 1 = enabled)
-     * @param cssu the value to send (0 = disabled, 1 = enabled)
-     */
-    int at_send_cssn(int cssi, int cssu);
-
-    /**
-     * Send AT+CUSD.
-     * @param code the CUSD code to send
-     */
-    int at_send_cusd(const char* code);
-    
-    /**
-     * Check device for audio capabilities
-     */
-    int at_send_cvoice_test();
-    
-    /**
-     * Enable transmitting of audio to the debug port (tty)
-     */
-    int at_send_ddsetex();
-    
-    /**
-     * Send a DTMF command
-     * @param digit -- the dtmf digit to send
-     */
-    int at_send_dtmf(char digit);
-    
-    /**
      * Send the SMS PDU message
      * @param pdu -- SMS PDU
      */
     int at_send_sms_text(const char* pdu);
-    
-    /**
-     * Set the U2DIAG mode
-     * @param mode -- the U2DIAG mode (0 = Only modem functions)
-     */
-    int at_send_u2diag(int mode);
-    
-    /**
-     * Send the AT+CCWA command (disable)
-     */
-    int at_send_ccwa_disable();
-    
-    /**
-     * Send the AT+CFUN command (Operation Mode Setting)
-     * @param fun
-     * @param rst
-     */
-    int at_send_cfun(int fun, int rst);
-    
-    /**
-     * Set error reporing verbosity level
-     * @param level -- the verbosity level
-     */
-    int at_send_cmee(int level);
-    
-    /**
-     * Set storage location for incoming SMS
-     */
-    int at_send_cpms();
-    
-public:
-
-    /**
-     * Add an item to the back of the queue
-     * @param cmd the command that was sent to generate the response
-     * @param res the expected response
-     */
-    int	at_fifo_queue_add(at_cmd_t cmd, at_res_t res);
-    
-    /**
-     * Add an item to the back of the queue with pointer data
-     * @param cmd -- the command that was sent to generate the response
-     * @param res -- the expected response
-     * @param data -- pointer data associated with this entry, it will be freed when the message is freed
-     */
-    int	at_fifo_queue_add_ptr(at_cmd_t cmd, at_res_t res, void* data);
-    
-    /**
-     * Add an item to the back of the queue with pointer data
-     * @param cmd -- the command that was sent to generate the response
-     * @param res -- the expected response
-     * @param num -- numeric data
-     */
-    int	at_fifo_queue_add_num(at_cmd_t cmd, at_res_t res, int num);
-    
-    /**
-     * Remove an item from the front of the queue, and free it
-     */
-    void at_fifo_queue_rem();
-    
-    /**
-     * Remove all itmes from the queue and free them
-     */
-    void at_fifo_queue_flush();
-    
-    /**
-     * Get the head of a queue
-     * @return a pointer to the head of the given queue
-     */
-    at_queue_t* at_fifo_queue_head();
-
+        
 private:
-    ObjList m_atQueue;
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
@@ -889,6 +655,13 @@ private:
     bool Hangup(int error);
     int getReason(int end_status, int cc_cause);
     bool m_incoming_pdu;
+    
+
+    ATCommand* m_lastcmd;
+public:
+    bool isDTMFValid(char dtmf);
+    bool encodeUSSD(const String& code, String& ret);
+    ObjList m_commandQueue;
 };
 
 

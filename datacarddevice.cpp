@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <poll.h>
+#include <string.h>
 #include "pdu.h"
 
 
@@ -157,19 +158,14 @@ void MediaThread::run()
     int len;
     char silence_frame[FRAME_SIZE];
 
-    size_t used;
-    int iovcnt;
-    struct iovec iov[3];
     ssize_t res;
-    size_t count;
-
     
     memset(silence_frame, 0, sizeof(silence_frame));
     
     if (!m_device) 
         return;
 
-    m_device->a_write_rb.rb_init(m_device->a_write_buf, sizeof(m_device->a_write_buf));
+    m_device->m_audio_buf.clear();
 
     // Main loop
     while (m_device->isRunning())
@@ -208,48 +204,37 @@ void MediaThread::run()
 	    if(len) 
 	    {
 		m_device->forwardAudio(buf, len);
+<<<<<<< .working
 ///		
 ///    		write(pfd.fd, buf, len);
 ///
 	    }
 	    used = m_device->a_write_rb.rb_used ();
 	    if(used >= FRAME_SIZE)
+=======
+
+//TODO: Write full data
+	    
+	    unsigned int avail = m_device->m_audio_buf.length();	
+	    if(avail >= FRAME_SIZE)
+>>>>>>> .merge-right.r124
 	    {
-		iovcnt = m_device->a_write_rb.rb_read_n_iov(iov, FRAME_SIZE);
-		m_device->a_write_rb.rb_read_upd(FRAME_SIZE);
+		char* data = (char*)m_device->m_audio_buf.data();
+	    	write(pfd.fd, data, FRAME_SIZE);
+		m_device->m_audio_buf.cut(-FRAME_SIZE);
 	    }
-	    else if(used > 0)
+	    else if(avail > 0)
 	    {
 		Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
-		iovcnt = m_device->a_write_rb.rb_read_all_iov(iov);
-		m_device->a_write_rb.rb_read_upd(used);
-
-		iov[iovcnt].iov_base = silence_frame;
-		iov[iovcnt].iov_len = FRAME_SIZE - used;
-		iovcnt++;
+		char* data = (char*)m_device->m_audio_buf.data();
+	    	write(pfd.fd, data, avail);
+		m_device->m_audio_buf.cut(-avail);
 	    }
 	    else
 	    {
 		Debug(DebugAll, "[%s] write silence", m_device->c_str());
-		iov[0].iov_base = silence_frame;
-		iov[0].iov_len = FRAME_SIZE;
-		iovcnt = 1;
-	    }
-	    count = 0;
-	    while((res = writev(pfd.fd, iov, iovcnt)) < 0 && (errno == EINTR || errno == EAGAIN))
-	    {
-		if(count++ > 10)
-		{
-		    Debug(DebugAll,"Deadlock avoided for write!");
-		    break;
-		}
-		usleep(1);
-	    }
-	    if(res < 0 || res != FRAME_SIZE)
-	    {
-		Debug(DebugAll,"[%s] Write error!",m_device->c_str());
-	    }
-
+		write(pfd.fd, silence_frame, FRAME_SIZE);
+	    }	    
 	    m_device->m_mutex.unlock();
 	} 
 	else if(pfd.revents) 
@@ -296,9 +281,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_reset_datacard = true;
     m_u2diag = -1;
     m_callingpres = -1;
-    
-    m_atQueue.clear();
-    
+        
 ///
     initialized = 0;
     gsm_registered = 0;
@@ -307,6 +290,9 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     outgoing = 0;
     needring = 0;
     needchup = 0;
+    
+    m_commandQueue.clear();
+    m_lastcmd = 0;
 }
 
 bool CardDevice::startMonitor() 
@@ -385,7 +371,10 @@ bool CardDevice::disconnect()
     m_number = "Unknown";
     m_incoming_pdu = false;
 
-    m_atQueue.clear();
+    m_commandQueue.clear();
+	m_lastcmd = 0;
+    
+    initialized = 0;
 
     Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
     return m_connected;
@@ -541,13 +530,8 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
             pdu.setAlphabet(PDU::UCS2);
             pdu.generate();
             
-            char *msg = strdup(pdu.getPDU());
-            if(at_send_cmgs(pdu.getMessageLen()) || at_fifo_queue_add_ptr(CMD_AT_CMGS, RES_SMS_PROMPT, msg))
-            {
-    		free(msg);
-        	Debug(DebugAll, "[%s] Error sending SMS message", c_str());
-        	return false;
-	    }
+            const char* pdutext = pdu.getPDU();
+            m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, new String(pdutext)));
 	}
         else
         {
@@ -580,11 +564,10 @@ bool CardDevice::sendUSSD(const String &ussd)
     
     if (m_connected && initialized && gsm_registered)
     {
-        if (at_send_cusd(ussd.c_str()) || at_fifo_queue_add(CMD_AT_CUSD, RES_OK))
-        {
-            Debug(DebugAll, "[%s] Error sending USSD command", c_str());
-            return false;
-        }
+        String ussdenc;
+        if(!encodeUSSD(ussd, ussdenc))
+    	    return false;
+        m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD));
     }
     else
     {
@@ -603,7 +586,9 @@ bool CardDevice::incomingCall(const String &caller)
         Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
 	return false;
     }
-    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
+    m_mutex.lock();
+    m_audio_buf.clear();
+    m_mutex.unlock();
     return m_conn->onIncoming(caller);
 }
 
@@ -620,10 +605,7 @@ bool CardDevice::Hangup(int reason)
 //TODO: Review this!!!
     if(needchup)
     {
-	if(at_send_chup() || at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-	{
-	    Debug(DebugAll, "[%s] Error sending AT+CHUP command", c_str());
-	}
+	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	needchup = 0;
     }
 
@@ -659,27 +641,11 @@ bool CardDevice::newCall(const String &called, void* usrData)
 //  2: CLIR suppression (show)
 //  Other values not valid, Do not use callingpres
     if((m_callingpres >= 0) && (m_callingpres <= 2))
-    {
-	int clir = m_callingpres;
-	char* dest_number = strdup(called.c_str());
-	if (at_send_clir(clir) || at_fifo_queue_add_ptr(CMD_AT_CLIR, RES_OK, dest_number))
-	{
-		Debug(DebugAll, "[%s] Error sending AT+CLIR command", c_str());
-		Hangup(DATACARD_FAILURE);
-		return false;
-	}
-    }
+	m_commandQueue.append(new ATCommand("AT+CLIR=" + String(m_callingpres), CMD_AT_CLIR, new String(called)));
     else
-    {
-	if (at_send_atd(called.c_str()) || at_fifo_queue_add(CMD_AT_D, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error sending ATD command", c_str());
-		Hangup(DATACARD_FAILURE);
-		return false;
-	}
-    }
+        m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D));
 
-    a_write_rb.rb_init(a_write_buf, sizeof(a_write_buf));
+    m_audio_buf.clear();
 
     outgoing = 1;
     needchup = 1;
@@ -812,6 +778,60 @@ int CardDevice::getReason(int end_status, int cc_cause)
     return DATACARD_FAILURE;
 }
 
+bool CardDevice::isDTMFValid(char digit)
+{
+    switch (digit)
+    {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	case '*':
+	case '#':
+	    return true;
+	default:
+	    return false;
+    }
+}
+
+bool CardDevice::encodeUSSD(const String& code, String& ret)
+{
+    ssize_t res;
+    char buf[512];
+
+    if(cusd_use_7bit_encoding)
+    {
+	res = char_to_hexstr_7bit(code.safe(), code.length(), buf, sizeof(buf));
+	if (res <= 0)
+	{
+	    Debug(DebugAll, "[%s] Error converting USSD code to PDU: %s\n", c_str(), code.safe());
+	    return false;
+	}
+    }
+    else if(use_ucs2_encoding)
+    {
+	res = utf8_to_hexstr_ucs2(code.safe(), code.length(), buf, sizeof(buf));
+	if (res <= 0)
+	{
+	    Debug(DebugAll, "[%s] error converting USSD code to UCS-2: %s\n", c_str(), code.safe());
+	    return false;
+	}
+    }
+    else
+    {
+	ret = code;
+	return true;
+    }
+    ret = buf;
+    return true;
+
+}
 
 //audio
 void CardDevice::forwardAudio(char* data, int len)
@@ -827,14 +847,8 @@ void CardDevice::forwardAudio(char* data, int len)
 int CardDevice::sendAudio(char* data, int len)
 {
 //TODO:
-    size_t count = a_write_rb.rb_free();
-    
     m_mutex.lock();
-    if (count < (size_t) len)
-    {
-	a_write_rb.rb_read_upd(len - count);
-    }
-    a_write_rb.rb_write(data, len);
+    m_audio_buf.append(data, len);
     m_mutex.unlock();
     return 0;
 }
@@ -995,14 +1009,8 @@ bool Connection::sendAnswer()
 {
 
     m_dev->m_mutex.lock();
-
     if (m_dev->incoming)
-    {
-	if (m_dev->at_send_ata() || m_dev->at_fifo_queue_add(CMD_AT_A, RES_OK))
-	{
-	    Debug(DebugAll, "[%s] Error sending ATA command", m_dev->c_str());
-	}
-    }
+	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A));
     m_dev->m_mutex.unlock();
 
     return true;
@@ -1022,40 +1030,30 @@ bool Connection::sendHangup()
 
     tmp->m_mutex.lock();
 
+    m_dev = NULL;
+
 
     if (tmp->needchup)
     {
-	if (tmp->at_send_chup() || tmp->at_fifo_queue_add (CMD_AT_CHUP, RES_OK))
-	{
-		Debug(DebugAll, "[%s] Error sending AT+CHUP command", tmp->c_str());
-	}
+	tmp->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	tmp->needchup = 0;
     }
 
     tmp->m_conn = NULL;
     tmp->needring = 0;
 
-    m_dev = NULL;
-
     tmp->m_mutex.unlock();
-
-//	ast_setstate (channel, AST_STATE_DOWN);
 
     return true;
 }
 
 bool Connection::sendDTMF(char digit)
 {
+    Debug(DebugAll, "[%s] Send DTMF %c", m_dev->c_str(), digit);
 
     m_dev->m_mutex.lock();
-    
-    if (m_dev->at_send_dtmf(digit) || m_dev->at_fifo_queue_add (CMD_AT_DTMF, RES_OK))
-    {
-	Debug(DebugAll, "[%s] Error sending DTMF %c", m_dev->c_str(), digit);
-	m_dev->m_mutex.unlock();
-	return -1;
-    }
-    Debug(DebugAll, "[%s] Send DTMF %c", m_dev->c_str(), digit);
+    if(m_dev->isDTMFValid(digit))
+	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_CPIN));
     m_dev->m_mutex.unlock();
 
     return true;

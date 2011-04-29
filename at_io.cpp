@@ -10,6 +10,8 @@
 #include "datacarddevice.h"
 #include <stdlib.h>
 #include <poll.h>
+#include <stdio.h>
+#include <string.h>
 
 
 int CardDevice::handle_rd_data()
@@ -62,36 +64,113 @@ int CardDevice::handle_rd_data()
     return 0;
 }
 
-
-int CardDevice::at_wait(int* ms)
+void CardDevice::processATEvents()
 {
     struct pollfd fds;
-    fds.fd = m_data_fd;
-    fds.events = POLLIN;
-    fds.revents = 0;
 
-    int res = poll(&fds, 1, *ms);
-    if (res < 0) {
-        /* Simulate a timeout if we were interrupted */
-        if (errno != EINTR)
-            return -1;
-	return 0;
-    }
-    else if(res == 0)
+    m_mutex.lock();
+	//This may be unnecessary
+    m_commandQueue.clear();
+	m_lastcmd = 0;
+	//--
+    m_commandQueue.append(new ATCommand("AT", CMD_AT));
+    
+    m_mutex.unlock();
+
+    // Main loop
+    while (isRunning())
     {
-	return 0;
-    }
-    if((fds.revents & POLLIN))
-    {
-        //incoming data
-        return fds.fd;
-    }	
-    else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
-    {
-        //exeption
-        return -1;
-    }
-    return 0;
+        m_mutex.lock();
+        if (dataStatus() || audioStatus())
+        {
+            Debug(DebugAll, "Lost connection to Datacard %s", c_str());
+            disconnect();
+            m_mutex.unlock();
+            return;
+        }
+        m_mutex.unlock();
+
+	fds.fd = m_data_fd;
+	fds.events = POLLIN;
+	fds.revents = 0;
+	
+	if((m_commandQueue.count() > 0) && !m_lastcmd)
+	    fds.events |= POLLOUT;
+	    
+
+	int res = poll(&fds, 1, 1000);
+	if (res < 0) {
+    	    if (errno == EINTR)
+        	continue;
+	    m_mutex.lock();
+	    disconnect();
+            m_mutex.unlock();
+	    return;
+	}
+	else if(res == 0)
+	{
+	    m_mutex.lock();
+            if (!initialized)
+            {
+                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
+		if (m_lastcmd)
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+
+                Debug(DebugAll, "Error initializing Datacard %s", c_str());
+                disconnect();
+                m_mutex.unlock();
+                return;
+            }
+            else
+            {
+// TODO:
+//		if (m_lastcmd)
+//		{
+//                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+//                    disconnect();
+//                }
+                m_mutex.unlock();
+                continue;
+            }
+	}
+	if((fds.revents & POLLIN))
+	{
+    	    //incoming data
+    	    m_mutex.lock();
+	    if (handle_rd_data())
+	    {
+        	disconnect();
+        	m_mutex.unlock();
+        	return;
+	    }
+    	    m_mutex.unlock();
+	}	
+	else if (fds.revents & POLLOUT)
+	{
+	    m_mutex.lock();
+	    if(!m_lastcmd)
+	    {
+	    
+		ATCommand* cmd = static_cast<ATCommand*>(m_commandQueue.get());
+	    
+		if(cmd)
+		{
+		    at_write_full((char*)cmd->m_command.safe(),cmd->m_command.length());
+		    m_commandQueue.remove(cmd, false);
+		    m_lastcmd = cmd;
+		}
+	    }
+    	    m_mutex.unlock();
+	}
+	else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
+	{
+    	    //exeption
+    	    m_mutex.lock();
+	    disconnect();
+            m_mutex.unlock();
+    	    return;
+	}
+    } // End of Main loop
 }
 
 at_res_t CardDevice::at_read_result_classification (char* command)
@@ -223,6 +302,40 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 	at_res = RES_UNKNOWN;
     }
     return at_res;
+}
+
+
+int CardDevice::at_write_full(char* buf, size_t count)
+{
+    char* p = buf;
+    ssize_t out_count;
+
+    Debug(DebugAll, "[%s] [%.*s]", c_str(), (int)count, buf);
+
+    while (count > 0)
+    {
+	if ((out_count = write(m_data_fd, p, count)) == -1)
+	{
+	    Debug(DebugAll, "[%s] write() error: %d", c_str(), errno);
+	    return -1;
+	}
+
+	count -= out_count;
+	p += out_count;
+    }
+    write(m_data_fd, "\r", 1);
+    
+    return 0;
+}
+
+int CardDevice::at_send_sms_text(const char* pdu)
+{
+    char buf[1024];
+    int ret = snprintf(buf, 1024, "%s\x1a", pdu);
+    if(ret == 1024)
+	return -1;
+
+    return at_write_full(buf, ret);
 }
 
 /* vi: set ts=8 sw=4 sts=4 noet: */

@@ -5,7 +5,7 @@ using namespace TelEngine;
 namespace { // anonymous
 
 
-#define DEF_DISCOVERY_INT	60
+#define DEF_DISCOVERY_INT 60
 
 
 static TokenDict dict_errors[] = {
@@ -413,12 +413,12 @@ bool DatacardDriver::received(Message& msg, int id)
 DatacardDriver::DatacardDriver()
     : Driver("datacard", "varchans"),m_endpoint(0)
 {
-    Output("Loaded module DatacardChannel");
+    Output("Loaded module Datacard");
 }
 
 DatacardDriver::~DatacardDriver()
 {
-    Output("Unloading module DatacardChannel");
+    Output("Unloading module Datacard");
     m_endpoint->cleanDevices();
 }
 
@@ -430,7 +430,7 @@ void DatacardDriver::initialize()
         return;
     }
 
-    Output("Initializing module DatacardChannel");
+    Output("Initializing module Datacard Revision %s", SVN_REV);
 //TODO: make reload    
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
