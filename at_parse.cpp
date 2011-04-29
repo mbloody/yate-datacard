@@ -282,7 +282,7 @@ char* CardDevice::at_parse_clip(char* str, size_t len)
 }
 
 char* CardDevice::at_parse_cnum(char* str, size_t len)
-{
+{                                                                        
 	size_t	i;
 	int	state;
 	char*	number = NULL;

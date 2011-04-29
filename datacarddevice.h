@@ -250,17 +250,16 @@ private:
 public:
 
     /**
-     * Wait for AT command
-     * @param ms -- wait timeout
-     * @return file descriptor or -1 on error
-     */    
-    int at_wait(int* ms);
-
-    /**
      * Read and handle data
      * @return 0 on success or -1 on error
      */    
     int handle_rd_data();
+
+    /**
+     * Process AT data
+     * @return
+     */        
+    void processATEvents();
 
 private:
 

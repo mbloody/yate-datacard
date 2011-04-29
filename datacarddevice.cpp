@@ -45,111 +45,22 @@ static int opentty (char* dev)
 	return fd;
 }
 
-MonitorThread::MonitorThread(CardDevice* dev):m_device(dev)
-{
-}
+MonitorThread::MonitorThread(CardDevice* dev):m_device(dev) {}
 
-MonitorThread::~MonitorThread()
-{
-}
+MonitorThread::~MonitorThread() {}
 
 void MonitorThread::run()
 {
-    at_queue_t*	e;
-    int t;
-
-    /* start datacard initilization with the AT request */
-    if (!m_device) 
-        return;
-    
-    m_device->m_mutex.lock();
-
-    if (m_device->at_send_at() || m_device->at_fifo_queue_add(CMD_AT, RES_OK))
-    {
-        Debug(DebugAll, "[%s] Error sending AT", m_device->c_str());
-        m_device->disconnect();
-        m_device->m_mutex.unlock();
-        return;
-    }
-
-    m_device->m_mutex.unlock();
-
-    // Main loop
-    while (m_device->isRunning())
-    {
-        m_device->m_mutex.lock();
-
-        if (m_device->dataStatus() || m_device->audioStatus())
-        {
-            Debug(DebugAll, "Lost connection to Datacard %s", m_device->c_str());
-            m_device->disconnect();
-            m_device->m_mutex.unlock();
-            return;
-        }
-        t = 10000;
-
-        m_device->m_mutex.unlock();
-
-	int res = m_device->at_wait(&t);
-	if(res < 0)
-	{
-	    m_device->m_mutex.lock();
-	    m_device->disconnect();
-            m_device->m_mutex.unlock();
-            return;
-	}
-        if (res == 0)
-        {
-            m_device->m_mutex.lock();
-            if (!m_device->initialized)
-            {
-                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", m_device->c_str());
-
-		if ((e = m_device->at_fifo_queue_head()))
-                {
-                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", m_device->c_str(), m_device->at_res2str (e->res), m_device->at_cmd2str (e->cmd));
-                }
-                Debug(DebugAll, "Error initializing Datacard %s", m_device->c_str());
-                m_device->disconnect();
-                m_device->m_mutex.unlock();
-                return;
-            }
-            else
-            {
-                m_device->m_mutex.unlock();
-                continue;
-            }
-        }
-    
-        m_device->m_mutex.lock();
-
-//	Debug(DebugAll, "m_device->handle_rd_data(); [%s]", m_device->c_str());
-
-	if (m_device->handle_rd_data())
-	{
-            m_device->disconnect();
-            m_device->m_mutex.unlock();
-            return;
-	}
-
-//	Debug(DebugAll, "after m_device->handle_rd_data(); [%s]", m_device->c_str());
-
-        m_device->m_mutex.unlock();
-    } // End of Main loop
+    if (m_device) 
+	m_device->processATEvents();
 }
 
-void MonitorThread::cleanup()
-{
-}
+void MonitorThread::cleanup() {}
 
 //MediaThread
-MediaThread::MediaThread(CardDevice* dev):m_device(dev)
-{
-}
+MediaThread::MediaThread(CardDevice* dev):m_device(dev) {}
 
-MediaThread::~MediaThread()
-{
-}
+MediaThread::~MediaThread() {}
 
 void MediaThread::run()
 {
@@ -177,7 +88,6 @@ void MediaThread::run()
 
         m_device->m_mutex.unlock();
 
-//	res = poll(&pfd, 1, 50);
 	res = poll(&pfd, 1, 1000);
 
 	if (res == -1 && errno != EINTR) 
@@ -192,32 +102,18 @@ void MediaThread::run()
 	if (res == 0)
     	    continue;
 
-
 	if(pfd.revents & POLLIN) 
 	{
 	    m_device->m_mutex.lock();
 
-///	    Debug(DebugAll, "POLLIN");
-
 	    len = read(pfd.fd, buf, FRAME_SIZE);
-
 	    if(len) 
-	    {
 		m_device->forwardAudio(buf, len);
-<<<<<<< .working
-///		
-///    		write(pfd.fd, buf, len);
-///
-	    }
-	    used = m_device->a_write_rb.rb_used ();
-	    if(used >= FRAME_SIZE)
-=======
 
 //TODO: Write full data
 	    
 	    unsigned int avail = m_device->m_audio_buf.length();	
 	    if(avail >= FRAME_SIZE)
->>>>>>> .merge-right.r124
 	    {
 		char* data = (char*)m_device->m_audio_buf.data();
 	    	write(pfd.fd, data, FRAME_SIZE);
@@ -254,9 +150,7 @@ void MediaThread::run()
 
 }
 
-void MediaThread::cleanup()
-{
-}
+void MediaThread::cleanup() {}
 
 CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_mutex(true), m_conn(0), m_connected(false)
 {
@@ -282,7 +176,6 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_u2diag = -1;
     m_callingpres = -1;
         
-///
     initialized = 0;
     gsm_registered = 0;
     
@@ -297,12 +190,10 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
 
 bool CardDevice::startMonitor() 
 { 
-    //TODO: Running flag
     m_running = true;
     m_media = new MediaThread(this);
-    m_media->startup();
     m_monitor = new MonitorThread(this);
-    return m_monitor->startup();
+    return m_monitor->startup() && m_media->startup();
 }
 
 bool CardDevice::tryConnect()
@@ -311,17 +202,12 @@ bool CardDevice::tryConnect()
     if(!m_connected)
     {
 	Debug("tryConnect",DebugAll,"Datacard %s trying to connect on %s...", safe(), m_data_tty.safe());
-	if((m_data_fd = opentty((char*)m_data_tty.safe())) > -1)
-	{
-	    if((m_audio_fd = opentty((char*)m_audio_tty.safe())) > -1)
+	if(((m_data_fd = opentty((char*)m_data_tty.safe())) > -1) && ((m_audio_fd = opentty((char*)m_audio_tty.safe())) > -1))
+	    if(startMonitor())
 	    {
-		if(startMonitor())
-		{
-		    m_connected = true;
-		    Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...", safe());
-		}
+	        m_connected = true;
+	        Debug("tryConnect",DebugAll,"Datacard %s has connected, initializing...", safe());
 	    }
-	}
     }
     m_mutex.unlock();
     return m_connected;
@@ -334,8 +220,8 @@ bool CardDevice::disconnect()
     	Debug("disconnect",DebugAll,"[%s] Datacard not connected", safe());	
     	return m_connected;
     }
-    if(isRunning()) 
-	stopRunning();
+    
+    stopRunning();
 
     if(m_conn)
     {
@@ -402,7 +288,7 @@ bool CardDevice::isRunning() const
 
 void CardDevice::stopRunning()
 {
-    // m_mutex.lock();
+    // m_mutex.lock();    
     m_running = false;
     // m_mutex.unlock();
 }
