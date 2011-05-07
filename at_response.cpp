@@ -694,10 +694,6 @@ int CardDevice::at_response_conn(char* str, size_t len)
 	if(m_conn)
 	    m_conn->onAnswered();
     }
-    else if(incoming)
-    {
-//		ast_setstate (owner, AST_STATE_UP);
-    }
     return 0;
 }
 
@@ -743,20 +739,18 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 {
     int index = at_parse_cmti(str, len);
 
-    if (index > -1)
+    if (index < 0)
     {
-	Debug(DebugAll, "[%s] Incoming SMS message", c_str());
-	if (m_disablesms)
-	    Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
-	else
-	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, new String(index)));
-	return 0;
-    }
-    else
-    {
-	Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting", c_str());
+	Debug(DebugAll, "[%s] Error parsing incoming sms message alert", c_str());
 	return -1;
     }
+
+    Debug(DebugAll, "[%s] Incoming SMS message", c_str());
+    if (m_disablesms)
+        Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
+    else
+        m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, new String(index)));
+    return 0;
 }
 
 int CardDevice::at_response_cmgr(char* str, size_t len)
@@ -780,15 +774,12 @@ int CardDevice::at_response_sms_prompt()
 	    at_send_sms_text((char*)text->safe());
 	}
     }
-    else if(m_lastcmd)
-    {
-	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
-//FIXME: Send empty SMS text. To exit from SMS prompt.
-	at_send_sms_text("");
-    }
     else
     {
-	Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
+	if(m_lastcmd)
+	    Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+	else
+	    Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
 //FIXME: Send empty SMS text. To exit from SMS prompt.
 	at_send_sms_text("");
     }
