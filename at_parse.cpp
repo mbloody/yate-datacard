@@ -253,108 +253,50 @@ const char* CardDevice::at_res2str(at_res_t res)
 	}
 }
 
-char* CardDevice::at_parse_clip(char* str, size_t len)
+String CardDevice::at_parse_clip(char* str, size_t len)
 {
-	size_t	i;
-	int	state;
-	char*	clip = NULL;
+    /*
+     * parse clip info in the following format:
+     * +CLIP: "123456789",128,...
+     */
+	 
+    String num;
+    num.assign(str, len);
 
-	/*
-	 * parse clip info in the following format:
-	 * +CLIP: "123456789",128,...
-	 */
-
-	for (i = 0, state = 0; i < len && state < 3; i++)
-	{
-		switch (state)
-		{
-			case 0: /* search for start of the number (") */
-				if (str[i] == '"')
-				{
-					state++;
-				}
-				break;
-
-			case 1: /* mark the number */
-				clip = &str[i];
-				state++;
-				/* fall through */
-
-			case 2: /* search for the end of the number (") */
-				if (str[i] == '"')
-				{
-					str[i] = '\0';
-					state++;
-				}
-				break;
-		}
-	}
-
-	if (state != 3)
-	{
-		return NULL;
-	}
-
-	return clip;
+    num.trimBlanks();
+    static Regexp tmp("+CLIP:[[:space:]]*\"\\?\\([^,\"]*\\)\"\\?,\\([[:digit:]]\\+\\)");
+    if (num.matches(tmp))
+    {
+	for (int i=0; i<=num.matchCount(); i++)
+	    Debug(DebugAll, "match[%d]='%s' pos=%d len=%d\n",i,num.matchString(i).c_str(),num.matchOffset(i),num.matchLength(i));	    	    
+	if(num.matchCount() < 2)
+	    return String::empty();
+	return num.matchString(1).c_str();
+    }
+    return String::empty();
 }
 
-char* CardDevice::at_parse_cnum(char* str, size_t len)
-{                                                                        
-	size_t	i;
-	int	state;
-	char*	number = NULL;
+String CardDevice::at_parse_cnum(char* str, size_t len)
+{
+    /*
+     * parse CNUM response in the following format:
+     * +CNUM: "<name>","<number>",<type>
+     */
 
-	/*
-	 * parse CNUM response in the following format:
-	 * +CNUM: "<name>","<number>",<type>
-	 */
+    String num;
+    num.assign(str, len);
 
-	for (i = 0, state = 0; i < len && state < 5; i++)
-	{
-		switch (state)
-		{
-			case 0: /* search for start of the name (") */
-				if (str[i] == '"')
-				{
-					state++;
-				}
-				break;
-
-			case 1: /* search for the end of the name (") */
-				if (str[i] == '"')
-				{
-					state++;
-				}
-				break;
-
-			case 2: /* search for the start of the number (") */
-				if (str[i] == '"')
-				{
-					state++;
-				}
-				break;
-
-			case 3: /* mark the number */
-				number = &str[i];
-				state++;
-				/* fall through */
-
-			case 4: /* search for the end of the number (") */
-				if (str[i] == '"')
-				{
-					str[i] = '\0';
-					state++;
-				}
-				break;
-		}
-	}
-
-	if (state != 5)
-	{
-		return NULL;
-	}
-
-	return number;
+    num.trimBlanks();
+    static Regexp tmp("+CNUM:[[:space:]]*\\([^,]*\\),\"\\?\\([^,\"]*\\)\"\\?,\\([[:digit:]]\\+\\)");
+    if (num.matches(tmp))
+    {
+//	for (int i=0; i<=num.matchCount(); i++)
+//	    Debug(DebugAll, "match[%d]='%s' pos=%d len=%d\n",i,num.matchString(i).c_str(),num.matchOffset(i),num.matchLength(i));	    
+	if(num.matchCount() < 3)
+	    return String::empty();
+	return num.matchString(2).c_str();
+    }
+    return String::empty();
 }
 
 char* CardDevice::at_parse_cops(char* str, size_t len)

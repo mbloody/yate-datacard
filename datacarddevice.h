@@ -529,10 +529,9 @@ private:
      * Parse a CLIP event
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CID string is parsed
-     * @return NULL on error (parse error) or a pointer to the caller id inforamtion in str on success
+     * @return empty String on error (parse error) or String with caller id inforamtion on success
      */
-    char* at_parse_clip(char* str, size_t len);
+    String at_parse_clip(char* str, size_t len);
     
     /**
      * Parse a CMGR message
@@ -557,10 +556,9 @@ private:
      * Parse a CNUM response
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CNUM message is parsed
-     * @return NULL on error (parse error) or a pointer to the subscriber number
+     * @return emplty String on error (parse error) or String withsubscriber number
      */
-    char* at_parse_cnum(char* str, size_t len);
+    String at_parse_cnum(char* str, size_t len);
     
     /**
      * Parse a COPS response

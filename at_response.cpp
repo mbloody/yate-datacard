@@ -699,15 +699,13 @@ int CardDevice::at_response_conn(char* str, size_t len)
 
 int CardDevice::at_response_clip(char* str, size_t len)
 {
-    char* clip;
     if (initialized && needring == 0)
     {
 	incoming = 1;
-	if ((clip = at_parse_clip(str, len)) == NULL)
-	{
+	String clip = at_parse_clip(str, len);
+	if (clip.null())
 	    Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
-	}
-	if(incomingCall(String(clip)) == false)
+	if(incomingCall(clip) == false)
 	{
 	    Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
 	    m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
@@ -872,8 +870,8 @@ int CardDevice::at_response_csq(char* str, size_t len)
 
 int CardDevice::at_response_cnum(char* str, size_t len)
 {
-    char* number = at_parse_cnum(str, len);
-    if(number)
+    String number = at_parse_cnum(str, len);
+    if(!number.null())
     {
 	m_number = number;
 	return 0;
