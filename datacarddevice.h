@@ -608,10 +608,9 @@ private:
      * Parse a CUSD answer
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CUSD string is parsed
      * @return 0 success or -1 parse error
      */
-    int at_parse_cusd(char* str, size_t len, char** cusd, unsigned char* dcs);
+    int at_parse_cusd(char* str, size_t len, String &cusd, unsigned char &dcs);
     
     /**
      * Parse a ^MODE notification (link mode)

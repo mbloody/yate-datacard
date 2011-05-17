@@ -788,11 +788,11 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 {
 //TODO:
     ssize_t res;
-    char* cusd;
+    String cusd;
     unsigned char dcs;
     char cusd_utf8_str[1024];
 
-    if(at_parse_cusd (str, len, &cusd, &dcs))
+    if(at_parse_cusd(str, len, cusd, dcs))
     {
 	Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'", c_str(), (int) len, str);
 	return 0;
@@ -800,32 +800,32 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 
     if((dcs == 0 || dcs == 15) && !cusd_use_ucs2_decoding)
     {
-	res = hexstr_7bit_to_char(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	res = hexstr_7bit_to_char(cusd.safe(), cusd.length(), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
 	{
 	    cusd = cusd_utf8_str;
 	}
 	else
 	{
-	    Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd);
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd.safe());
 	    return -1;
 	}
     }
     else
     {
-	res = hexstr_ucs2_to_utf8(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	res = hexstr_ucs2_to_utf8(cusd.safe(), cusd.length(), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
 	{
 	    cusd = cusd_utf8_str;
 	}
 	else
 	{
-	    Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd);
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd.safe());
 	    return -1;
 	}
     }
-    Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
-    m_endpoint->onReceiveUSSD(this, cusd);
+    Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd.safe());
+    m_endpoint->onReceiveUSSD(this, cusd.safe());
     return 0;
 }
 
