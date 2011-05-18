@@ -148,8 +148,11 @@ public:
     GenObject* m_obj;
 };
 
-
-
+/**
+ * Thread for processing data tty.
+ * Sending AT command
+ * Processing responses 
+ */
 class MonitorThread : public Thread
 {
 public:
@@ -158,10 +161,14 @@ public:
     virtual void run();
     virtual void cleanup();
 private:
-    CardDevice* m_device;
+    CardDevice* m_device; //pointer to device
 };
 
-
+/**
+ * Thread for handling media data.
+ * Receiving audio data from tty to core
+ * Sending audio data to tty from core  
+ */
 class MediaThread : public Thread
 {
 public:
@@ -170,9 +177,13 @@ public:
     virtual void run();
     virtual void cleanup();
 private:
-    CardDevice* m_device;
+    CardDevice* m_device; //pointer to device
 };
 
+/**
+ * Device
+ * Work with devise tty ports 
+ */
 class CardDevice: public String
 {
 public:
@@ -204,8 +215,8 @@ public:
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
-
     DataBlock m_audio_buf;
+
 
     String getNumber()
 	{ return m_number; }
@@ -658,12 +669,31 @@ private:
 
 public:
 // SMS and USSD
+
+    /**
+     * Send SMS message
+     * @param called - number of recepient
+     * @param sms - sms text body
+     * @return true on success or false on error
+     */
     bool sendSMS(const String &called, const String &sms);
+
+    /**
+     * Send USSD
+     * @param ussd - cusd
+     * @return true on success or false on error
+     */
     bool sendUSSD(const String &ussd);   
 
     void forwardAudio(char* data, int len);
     int sendAudio(char* data, int len);
     
+    /**
+     * Create new call
+     * @param called - called party number
+     * @param usrData - additional user data
+     * @return true on success or false on error
+     */
     bool newCall(const String &called, void* usrData);
     
 private:
@@ -681,7 +711,10 @@ public:
     ObjList m_commandQueue;
 };
 
-
+/**
+ * Call connection
+ * Process all needed call actions
+ */
 class Connection
 {
 public:
@@ -703,34 +736,103 @@ protected:
     CardDevice* m_dev;
 };
 
+/**
+ * Holds all currently created devices
+ * Process incoming connections, SMS and USSD.
+ * Make calls throw selected device 
+ */
 class DevicesEndPoint : public Thread
 {
 public:
-    
+
     DevicesEndPoint(int interval);
     virtual ~DevicesEndPoint();
     
-    
+    /**
+     * Thread methods for device discovery.
+     * @param
+     * @return
+     */
     virtual void run();
-    virtual void cleanup();
-    
+    virtual void cleanup();    
+
+    /**
+     * Call when CUSD response received.
+     * @param dev - pointer to current device
+     * @param ussd - cusd string
+     * @return
+     */
     virtual void onReceiveUSSD(CardDevice* dev, String ussd);
+
+    /**
+     * Call when new SMS message received.
+     * @param dev - pointer to current device
+     * @param caller - number of SMS sender
+     * @param sms - SMS body
+     * @return
+     */
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms);
-    
+
+    /**
+     * Send SMS message.
+     * @param dev - pointer to current device
+     * @param called - number of SMS recepient
+     * @param sms - SMS body
+     * @return
+     */    
     bool sendSMS(CardDevice* dev, const String &called, const String &sms);
+
+    /**
+     * Send CUSD request.
+     * @param dev - pointer to current device
+     * @param ussd - ussd text. For example *100#
+     * @return
+     */    
     bool sendUSSD(CardDevice* dev, const String &ussd);
-    
+
+    /**
+     * Append new device to endpoint.
+     * @param name - unique device name for future access
+     * @param data - list of configuration parameters
+     * @return pointer of newly created device object
+     */        
     CardDevice* appendDevice(String name, NamedList* data);
+
+    /**
+     * Find device by name
+     * @param name - device name
+     * @return device pointer or NULL if not found
+     */        
     CardDevice* findDevice(const String &name);
+
+    /**
+     * Remove all devices from endpoint
+     * @param
+     * @return
+     */            
     void cleanDevices();
-    
+
+    /**
+     * Call when need create new connection for call
+     * @param dev - pointer to calling device
+     * @param usrData - additional user information
+     * @return pointer to new connection
+     */    
     virtual Connection* createConnection(CardDevice* dev, void* usrData = 0);
+
+    /**
+     * Make new call throw specific device
+     * @param dev - pointer to device for call
+     * @param called - number for outgoing call     
+     * @param usrData - additional user information
+     * @return pointer to new connection
+     */        
     bool MakeCall(CardDevice* dev, const String &called, void* usrData);
 
 private:
     Mutex m_mutex;
-    ObjList m_devices;
-    int m_interval;
+    ObjList m_devices; //devices list
+    int m_interval;  //discovery interval
     bool m_run;
 };
 
