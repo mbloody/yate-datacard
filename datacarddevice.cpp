@@ -515,7 +515,7 @@ bool CardDevice::Hangup(int reason)
 	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	needchup = 0;
     }
-
+    lock.drop();
     return tmp->onHangup(reason);
 }
 
