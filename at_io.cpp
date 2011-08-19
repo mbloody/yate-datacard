@@ -38,6 +38,12 @@ int CardDevice::handle_rd_data()
 
     while ((ret = read(m_data_fd, &c, 1)) == 1) 
     {
+        if (rd_buff_pos >= RDBUFF_MAX) 
+	{
+	    Debug(DebugAll,"Device %s: Buffer exceeded\n", c_str());
+	    return -1;
+	}
+	
 	switch (state) 
 	{
 	    case BLT_STATE_WANT_CONTROL:
@@ -63,11 +69,6 @@ int CardDevice::handle_rd_data()
 		}
 		else 
 		{
-		    if (rd_buff_pos >= RDBUFF_MAX) 
-		    {
-			Debug(DebugAll,"Device %s: Buffer exceeded\n", c_str());
-			return -1;
-		    }
 		    rd_buff[rd_buff_pos++] = c;
 		}
 		break;
