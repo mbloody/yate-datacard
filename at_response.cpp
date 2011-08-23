@@ -928,7 +928,7 @@ int CardDevice::at_response_cgmi(char* str, size_t len)
 int CardDevice::at_response_cgmm(char* str, size_t len)
 {
     m_model.assign(str,len);
-    if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X")
+    if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X" || m_model == "E173")
     {
 	cusd_use_7bit_encoding = 1;
 	cusd_use_ucs2_decoding = 0;
