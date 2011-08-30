@@ -140,11 +140,12 @@ void CardDevice::processATEvents()
             else
             {
 // TODO:
-//		if (m_lastcmd)
-//		{
-//                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+		if (m_lastcmd)
+		{
+                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+                    m_lastcmd->onTimeout();
 //                    disconnect();
-//                }
+                }
                 m_mutex.unlock();
                 continue;
             }

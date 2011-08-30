@@ -140,6 +140,11 @@ public:
 	return m_obj;
     }
 
+    void onTimeout()    
+    {
+	Debug(DebugAll, "Timeout for AT command %s ignoring ", m_command.safe());
+    }
+
 public:
     String m_command;
     at_cmd_t m_cmd;
