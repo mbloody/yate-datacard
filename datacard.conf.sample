@@ -20,7 +20,7 @@ audio=/dev/ttyUSB2
 ; data: string: tty for AT commands
 data=/dev/ttyUSB3
 
-; pin: string: SIP PIN 1 code
+; pin: string: SIM PIN 1 code
 ;pin=0000
 
 ; autodeletesms: bool: Delete incoming SMS from memory.

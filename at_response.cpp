@@ -217,7 +217,6 @@ int CardDevice::at_response_ok()
 	    case CMD_AT_CGSN:
 		if(!initialized)
 		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
-//		    m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
 		break;
 
 	    case CMD_AT_CIMI:
@@ -230,7 +229,7 @@ int CardDevice::at_response_ok()
 		{
 		    if(m_simstatus == 0)
 		        m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
-		    else if(m_simstatus == 1 && (m_sim_pin.length() != 0) && (m_pincount ==0))
+		    else if(m_simstatus == 1 && (m_sim_pin.length() > 0) && (m_pincount == 0))
 		    {
 			m_pincount++;
 			m_commandQueue.append(new ATCommand("AT+CPIN=" + m_sim_pin, CMD_AT_CPIN_ENTER));
