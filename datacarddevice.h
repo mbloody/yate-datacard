@@ -60,6 +60,7 @@ typedef enum {
 	CMD_AT_COPS,
 	CMD_AT_COPS_INIT,
 	CMD_AT_CPIN,
+	CMD_AT_CPIN_ENTER,
 	CMD_AT_CPMS,
 	CMD_AT_CREG,
 	CMD_AT_CREG_INIT,
@@ -245,6 +246,9 @@ private:
     String m_number;
     String m_location_area_code;
     String m_cell_id;
+    
+    unsigned char m_pincount;
+    int m_simstatus;
 
 //FIXME: review all his flags. Simplify or implement it.
 
@@ -270,6 +274,7 @@ public:
 
 
     /* Config */
+    String m_sim_pin;
     String m_audio_tty;			/* tty for audio connection */
     String m_data_tty;			/* tty for AT commands */
     int m_u2diag;

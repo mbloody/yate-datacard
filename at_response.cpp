@@ -216,17 +216,39 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CGSN:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
+		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
+//		    m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
 		break;
 
 	    case CMD_AT_CIMI:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
+		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT));
 		break;
 
 	    case CMD_AT_CPIN:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT));
+		{
+		    if(m_simstatus == 0)
+		        m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
+		    else if(m_simstatus == 1 && (m_sim_pin.length() != 0) && (m_pincount ==0))
+		    {
+			m_pincount++;
+			m_commandQueue.append(new ATCommand("AT+CPIN=" + m_sim_pin, CMD_AT_CPIN_ENTER));
+		    }
+		    else
+		    {
+		    	Debug(DebugAll, "[%s] Wrong SIM State", c_str());
+			m_lastcmd->destruct();
+			m_lastcmd = 0;
+			return -1;
+		    }
+						
+		}
+		break;
+
+	    case CMD_AT_CPIN_ENTER:
+		if(!initialized)
+		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
 		break;
 
 	    case CMD_AT_COPS_INIT:
@@ -438,6 +460,10 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CPIN:
 		Debug(DebugAll,  "[%s] Error checking PIN state", c_str());
+		goto e_return;
+
+	    case CMD_AT_CPIN_ENTER:
+		Debug(DebugAll,  "[%s] Error enter PIN code", c_str());
 		goto e_return;
 
 	    case CMD_AT_COPS_INIT:
@@ -854,7 +880,8 @@ int CardDevice::at_response_no_carrier()
 
 int CardDevice::at_response_cpin(char* str, size_t len)
 {
-    return at_parse_cpin(str, len);
+    m_simstatus = at_parse_cpin(str, len);
+    return 0;
 }
 
 int CardDevice::at_response_smmemfull()

@@ -205,9 +205,12 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     needring = 0;
     needchup = 0;
     
+    m_simstatus = -1;
+    m_pincount = 0;
     m_commandQueue.clear();
     m_lastcmd = 0;
 }
+    
 
 bool CardDevice::startMonitor() 
 { 
@@ -278,8 +281,11 @@ bool CardDevice::disconnect()
     m_number = "Unknown";
     m_incoming_pdu = false;
 
+    m_simstatus = -1;
+    m_pincount = 0;
+    
     m_commandQueue.clear();
-	m_lastcmd = 0;
+    m_lastcmd = 0;
     
     initialized = 0;
 
@@ -834,6 +840,8 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     CardDevice* dev = new CardDevice(name, this);
     dev->m_data_tty = data_tty;
     dev->m_audio_tty = audio_tty;
+    
+    dev->m_sim_pin = data->getValue("pin");
 
     dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
     dev->m_reset_datacard = data->getBoolValue("resetdatacard",true);
