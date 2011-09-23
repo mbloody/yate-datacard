@@ -40,8 +40,11 @@ int CardDevice::handle_rd_data()
     {
         if (rd_buff_pos >= RDBUFF_MAX) 
 	{
-	    Debug(DebugAll,"Device %s: Buffer exceeded\n", c_str());
-	    return -1;
+	    Debug(DebugAll,"Device %s: Buffer exceeded - cleared", c_str());
+	    rd_buff_pos = 0;
+	    memset(rd_buff, 0, RDBUFF_MAX);
+	    continue;
+	    //return -1;
 	}
 	
 	switch (state) 
@@ -85,6 +88,7 @@ void CardDevice::processATEvents()
     struct pollfd fds;
 
     m_mutex.lock();
+                 
     //This may be unnecessary
     m_commandQueue.clear();
     m_lastcmd = 0;
