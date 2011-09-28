@@ -38,7 +38,7 @@ int CardDevice::handle_rd_data()
 
     while ((ret = read(m_data_fd, &c, 1)) == 1) 
     {
-        if (rd_buff_pos >= RDBUFF_MAX) 
+        if (rd_buff_pos >= RDBUFF_MAX || rd_buff_pos < 0)
 	{
 	    Debug(DebugAll,"Device %s: Buffer exceeded - cleared", c_str());
 	    rd_buff_pos = 0;
