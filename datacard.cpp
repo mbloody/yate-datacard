@@ -404,7 +404,7 @@ bool DatacardDriver::received(Message& msg, int id)
 	String detail;
 	if(target == "devices")
 	{
-	    detail = "test";	
+	    detail = m_endpoint->devicesStatus();	
 	}
 	msg.retValue().clear();
 	msg.retValue() << "module=" << name();

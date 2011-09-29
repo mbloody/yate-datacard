@@ -823,6 +823,13 @@ public:
     void cleanDevices();
 
     /**
+     * Get status of all devices
+     * @param
+     * @return
+     */                
+    String devicesStatus();
+
+    /**
      * Call when need create new connection for call
      * @param dev - pointer to calling device
      * @param usrData - additional user information

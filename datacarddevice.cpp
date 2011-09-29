@@ -399,15 +399,30 @@ String CardDevice::getStatus()
 //		);
 //    list->addParam("has_voice", has_voice?"true":"false");
 //    list->addParam("has_sms", has_sms?"true":"false");
+    ret << String(rssi) <<"|";
 //    list->addParam("rssi", String(rssi));
 //    list->addParam("linkmode", String(linkmode));
 //    list->addParam("linksubmode", String(linksubmode));
+
+    ret << m_provider_name <<"|";
 //    list->addParam("providername", m_provider_name);
+
+    ret << m_manufacturer <<"|";
 //    list->addParam("manufacturer", m_manufacturer);
+
+    ret << m_model <<"|";
 //    list->addParam("model", m_model);
+
+    ret << m_firmware <<"|";
 //    list->addParam("firmware", m_firmware);
+
+    ret << m_imei <<"|";
 //    list->addParam("imei", m_imei);
+
+    ret << m_imsi <<"|";
 //    list->addParam("imsi", m_imsi);
+
+    ret << m_number;
 //    list->addParam("number", m_number);
 
 //    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
@@ -879,6 +894,25 @@ void DevicesEndPoint::cleanDevices()
     m_mutex.unlock();
     m_run = false;
 }
+
+String DevicesEndPoint::devicesStatus()
+{
+    CardDevice* dev = 0;
+    String ret ="";
+    m_mutex.lock();
+    const ObjList *devicesIter = &m_devices;
+    while (devicesIter)
+    {
+	GenObject* obj = devicesIter->get();
+	devicesIter = devicesIter->next();
+	if (!obj) continue;	
+	dev = static_cast<CardDevice*>(obj);
+	ret << dev->getStatus() <<",";
+    }
+    m_mutex.unlock();
+    return ret;
+}
+
 
 Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
 {
