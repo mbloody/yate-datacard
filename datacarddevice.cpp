@@ -907,7 +907,7 @@ String DevicesEndPoint::devicesStatus()
 	devicesIter = devicesIter->next();
 	if (!obj) continue;	
 	dev = static_cast<CardDevice*>(obj);
-	ret << dev->getStatus() <<",";
+	ret << dev->getStatus() <<";";
     }
     m_mutex.unlock();
     return ret;
