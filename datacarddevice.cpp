@@ -372,19 +372,19 @@ String CardDevice::getStatus()
     switch(gsm_reg_status)
     {
 	case 0:
-	    ret << "not registered, not searching";
+	    ret << "not registered - not searching";
 	    break;
 	case 1:
-	    ret << "registered, home network";
+	    ret << "registered - home network";
 	    break;
 	case 2:
-	    ret << "not registered, but searching";
+	    ret << "not registered - but searching";
 	    break;
 	case 3:
 	    ret << "registration denied";
 	    break;
 	case 5:
-	    ret << "registered, roaming";
+	    ret << "registered - roaming";
 	    break;
 	default:
 	    ret << "unknown";
