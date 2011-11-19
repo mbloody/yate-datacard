@@ -59,22 +59,18 @@ static int opentty (char* dev)
 
 	term_attr.c_cflag |= CRTSCTS;
 
+//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
+
 	
 	term_attr.c_iflag =  IGNBRK;
+//	term_attr.c_iflag = 0;
 	term_attr.c_lflag = 0;
 	term_attr.c_oflag = 0;
 	term_attr.c_cc[VMIN] = 1;
-	term_attr.c_cc[VTIME] = 5;
+//	term_attr.c_cc[VTIME] = 5;
+	term_attr.c_cc[VTIME] = 0;
 	              
-//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
 	       
-
-//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
-//	term_attr.c_iflag = 0;
-//	term_attr.c_oflag = 0;
-//	term_attr.c_lflag = 0;
-//	term_attr.c_cc[VMIN] = 1;
-//	term_attr.c_cc[VTIME] = 0;
 
 //	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
 	if (tcsetattr (fd, TCSANOW, &term_attr) != 0)
