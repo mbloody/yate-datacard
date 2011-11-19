@@ -50,15 +50,34 @@ static int opentty (char* dev)
 		Debug("opentty",DebugAll, "tcgetattr() failed '%s'", dev);
 		return -1;
 	}
+	
+	cfsetospeed(&term_attr, (speed_t)B115200);
+	cfsetispeed(&term_attr, (speed_t)B115200);
+	term_attr.c_cflag = (term_attr.c_cflag & ~CSIZE) | CS8;
 
-	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
-	term_attr.c_iflag = 0;
-	term_attr.c_oflag = 0;
+	term_attr.c_cflag |= CLOCAL | CREAD;
+
+	term_attr.c_cflag |= CRTSCTS;
+
+	
+	term_attr.c_iflag =  IGNBRK;
 	term_attr.c_lflag = 0;
+	term_attr.c_oflag = 0;
 	term_attr.c_cc[VMIN] = 1;
-	term_attr.c_cc[VTIME] = 0;
+	term_attr.c_cc[VTIME] = 5;
+	              
+//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
+	       
 
-	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
+//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
+//	term_attr.c_iflag = 0;
+//	term_attr.c_oflag = 0;
+//	term_attr.c_lflag = 0;
+//	term_attr.c_cc[VMIN] = 1;
+//	term_attr.c_cc[VTIME] = 0;
+
+//	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
+	if (tcsetattr (fd, TCSANOW, &term_attr) != 0)
 	{
 		Debug("opentty",DebugAll,"tcsetattr() failed '%s'", dev);
 	}
