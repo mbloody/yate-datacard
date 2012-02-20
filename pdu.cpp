@@ -914,7 +914,7 @@ int PDU::explainAddressType(const char *octet_char, int octet_int)
             case 6: p = "abbreviated"; break;
         }
         
-        sprintf(m_number_type, p);
+        sprintf(m_number_type, "%s", p);
         
         switch (result & 0x0F)
         {
@@ -1092,7 +1092,7 @@ bool PDU::parseDeliver()
     {
         sprintf(m_err, "Invalid values(s) in time of Service Centre Time Stamp.\n");
     }
-    sprintf(m_time, str_buf);
+    sprintf(m_time, "%s", str_buf);
     
     m_pdu_ptr += 6;
     // Time zone is not used but bytes are checked:
@@ -1260,7 +1260,7 @@ bool PDU::parseStatusReport()
 	{
 		sprintf(m_err, "Invalid value(s) in date of SMSC Timestamp.");
 	}
-	sprintf(m_date, str_buf);
+	sprintf(m_date, "%s", str_buf);
 	
 	m_pdu_ptr += 6;
 	sprintf(str_buf, "%c%c:%c%c:%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
@@ -1275,7 +1275,7 @@ bool PDU::parseStatusReport()
 	{
 		sprintf(m_err, "Invalid value(s) in time of SMSC Timestamp.");
 	}
-	sprintf(m_time, str_buf);
+	sprintf(m_time, "%s", str_buf);
 
 	m_pdu_ptr += 6;
 	// Time zone is not used but bytes are checked:
