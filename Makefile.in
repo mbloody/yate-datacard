@@ -13,7 +13,8 @@ SED := sed
 DEFS :=
 INCLUDES := -I@top_srcdir@ -I.
 CFLAGS := -O3 @YATE_INC@
-LDFLAGS:= @YATE_LIB@  -ldl -lpthread
+LDFLAGS:=
+YATELIBS:= @YATE_LIB@ -ldl -lpthread
 MODSTRIP:= @YATE_STR@
 
 SVNVERSION := $(shell LC_ALL=C svnversion -cn . 2>/dev/null | sed -e "s/.*://" -e "s/\([0-9]*\).*/\1/" | grep "[0-9]" || LC_ALL=C svn info . 2>/dev/null | awk '/^Revision:/ {print $$2 }' | grep "[0-9]" || LC_ALL=C git svn info . 2>/dev/null | awk '/^Revision:/ {print $$2 }' | grep "[0-9]" || echo unknown)
@@ -142,7 +143,7 @@ datacard.yate : $(INCFILES)
 datacard.yate : $(OBJS)
 
 %.yate: @srcdir@/%.cpp $(MKDEPS) $(INCFILES)
-	$(MODCOMP) -o $@ $(LOCALFLAGS)  $(OBJS) $< $(LOCALLIBS)
+	$(MODCOMP) -o $@ $(LOCALFLAGS) $(OBJS) $< $(LOCALLIBS) $(YATELIBS)
 
 @srcdir@/configure: @srcdir@/configure.in
 	cd @srcdir@ && autoconf

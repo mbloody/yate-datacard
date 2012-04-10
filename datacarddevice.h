@@ -1,3 +1,24 @@
+/**
+ * atacarddevice.h
+ * This file is part of the Yate-datacard Project http://code.google.com/p/yate-datacard/
+ * Yate datacard channel driver for Huawei UMTS modem
+ *
+ * Copyright (C) 2010-2011 MBloody
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ */
+
 #ifndef DATACARDDEVICE_H
 #define DATACARDDEVICE_H
 #include <yatephone.h>
@@ -39,6 +60,7 @@ typedef enum {
 	CMD_AT_COPS,
 	CMD_AT_COPS_INIT,
 	CMD_AT_CPIN,
+	CMD_AT_CPIN_ENTER,
 	CMD_AT_CPMS,
 	CMD_AT_CREG,
 	CMD_AT_CREG_INIT,
@@ -119,6 +141,11 @@ public:
 	return m_obj;
     }
 
+    void onTimeout()    
+    {
+	Debug(DebugAll, "Timeout for AT command %s ignoring ", m_command.safe());
+    }
+
 public:
     String m_command;
     at_cmd_t m_cmd;
@@ -127,8 +154,11 @@ public:
     GenObject* m_obj;
 };
 
-
-
+/**
+ * Thread for processing data tty.
+ * Sending AT command
+ * Processing responses 
+ */
 class MonitorThread : public Thread
 {
 public:
@@ -137,10 +167,14 @@ public:
     virtual void run();
     virtual void cleanup();
 private:
-    CardDevice* m_device;
+    CardDevice* m_device; //pointer to device
 };
 
-
+/**
+ * Thread for handling media data.
+ * Receiving audio data from tty to core
+ * Sending audio data to tty from core  
+ */
 class MediaThread : public Thread
 {
 public:
@@ -149,9 +183,13 @@ public:
     virtual void run();
     virtual void cleanup();
 private:
-    CardDevice* m_device;
+    CardDevice* m_device; //pointer to device
 };
 
+/**
+ * Device
+ * Work with devise tty ports 
+ */
 class CardDevice: public String
 {
 public:
@@ -183,8 +221,8 @@ public:
     int m_audio_fd;			/* audio descriptor */
     int m_data_fd;			/* data  descriptor */
 
-
     DataBlock m_audio_buf;
+
 
     String getNumber()
 	{ return m_number; }
@@ -208,6 +246,9 @@ private:
     String m_number;
     String m_location_area_code;
     String m_cell_id;
+    
+    unsigned char m_pincount;
+    int m_simstatus;
 
 //FIXME: review all his flags. Simplify or implement it.
 
@@ -233,6 +274,7 @@ public:
 
 
     /* Config */
+    String m_sim_pin;
     String m_audio_tty;			/* tty for audio connection */
     String m_data_tty;			/* tty for AT commands */
     int m_u2diag;
@@ -508,10 +550,9 @@ private:
      * Parse a CLIP event
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CID string is parsed
-     * @return NULL on error (parse error) or a pointer to the caller id inforamtion in str on success
+     * @return empty String on error (parse error) or String with caller id inforamtion on success
      */
-    char* at_parse_clip(char* str, size_t len);
+    String at_parse_clip(char* str, size_t len);
     
     /**
      * Parse a CMGR message
@@ -536,10 +577,9 @@ private:
      * Parse a CNUM response
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CNUM message is parsed
-     * @return NULL on error (parse error) or a pointer to the subscriber number
+     * @return emplty String on error (parse error) or String withsubscriber number
      */
-    char* at_parse_cnum(char* str, size_t len);
+    String at_parse_cnum(char* str, size_t len);
     
     /**
      * Parse a COPS response
@@ -589,10 +629,9 @@ private:
      * Parse a CUSD answer
      * @param str -- string to parse (null terminated)
      * @param len -- string lenght
-     * @note str will be modified when the CUSD string is parsed
      * @return 0 success or -1 parse error
      */
-    int at_parse_cusd(char* str, size_t len, char** cusd, unsigned char* dcs);
+    int at_parse_cusd(char* str, size_t len, String &cusd, unsigned char &dcs);
     
     /**
      * Parse a ^MODE notification (link mode)
@@ -640,12 +679,31 @@ private:
 
 public:
 // SMS and USSD
+
+    /**
+     * Send SMS message
+     * @param called - number of recepient
+     * @param sms - sms text body
+     * @return true on success or false on error
+     */
     bool sendSMS(const String &called, const String &sms);
+
+    /**
+     * Send USSD
+     * @param ussd - cusd
+     * @return true on success or false on error
+     */
     bool sendUSSD(const String &ussd);   
 
     void forwardAudio(char* data, int len);
     int sendAudio(char* data, int len);
     
+    /**
+     * Create new call
+     * @param called - called party number
+     * @param usrData - additional user data
+     * @return true on success or false on error
+     */
     bool newCall(const String &called, void* usrData);
     
 private:
@@ -663,7 +721,10 @@ public:
     ObjList m_commandQueue;
 };
 
-
+/**
+ * Call connection
+ * Process all needed call actions
+ */
 class Connection
 {
 public:
@@ -685,34 +746,110 @@ protected:
     CardDevice* m_dev;
 };
 
+/**
+ * Holds all currently created devices
+ * Process incoming connections, SMS and USSD.
+ * Make calls throw selected device 
+ */
 class DevicesEndPoint : public Thread
 {
 public:
-    
+
     DevicesEndPoint(int interval);
     virtual ~DevicesEndPoint();
     
-    
+    /**
+     * Thread methods for device discovery.
+     * @param
+     * @return
+     */
     virtual void run();
-    virtual void cleanup();
-    
+    virtual void cleanup();    
+
+    /**
+     * Call when CUSD response received.
+     * @param dev - pointer to current device
+     * @param ussd - cusd string
+     * @return
+     */
     virtual void onReceiveUSSD(CardDevice* dev, String ussd);
+
+    /**
+     * Call when new SMS message received.
+     * @param dev - pointer to current device
+     * @param caller - number of SMS sender
+     * @param sms - SMS body
+     * @return
+     */
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms);
-    
+
+    /**
+     * Send SMS message.
+     * @param dev - pointer to current device
+     * @param called - number of SMS recepient
+     * @param sms - SMS body
+     * @return
+     */    
     bool sendSMS(CardDevice* dev, const String &called, const String &sms);
+
+    /**
+     * Send CUSD request.
+     * @param dev - pointer to current device
+     * @param ussd - ussd text. For example *100#
+     * @return
+     */    
     bool sendUSSD(CardDevice* dev, const String &ussd);
-    
+
+    /**
+     * Append new device to endpoint.
+     * @param name - unique device name for future access
+     * @param data - list of configuration parameters
+     * @return pointer of newly created device object
+     */        
     CardDevice* appendDevice(String name, NamedList* data);
+
+    /**
+     * Find device by name
+     * @param name - device name
+     * @return device pointer or NULL if not found
+     */        
     CardDevice* findDevice(const String &name);
+
+    /**
+     * Remove all devices from endpoint
+     * @param
+     * @return
+     */            
     void cleanDevices();
-    
+
+    /**
+     * Get status of all devices
+     * @param
+     * @return
+     */                
+    String devicesStatus();
+
+    /**
+     * Call when need create new connection for call
+     * @param dev - pointer to calling device
+     * @param usrData - additional user information
+     * @return pointer to new connection
+     */    
     virtual Connection* createConnection(CardDevice* dev, void* usrData = 0);
+
+    /**
+     * Make new call throw specific device
+     * @param dev - pointer to device for call
+     * @param called - number for outgoing call     
+     * @param usrData - additional user information
+     * @return pointer to new connection
+     */        
     bool MakeCall(CardDevice* dev, const String &called, void* usrData);
 
 private:
     Mutex m_mutex;
-    ObjList m_devices;
-    int m_interval;
+    ObjList m_devices; //devices list
+    int m_interval;  //discovery interval
     bool m_run;
 };
 

@@ -1,3 +1,24 @@
+/**
+ * datacarddevice.cpp
+ * This file is part of the Yate-datacard Project http://code.google.com/p/yate-datacard/
+ * Yate datacard channel driver for Huawei UMTS modem
+ *
+ * Copyright (C) 2010-2011 MBloody
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "datacarddevice.h"
 #include <termios.h>
 #include <fcntl.h>
@@ -29,15 +50,30 @@ static int opentty (char* dev)
 		Debug("opentty",DebugAll, "tcgetattr() failed '%s'", dev);
 		return -1;
 	}
+	
+	cfsetospeed(&term_attr, (speed_t)B115200);
+	cfsetispeed(&term_attr, (speed_t)B115200);
+	term_attr.c_cflag = (term_attr.c_cflag & ~CSIZE) | CS8;
 
-	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
-	term_attr.c_iflag = 0;
-	term_attr.c_oflag = 0;
+	term_attr.c_cflag |= CLOCAL | CREAD;
+
+	term_attr.c_cflag |= CRTSCTS;
+
+//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
+
+	
+	term_attr.c_iflag =  IGNBRK;
+//	term_attr.c_iflag = 0;
 	term_attr.c_lflag = 0;
+	term_attr.c_oflag = 0;
 	term_attr.c_cc[VMIN] = 1;
+//	term_attr.c_cc[VTIME] = 5;
 	term_attr.c_cc[VTIME] = 0;
+	              
+	       
 
-	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
+//	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
+	if (tcsetattr (fd, TCSANOW, &term_attr) != 0)
 	{
 		Debug("opentty",DebugAll,"tcsetattr() failed '%s'", dev);
 	}
@@ -184,9 +220,12 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     needring = 0;
     needchup = 0;
     
+    m_simstatus = -1;
+    m_pincount = 0;
     m_commandQueue.clear();
     m_lastcmd = 0;
 }
+    
 
 bool CardDevice::startMonitor() 
 { 
@@ -257,8 +296,11 @@ bool CardDevice::disconnect()
     m_number = "Unknown";
     m_incoming_pdu = false;
 
+    m_simstatus = -1;
+    m_pincount = 0;
+    
     m_commandQueue.clear();
-	m_lastcmd = 0;
+    m_lastcmd = 0;
     
     initialized = 0;
 
@@ -345,19 +387,19 @@ String CardDevice::getStatus()
     switch(gsm_reg_status)
     {
 	case 0:
-	    ret << "not registered, not searching";
+	    ret << "not registered - not searching";
 	    break;
 	case 1:
-	    ret << "registered, home network";
+	    ret << "registered - home network";
 	    break;
 	case 2:
-	    ret << "not registered, but searching";
+	    ret << "not registered - but searching";
 	    break;
 	case 3:
 	    ret << "registration denied";
 	    break;
 	case 5:
-	    ret << "registered, roaming";
+	    ret << "registered - roaming";
 	    break;
 	default:
 	    ret << "unknown";
@@ -372,15 +414,30 @@ String CardDevice::getStatus()
 //		);
 //    list->addParam("has_voice", has_voice?"true":"false");
 //    list->addParam("has_sms", has_sms?"true":"false");
+    ret << String(rssi) <<"|";
 //    list->addParam("rssi", String(rssi));
 //    list->addParam("linkmode", String(linkmode));
 //    list->addParam("linksubmode", String(linksubmode));
+
+    ret << m_provider_name <<"|";
 //    list->addParam("providername", m_provider_name);
+
+    ret << m_manufacturer <<"|";
 //    list->addParam("manufacturer", m_manufacturer);
+
+    ret << m_model <<"|";
 //    list->addParam("model", m_model);
+
+    ret << m_firmware <<"|";
 //    list->addParam("firmware", m_firmware);
+
+    ret << m_imei <<"|";
 //    list->addParam("imei", m_imei);
+
+    ret << m_imsi <<"|";
 //    list->addParam("imsi", m_imsi);
+
+    ret << m_number;
 //    list->addParam("number", m_number);
 
 //    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
@@ -494,7 +551,7 @@ bool CardDevice::Hangup(int reason)
 	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	needchup = 0;
     }
-
+    lock.drop();
     return tmp->onHangup(reason);
 }
 
@@ -813,6 +870,8 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     CardDevice* dev = new CardDevice(name, this);
     dev->m_data_tty = data_tty;
     dev->m_audio_tty = audio_tty;
+    
+    dev->m_sim_pin = data->getValue("pin");
 
     dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
     dev->m_reset_datacard = data->getBoolValue("resetdatacard",true);
@@ -850,6 +909,25 @@ void DevicesEndPoint::cleanDevices()
     m_mutex.unlock();
     m_run = false;
 }
+
+String DevicesEndPoint::devicesStatus()
+{
+    CardDevice* dev = 0;
+    String ret ="";
+    m_mutex.lock();
+    const ObjList *devicesIter = &m_devices;
+    while (devicesIter)
+    {
+	GenObject* obj = devicesIter->get();
+	devicesIter = devicesIter->next();
+	if (!obj) continue;	
+	dev = static_cast<CardDevice*>(obj);
+	ret << dev->getStatus() <<";";
+    }
+    m_mutex.unlock();
+    return ret;
+}
+
 
 Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
 {

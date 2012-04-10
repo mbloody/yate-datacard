@@ -1,11 +1,29 @@
-/* 
-   Copyright (C) 2009 - 2010
-   
-   Artem Makhutov <artem@makhutov.org>
-   http://www.makhutov.org
-   
-   Dmitry Vagin <dmitry2004@yandex.ru>
-*/
+/**
+ * at_response.cpp
+ * This file is part of the Yate-datacard Project http://code.google.com/p/yate-datacard/
+ * Yate datacard channel driver for Huawei UMTS modem
+ *
+ * Copyright (C) 2010-2011 MBloody
+ *
+ * Based on chan_datacard module for Asterisk
+ *
+ * Copyright (C) 2009-2010 Artem Makhutov <artem@makhutov.org>
+ * Copyright (C) 2009-2010 Dmitry Vagin <dmitry2004@yandex.ru>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ */
+
 
 #include "datacarddevice.h"
 #include <stdio.h>
@@ -198,17 +216,38 @@ int CardDevice::at_response_ok()
 
 	    case CMD_AT_CGSN:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
+		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
 		break;
 
 	    case CMD_AT_CIMI:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
+		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT));
 		break;
 
 	    case CMD_AT_CPIN:
 		if(!initialized)
-		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT));
+		{
+		    if(m_simstatus == 0)
+		        m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
+		    else if(m_simstatus == 1 && (m_sim_pin.length() > 0) && (m_pincount == 0))
+		    {
+			m_pincount++;
+			m_commandQueue.append(new ATCommand("AT+CPIN=" + m_sim_pin, CMD_AT_CPIN_ENTER));
+		    }
+		    else
+		    {
+		    	Debug(DebugAll, "[%s] Wrong SIM State", c_str());
+			m_lastcmd->destruct();
+			m_lastcmd = 0;
+			return -1;
+		    }
+						
+		}
+		break;
+
+	    case CMD_AT_CPIN_ENTER:
+		if(!initialized)
+		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
 		break;
 
 	    case CMD_AT_COPS_INIT:
@@ -420,6 +459,10 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CPIN:
 		Debug(DebugAll,  "[%s] Error checking PIN state", c_str());
+		goto e_return;
+
+	    case CMD_AT_CPIN_ENTER:
+		Debug(DebugAll,  "[%s] Error enter PIN code", c_str());
 		goto e_return;
 
 	    case CMD_AT_COPS_INIT:
@@ -676,24 +719,18 @@ int CardDevice::at_response_conn(char* str, size_t len)
 	if(m_conn)
 	    m_conn->onAnswered();
     }
-    else if(incoming)
-    {
-//		ast_setstate (owner, AST_STATE_UP);
-    }
     return 0;
 }
 
 int CardDevice::at_response_clip(char* str, size_t len)
 {
-    char* clip;
     if (initialized && needring == 0)
     {
 	incoming = 1;
-	if ((clip = at_parse_clip(str, len)) == NULL)
-	{
+	String clip = at_parse_clip(str, len);
+	if (clip.null())
 	    Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
-	}
-	if(incomingCall(String(clip)) == false)
+	if(incomingCall(clip) == false)
 	{
 	    Debug(DebugAll, "[%s] Unable to allocate channel for incoming call", c_str());
 	    m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
@@ -725,20 +762,18 @@ int CardDevice::at_response_cmti(char* str, size_t len)
 {
     int index = at_parse_cmti(str, len);
 
-    if (index > -1)
+    if (index < 0)
     {
-	Debug(DebugAll, "[%s] Incoming SMS message", c_str());
-	if (m_disablesms)
-	    Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
-	else
-	    m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, new String(index)));
-	return 0;
-    }
-    else
-    {
-	Debug(DebugAll, "[%s] Error parsing incoming sms message alert, disconnecting", c_str());
+	Debug(DebugAll, "[%s] Error parsing incoming sms message alert", c_str());
 	return -1;
     }
+
+    Debug(DebugAll, "[%s] Incoming SMS message", c_str());
+    if (m_disablesms)
+        Debug(DebugAll, "[%s] SMS reception has been disabled in the configuration.", c_str());
+    else
+        m_commandQueue.append(new ATCommand("AT+CMGR=" + String(index), CMD_AT_CMGR, new String(index)));
+    return 0;
 }
 
 int CardDevice::at_response_cmgr(char* str, size_t len)
@@ -762,15 +797,12 @@ int CardDevice::at_response_sms_prompt()
 	    at_send_sms_text((char*)text->safe());
 	}
     }
-    else if(m_lastcmd)
-    {
-	Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
-//FIXME: Send empty SMS text. To exit from SMS prompt.
-	at_send_sms_text("");
-    }
     else
     {
-	Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
+	if(m_lastcmd)
+	    Debug(DebugAll,  "[%s] Received sms prompt when expecting '%s' response to '%s', ignoring", c_str(), at_res2str (m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+	else
+	    Debug(DebugAll, "[%s] Received unexpected sms prompt", c_str());
 //FIXME: Send empty SMS text. To exit from SMS prompt.
 	at_send_sms_text("");
     }
@@ -781,11 +813,11 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 {
 //TODO:
     ssize_t res;
-    char* cusd;
+    String cusd;
     unsigned char dcs;
     char cusd_utf8_str[1024];
 
-    if(at_parse_cusd (str, len, &cusd, &dcs))
+    if(at_parse_cusd(str, len, cusd, dcs))
     {
 	Debug(DebugAll, "[%s] Error parsing CUSD: '%.*s'", c_str(), (int) len, str);
 	return 0;
@@ -793,32 +825,32 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 
     if((dcs == 0 || dcs == 15) && !cusd_use_ucs2_decoding)
     {
-	res = hexstr_7bit_to_char(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	res = hexstr_7bit_to_char(cusd.safe(), cusd.length(), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
 	{
 	    cusd = cusd_utf8_str;
 	}
 	else
 	{
-	    Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd);
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert 7bit to ASCII): %s", c_str(), cusd.safe());
 	    return -1;
 	}
     }
     else
     {
-	res = hexstr_ucs2_to_utf8(cusd, strlen (cusd), cusd_utf8_str, sizeof (cusd_utf8_str));
+	res = hexstr_ucs2_to_utf8(cusd.safe(), cusd.length(), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
 	{
 	    cusd = cusd_utf8_str;
 	}
 	else
 	{
-	    Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd);
+	    Debug(DebugAll, "[%s] Error parsing CUSD (convert UCS-2 to UTF-8): %s", c_str(), cusd.safe());
 	    return -1;
 	}
     }
-    Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd);
-    m_endpoint->onReceiveUSSD(this, cusd);
+    Debug(DebugAll, "[%s] Got USSD response: '%s'", c_str(), cusd.safe());
+    m_endpoint->onReceiveUSSD(this, cusd.safe());
     return 0;
 }
 
@@ -847,7 +879,8 @@ int CardDevice::at_response_no_carrier()
 
 int CardDevice::at_response_cpin(char* str, size_t len)
 {
-    return at_parse_cpin(str, len);
+    m_simstatus = at_parse_cpin(str, len);
+    return 0;
 }
 
 int CardDevice::at_response_smmemfull()
@@ -863,8 +896,8 @@ int CardDevice::at_response_csq(char* str, size_t len)
 
 int CardDevice::at_response_cnum(char* str, size_t len)
 {
-    char* number = at_parse_cnum(str, len);
-    if(number)
+    String number = at_parse_cnum(str, len);
+    if(!number.null())
     {
 	m_number = number;
 	return 0;
@@ -921,7 +954,7 @@ int CardDevice::at_response_cgmi(char* str, size_t len)
 int CardDevice::at_response_cgmm(char* str, size_t len)
 {
     m_model.assign(str,len);
-    if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X")
+    if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X" || m_model == "E173")
     {
 	cusd_use_7bit_encoding = 1;
 	cusd_use_ucs2_decoding = 0;
