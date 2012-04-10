@@ -561,6 +561,15 @@ bool CardDevice::newCall(const String &called, void* usrData)
 //    isE164
 //1 2 3 4 5 6 7 8 9 0 * # + A B C
 
+    Lock lock1(m_mutex);
+
+    if (!initialized || incoming || outgoing)
+    {
+	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
+	return false;
+    }
+    lock1.drop();
+
     m_conn = m_endpoint->createConnection(this, usrData);
     if(!m_conn)
     {
@@ -569,13 +578,6 @@ bool CardDevice::newCall(const String &called, void* usrData)
     }
 
     Lock lock(m_mutex);
-
-    if (!initialized || incoming || outgoing)
-    {
-	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
-	Hangup(DATACARD_BUSY);
-	return false;
-    }
 
     Debug(DebugAll, "[%s] Calling '%s'", c_str(), called.c_str());
 
