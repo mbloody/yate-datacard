@@ -188,7 +188,32 @@ void MediaThread::run()
 
 void MediaThread::cleanup() {}
 
-CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_mutex(true), m_conn(0), m_connected(false)
+
+DatacardConsumer::DatacardConsumer(CardDevice* dev, const char* format): DataConsumer(format), m_device(dev)
+{}
+
+DatacardConsumer::~DatacardConsumer()
+{}
+
+unsigned long DatacardConsumer::Consume(const DataBlock& data, unsigned long tStamp, unsigned long flags)
+{
+    if (!m_device)
+	return invalidStamp();
+    m_device->sendAudio((char*)data.data(), data.length());
+	
+    return 0;
+}
+
+DatacardSource::DatacardSource(CardDevice* dev, const char* format):DataSource(format), m_device(dev)
+{ 
+}
+
+DatacardSource::~DatacardSource()
+{
+}
+
+
+CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoint(ep), m_monitor(0), m_consumer(0), m_source(0), m_mutex(true), m_conn(0), m_connected(false)
 {
     m_data_fd = -1;
     m_audio_fd = -1;
@@ -224,6 +249,15 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_pincount = 0;
     m_commandQueue.clear();
     m_lastcmd = 0;
+    
+    m_source = new DatacardSource(this,"slin");
+    m_consumer = new DatacardConsumer(this,"slin");
+}
+
+CardDevice::~CardDevice()
+{
+    TelEngine::destruct(m_source);
+    TelEngine::destruct(m_consumer);
 }
     
 
@@ -523,7 +557,11 @@ bool CardDevice::sendUSSD(const String &ussd)
 
 bool CardDevice::incomingCall(const String &caller)
 {
-    m_conn = m_endpoint->createConnection(this);
+    if(!m_endpoint->onIncamingCall(this, caller))
+    {
+        Debug(DebugAll, "CardDevice::incomingCall error: onIncamingCall");
+	return false;
+    }
     if(!m_conn)
     {
         Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
@@ -556,24 +594,21 @@ bool CardDevice::Hangup(int reason)
 }
 
 
-bool CardDevice::newCall(const String &called, void* usrData)
+bool CardDevice::newCall(const String &called)
 {
 //    isE164
 //1 2 3 4 5 6 7 8 9 0 * # + A B C
-
-    m_conn = m_endpoint->createConnection(this, usrData);
-    if(!m_conn)
-    {
-        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL");
-	return false;
-    }
 
     Lock lock(m_mutex);
 
     if (!initialized || incoming || outgoing)
     {
 	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
-	Hangup(DATACARD_BUSY);
+	return false;
+    }
+    if(!m_conn)
+    {
+        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL");
 	return false;
     }
 
@@ -779,12 +814,8 @@ bool CardDevice::encodeUSSD(const String& code, String& ret)
 //audio
 void CardDevice::forwardAudio(char* data, int len)
 {
-    if(!m_conn)
-    {
-        Debug(DebugAll, "CardDevice::forwardAudio error: m_conn is NULL");
-	return;
-    }
-    m_conn->forwardAudio(data, len);
+    if(m_source && m_source->valid())
+	m_source->Forward(DataBlock(data, len));
 }
 
 int CardDevice::sendAudio(char* data, int len)
@@ -928,21 +959,9 @@ String DevicesEndPoint::devicesStatus()
     return ret;
 }
 
-
-Connection* DevicesEndPoint::createConnection(CardDevice* dev, void* usrData)
+bool DevicesEndPoint::onIncamingCall(CardDevice* dev, const String &caller)
 {
-    return 0;
-}
-
-bool DevicesEndPoint::MakeCall(CardDevice* dev, const String &called, void* usrData)
-{
-    
-    if(!dev)
-    {
-        Debug(DebugAll, "DevicesEndPoint::MakeCall error: dev is NULL");
-	return false;
-    }
-    return dev->newCall(called, usrData);
+    return false;
 }
 
 Connection::Connection(CardDevice* dev):m_dev(dev)
@@ -1021,15 +1040,6 @@ bool Connection::sendDTMF(char digit)
     m_dev->m_mutex.unlock();
 
     return true;
-}
-
-void Connection::forwardAudio(char* data, int len)
-{
-}
-
-int Connection::sendAudio(char* data, int len)
-{
-    return m_dev->sendAudio(data, len);
 }
 
 /* vi: set ts=8 sw=4 sts=4 noet: */

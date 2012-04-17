@@ -74,7 +74,8 @@ public:
 	dev->getParams(m);
 	Engine::enqueue(m);
     }
-    virtual Connection* createConnection(CardDevice* dev, void* usrData);
+    
+    virtual bool onIncamingCall(CardDevice* dev, const String &caller);
 };
 
 class SMSHandler : public MessageHandler
@@ -96,27 +97,6 @@ private:
 };
 
 class DatacardChannel;
-
-class DatacardConsumer : public DataConsumer
-{
-public:
-    DatacardConsumer(DatacardChannel* conn, const char* format);
-    ~DatacardConsumer();
-    virtual unsigned long Consume(const DataBlock &data, unsigned long tStamp, unsigned long flags);
-private:
-    DatacardChannel* m_connection;
-};
-
-
-class DatacardSource : public DataSource
-{
-public:
-    DatacardSource(DatacardChannel* conn, const char* format);
-    ~DatacardSource();
-private:
-    DatacardChannel* m_connection;
-};
-
 
 class DatacardDriver : public Driver
 {
@@ -159,18 +139,13 @@ public:
 	}
 	Engine::enqueue(s);
 
-	setSource(new DatacardSource(this,"slin"));
-	getSource()->deref();
-	setConsumer(new DatacardConsumer(this,"slin"));
-	getConsumer()->deref();
-		
+	setSource(dev->source());
+	setConsumer(dev->consumer());
     };
     ~DatacardChannel();
     
-    
     virtual bool msgAnswered(Message& msg);
     virtual bool msgTone(Message& msg, const char* tone);
-
     
     virtual void disconnected(bool final, const char *reason);
     inline void setTargetid(const char* targetid)
@@ -179,22 +154,17 @@ public:
     virtual bool onIncoming(const String &caller);
     virtual bool onProgress();
     virtual bool onAnswered();
-    virtual bool onHangup(int reason);
-    
-    
-    virtual void forwardAudio(char* data, int len);
+    virtual bool onHangup(int reason);    
 };
 
 
-Connection* YDevEndPoint::createConnection(CardDevice* dev, void* usrData)
+bool YDevEndPoint::onIncamingCall(CardDevice* dev, const String &caller)
 {
-    Message* msg = static_cast<Message*>(usrData);
-    DatacardChannel* channel = new DatacardChannel(dev, msg);
-    if(channel)
-	channel->initChan();
-    return channel;
+    DatacardChannel* chan = new DatacardChannel(dev);
+    dev->setConnection(chan);
+    chan->initChan();
+    return true;
 }
-
 
 bool SMSHandler::received(Message &msg)
 {
@@ -225,31 +195,6 @@ bool USSDHandler::received(Message &msg)
     return m_ep->sendUSSD(dev, text);
 }
 
-DatacardConsumer::DatacardConsumer(DatacardChannel* conn, const char* format): DataConsumer(format), m_connection(conn)
-{
-}
-
-DatacardConsumer::~DatacardConsumer()
-{
-}
-
-unsigned long DatacardConsumer::Consume(const DataBlock& data, unsigned long tStamp, unsigned long flags)
-{
-    if (!m_connection)
-	return invalidStamp();
-    m_connection->sendAudio((char*)data.data(), data.length());
-	
-    return 0;
-}
-
-DatacardSource::DatacardSource(DatacardChannel* conn, const char* format):DataSource(format), m_connection(conn)
-{ 
-}
-
-DatacardSource::~DatacardSource()
-{
-}
-
 void DatacardChannel::disconnected(bool final, const char *reason)
 {
     Debug(DebugAll,"DatacardChannel::disconnected() '%s'",reason);
@@ -261,6 +206,8 @@ DatacardChannel::~DatacardChannel()
     Debug(this,DebugAll,"DatacardChannel::~DatacardChannel() src=%p cons=%p",getSource(),getConsumer());
     sendHangup();
     Engine::enqueue(message("chan.hangup"));
+    setSource();
+    setConsumer();
 }
 
 
@@ -317,16 +264,6 @@ bool DatacardChannel::onHangup(int reason)
     return true;    
 }
 
-
-void DatacardChannel::forwardAudio(char* data, int len)
-{
-    DatacardSource* s = static_cast<DatacardSource*>(getSource());
-    if(s && s->valid())
-	s->Forward(DataBlock(data, len));
-}
-
-
-
 bool DatacardDriver::msgExecute(Message& msg, String& dest)
 {
     if (dest.null())
@@ -338,10 +275,28 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     }
     
     CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
-    if(m_endpoint->MakeCall(dev, dest, &msg))
-	return true;
-    msg.setParam("error","congestion");
-    return false;
+    if (!dev)
+    {
+	Debug(this,DebugWarn,"Device not found");
+        return false;
+    }
+
+    DatacardChannel* chan = new DatacardChannel(dev, &msg);
+    dev->setConnection(chan);
+    chan->initChan();
+    
+    CallEndpoint* ch = static_cast<CallEndpoint*>(msg.userData());
+    if (ch && chan->connect(ch,msg.getValue(YSTRING("reason")))) 
+    {
+        dev->newCall(dest);
+        chan->callConnect(msg);
+        msg.setParam("peerid",chan->id());
+        msg.setParam("targetid",chan->id());
+        chan->deref();
+        return true;
+    }
+    chan->destruct();
+    return false;    
 }
 
 
