@@ -601,16 +601,16 @@ bool CardDevice::newCall(const String &called)
 
     Lock lock(m_mutex);
 
-    if (!initialized || incoming || outgoing)
-    {
-	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
-	return false;
-    }
-    if(!m_conn)
-    {
-        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL");
-	return false;
-    }
+//    if (!initialized || incoming || outgoing)
+//    {
+//	Debug(DebugAll, "[%s] Error. Device already in use or not initilized", c_str());
+//	return false;
+//    }
+//    if(!m_conn)
+//    {
+//        Debug(DebugAll, "CardDevice::newCall error: m_conn is NULL");
+//	return false;
+//    }
 
     Debug(DebugAll, "[%s] Calling '%s'", c_str(), called.c_str());
 

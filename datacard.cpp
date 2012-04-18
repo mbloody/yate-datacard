@@ -268,15 +268,20 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
 	Debug(this,DebugWarn,"Device not found");
         return false;
     }
+    
+    if(dev->isBusy())
+    {
+	Debug(this,DebugWarn,"Device is busy");
+        return false;
+    }
 
     DatacardChannel* chan = new DatacardChannel(dev, &msg);
     dev->setConnection(chan);
     chan->initChan();
     
     CallEndpoint* ch = static_cast<CallEndpoint*>(msg.userData());
-    if (ch && chan->connect(ch,msg.getValue(YSTRING("reason")))) 
+    if (ch && chan->connect(ch,msg.getValue(YSTRING("reason"))) && dev->newCall(dest))
     {
-        dev->newCall(dest);
         chan->callConnect(msg);
         msg.setParam("peerid",chan->id());
         msg.setParam("targetid",chan->id());

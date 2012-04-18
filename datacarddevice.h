@@ -234,6 +234,10 @@ public:
 	{ return m_source; }
     inline DatacardConsumer* consumer()
 	{ return m_consumer; }
+	
+    inline bool isBusy()
+	{ Lock lock(m_mutex); return (!initialized || incoming || outgoing); }
+
 
 private:
     bool startMonitor();
