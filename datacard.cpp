@@ -122,21 +122,9 @@ public:
       Channel(__plugin, 0, (msg != 0)), Connection(dev)
     {
 	m_address = 0;
-	Message* s = message("chan.startup",msg);
-	
+	Message* s = message("chan.startup",msg);	
 	if (msg)
-	{
 	    s->copyParams(*msg,"caller,callername,called,billid,callto,username");
-	    CallEndpoint* ch = YOBJECT(CallEndpoint,msg->userData());
-	    if (ch && ch->connect(this,msg->getValue("reason"))) 
-	    {
-		callConnect(*msg);
-		m_targetid = msg->getValue("id");
-		msg->setParam("peerid",id());
-		msg->setParam("targetid",id());
-		deref();
-	    }
-	}
 	Engine::enqueue(s);
 
 	setSource(dev->source());
