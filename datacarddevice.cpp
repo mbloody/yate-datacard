@@ -1036,7 +1036,7 @@ bool Connection::sendDTMF(char digit)
 
     m_dev->m_mutex.lock();
     if(m_dev->isDTMFValid(digit))
-	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_CPIN));
+	m_dev->m_commandQueue.append(new ATCommand("AT^DTMF=1," + digit, CMD_AT_DTMF));
     m_dev->m_mutex.unlock();
 
     return true;

@@ -704,7 +704,7 @@ private:
      */
     int at_send_sms_text(const char* pdu);
         
-private:
+//private:
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
