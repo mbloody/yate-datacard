@@ -707,7 +707,8 @@ int PDU::convert(const char *tocode, const char *fromcode)
     if (cd == (iconv_t)(-1) || !m_message)
         return -1;
         
-    size_t inbytesleft = m_message_len, outbytesleft = max_message;
+    size_t inbytesleft = m_message_len;
+    size_t outbytesleft = max_message;
     
     char *tmp = (char*)malloc(outbytesleft);
     char *msg = m_message;
@@ -719,10 +720,13 @@ int PDU::convert(const char *tocode, const char *fromcode)
     if (m_message)
         free(m_message);
     m_message = tmp;
+
+    fprintf(stderr, "cc %s\n",m_message);
+
     
     iconv_close(cd);
     
-    m_message_len = maxsms_binary - outbytesleft;
+    m_message_len = max_message - outbytesleft;
     
     return m_message_len;
 }
@@ -1361,7 +1365,8 @@ void PDU::generate()
     char tmp_smsc[max_smsc];
     
     if (m_alphabet == 2)
-        convert("UTF16BE", "UTF8");
+	convert("UTF16BE", "UTF8");
+    
 
     if (m_number[0] == 's')  // Is number starts with s, then send it without number format indicator
     {
