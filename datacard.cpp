@@ -384,6 +384,16 @@ bool DatacardDriver::received(Message& msg, int id)
     	    msg.retValue() = "Datacard operation failed: " + line + "\r\n";
         return true;                                                    
     }
+    else if (id == Halt)
+    {
+	if(m_endpoint)
+	{
+	    m_endpoint->cleanDevices();
+	    m_endpoint->stopEP();
+	}
+	return Driver::received(msg,id);
+    }
+
     return Driver::received(msg,id);
 }
 
@@ -397,7 +407,7 @@ DatacardDriver::DatacardDriver()
 DatacardDriver::~DatacardDriver()
 {
     Output("Unloading module Datacard");
-    m_endpoint->cleanDevices();
+//    m_endpoint->cleanDevices();
 }
 
 void DatacardDriver::initialize()
@@ -430,6 +440,7 @@ void DatacardDriver::initialize()
     }
     m_endpoint->startup();
     setup();
+    installRelay(Halt);
     Engine::install(new SMSHandler(m_endpoint));
     Engine::install(new USSDHandler(m_endpoint));
     Output("DatacardChannel initialized");

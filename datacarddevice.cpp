@@ -834,7 +834,8 @@ DevicesEndPoint::DevicesEndPoint(int interval):Thread("DeviceEndPoint"),m_mutex(
 }
 
 DevicesEndPoint::~DevicesEndPoint()
-{
+{    
+    Debug(DebugAll, "Datacard devices: %d", m_devices.count());
 }
 
 void DevicesEndPoint::run()
@@ -936,9 +937,15 @@ void DevicesEndPoint::cleanDevices()
 	if (!obj) continue;	
 	dev = static_cast<CardDevice*>(obj);
 	dev->disconnect();
+	m_devices.remove(obj, true); // Remove from list and delete object
     }
     m_mutex.unlock();
+}
+
+void DevicesEndPoint::stopEP()
+{
     m_run = false;
+    cancel(true);
 }
 
 String DevicesEndPoint::devicesStatus()

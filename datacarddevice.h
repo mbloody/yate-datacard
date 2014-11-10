@@ -857,6 +857,13 @@ public:
     void cleanDevices();
 
     /**
+     * Stop devices endpoints
+     * @param
+     * @return
+     */
+    void stopEP();
+
+    /**
      * Get status of all devices
      * @param
      * @return
