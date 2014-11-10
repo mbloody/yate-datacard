@@ -111,6 +111,7 @@ public:
     void doComplete(const String& partLine, const String& partWord, String& rval);
 private:
     YDevEndPoint* m_endpoint;
+    String m_statusCmd;
 };
 
 INIT_PLUGIN(DatacardDriver);
@@ -310,6 +311,13 @@ void DatacardDriver::doComplete(const String& partLine, const String& partWord, 
 		Module::itemComplete(rval,*dev,partWord);
 	}
     }
+
+    Lock lock(this);
+    if (partLine == m_statusCmd)
+    {
+	Module::itemComplete(rval,"devices",partWord);
+    }
+    lock.drop();
 }
 
 bool DatacardDriver::doCommand(String& line, String& rval)
@@ -383,6 +391,7 @@ DatacardDriver::DatacardDriver()
     : Driver("datacard", "varchans"),m_endpoint(0)
 {
     Output("Loaded module Datacard");
+    m_statusCmd << "status " << name();
 }
 
 DatacardDriver::~DatacardDriver()
