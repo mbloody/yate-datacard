@@ -186,6 +186,27 @@ private:
     CardDevice* m_device; //pointer to device
 };
 
+
+class DatacardConsumer : public DataConsumer
+{
+public:
+    DatacardConsumer(CardDevice* dev, const char* format);
+    ~DatacardConsumer();
+    virtual unsigned long Consume(const DataBlock &data, unsigned long tStamp, unsigned long flags);
+private:
+    CardDevice* m_device;
+};
+
+class DatacardSource : public DataSource
+{
+public:
+    DatacardSource(CardDevice* dev, const char* format);
+    ~DatacardSource();
+private:
+    CardDevice* m_device;
+};
+
+
 /**
  * Device
  * Work with devise tty ports 
@@ -194,6 +215,7 @@ class CardDevice: public String
 {
 public:
     CardDevice(String name, DevicesEndPoint* ep);
+    ~CardDevice();
     bool tryConnect();
     bool disconnect();
     
@@ -204,6 +226,18 @@ public:
 
     bool getParams(NamedList* list);
     String getStatus();
+    
+    void setConnection(Connection* conn)
+	{ m_conn = conn; }
+
+    inline DatacardSource* source()
+	{ return m_source; }
+    inline DatacardConsumer* consumer()
+	{ return m_consumer; }
+	
+    inline bool isBusy()
+	{ Lock lock(m_mutex); return (!initialized || incoming || outgoing); }
+
 
 private:
     bool startMonitor();
@@ -212,6 +246,9 @@ private:
     DevicesEndPoint* m_endpoint;
     MonitorThread* m_monitor;
     MediaThread* m_media;
+
+    DatacardConsumer* m_consumer;
+    DatacardSource* m_source;
 
 public:
     Mutex m_mutex;
@@ -667,7 +704,7 @@ private:
      */
     int at_send_sms_text(const char* pdu);
         
-private:
+//private:
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
     ssize_t hexstr_to_ucs2char(const char* in, size_t in_length, char* out, size_t out_size);
@@ -704,7 +741,7 @@ public:
      * @param usrData - additional user data
      * @return true on success or false on error
      */
-    bool newCall(const String &called, void* usrData);
+    bool newCall(const String &called);
     
 private:
     bool receiveSMS(const char* pdustr, size_t len);
@@ -738,10 +775,7 @@ public:
     bool sendHangup();
 
     bool sendDTMF(char digit);
-    
-    virtual void forwardAudio(char* data, int len);
-    int sendAudio(char* data, int len);
-    
+        
 protected:
     CardDevice* m_dev;
 };
@@ -823,6 +857,13 @@ public:
     void cleanDevices();
 
     /**
+     * Stop devices endpoints
+     * @param
+     * @return
+     */
+    void stopEP();
+
+    /**
      * Get status of all devices
      * @param
      * @return
@@ -830,21 +871,12 @@ public:
     String devicesStatus();
 
     /**
-     * Call when need create new connection for call
+     * Called on new incoming for call
      * @param dev - pointer to calling device
-     * @param usrData - additional user information
-     * @return pointer to new connection
+     * @param caller - additional user information
+     * @return incaming call handling state
      */    
-    virtual Connection* createConnection(CardDevice* dev, void* usrData = 0);
-
-    /**
-     * Make new call throw specific device
-     * @param dev - pointer to device for call
-     * @param called - number for outgoing call     
-     * @param usrData - additional user information
-     * @return pointer to new connection
-     */        
-    bool MakeCall(CardDevice* dev, const String &called, void* usrData);
+    virtual bool onIncamingCall(CardDevice* dev, const String &caller);
 
 private:
     Mutex m_mutex;
