@@ -412,20 +412,24 @@ DatacardDriver::~DatacardDriver()
 
 void DatacardDriver::initialize()
 {
+    bool first = true;
     if(m_endpoint)
     {
-        Output("DatacardChannel already initialized");
-        return;
+//        Output("DatacardChannel already initialized");
+//        return;
+        first = false;
     }
 
     Output("Initializing module Datacard Revision %s", SVN_REV);
-//TODO: make reload    
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
     
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
-    m_endpoint = new YDevEndPoint(discovery_interval);
+    if(first)
+	m_endpoint = new YDevEndPoint(discovery_interval);
+    else
+	m_endpoint->cleanDevices();
     String name;
     unsigned int n = s_cfg.sections();
     for (unsigned int i = 0; i < n; i++) 
@@ -438,11 +442,14 @@ void DatacardDriver::initialize()
 	name  = *sect;
 	m_endpoint->appendDevice(name, sect);
     }
-    m_endpoint->startup();
-    setup();
-    installRelay(Halt);
-    Engine::install(new SMSHandler(m_endpoint));
-    Engine::install(new USSDHandler(m_endpoint));
+    if(first)
+    {
+	m_endpoint->startup();
+	setup();
+	installRelay(Halt);
+	Engine::install(new SMSHandler(m_endpoint));
+	Engine::install(new USSDHandler(m_endpoint));
+    }
     Output("DatacardChannel initialized");
 }
 
