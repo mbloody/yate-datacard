@@ -38,22 +38,22 @@ int CardDevice::handle_rd_data()
 
     while ((ret = read(m_data_fd, &c, 1)) == 1) 
     {
-        if (rd_buff_pos >= RDBUFF_MAX || rd_buff_pos < 0)
+        if (m_rd_buff_pos >= RDBUFF_MAX || m_rd_buff_pos < 0)
 	{
 	    Debug(DebugAll,"Device %s: Buffer exceeded - cleared", c_str());
-	    rd_buff_pos = 0;
-	    memset(rd_buff, 0, RDBUFF_MAX);
+	    m_rd_buff_pos = 0;
+	    memset(m_rd_buff, 0, RDBUFF_MAX);
 	    continue;
 	    //return -1;
 	}
 	
-	switch (state) 
+	switch (m_state) 
 	{
 	    case BLT_STATE_WANT_CONTROL:
 		if (c != '\r' && c != '\n')
 		{
-		    state = BLT_STATE_WANT_CMD;
-		    rd_buff[rd_buff_pos++] = c;
+		    m_state = BLT_STATE_WANT_CMD;
+		    m_rd_buff[m_rd_buff_pos++] = c;
 		} 
 		else
 		    return 0;
@@ -61,22 +61,22 @@ int CardDevice::handle_rd_data()
 	    case BLT_STATE_WANT_CMD:
 		if (c == '\r' || c == '\n')
 		{
-		    state = BLT_STATE_WANT_CONTROL;
-		    Debug(DebugAll,"[%s] : [%s]\n",c_str(), rd_buff);
+		    m_state = BLT_STATE_WANT_CONTROL;
+		    Debug(DebugAll,"[%s] : [%s]\n",c_str(), m_rd_buff);
 
-		    int res = at_response(rd_buff,at_read_result_classification(rd_buff));
+		    int res = at_response(m_rd_buff,at_read_result_classification(m_rd_buff));
     
-		    rd_buff_pos = 0;
-		    memset(rd_buff, 0, RDBUFF_MAX);
+		    m_rd_buff_pos = 0;
+		    memset(m_rd_buff, 0, RDBUFF_MAX);
 		    return res;
 		}
 		else 
 		{
-		    rd_buff[rd_buff_pos++] = c;
+		    m_rd_buff[m_rd_buff_pos++] = c;
 		}
 		break;
     	    default:
-        	Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), state);
+        	Debug(DebugAll,"Device %s: Unknown device state %d\n", c_str(), m_state);
         	return -1;
 	}
     }
@@ -130,7 +130,7 @@ void CardDevice::processATEvents()
 	else if(res == 0)
 	{
 	    m_mutex.lock();
-            if (!initialized)
+            if (!m_initialized)
             {
                 Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
 		if (m_lastcmd)

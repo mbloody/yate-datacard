@@ -166,7 +166,7 @@ int CardDevice::at_response_ok()
 	{
 	    /* initilization stuff */
 	    case CMD_AT:
-		if(!initialized)
+		if(!m_initialized)
 		{
 		    if(m_reset_datacard)
 		    	m_commandQueue.append(new ATCommand("ATZ", CMD_AT_Z));
@@ -180,7 +180,7 @@ int CardDevice::at_response_ok()
 		break;
 
 	    case CMD_AT_E:
-		if(!initialized)
+		if(!m_initialized)
 		{
 		    if(m_u2diag != -1)
 		        m_commandQueue.append(new ATCommand("AT^U2DIAG=" + String(m_u2diag), CMD_AT_U2DIAG));
@@ -190,42 +190,42 @@ int CardDevice::at_response_ok()
 		break;
 
 	    case CMD_AT_U2DIAG:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CGMI", CMD_AT_CGMI));
 		break;
 
 	    case CMD_AT_CGMI:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CGMM", CMD_AT_CGMM));
 		break;
 
 	    case CMD_AT_CGMM:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CGMR", CMD_AT_CGMR));
 		break;
 
 	    case CMD_AT_CGMR:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CMEE=0", CMD_AT_CMEE));
 		break;
 		
 	    case CMD_AT_CMEE:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CGSN", CMD_AT_CGSN));
 		break;
 
 	    case CMD_AT_CGSN:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
 		break;
 
 	    case CMD_AT_CIMI:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+COPS=0,0", CMD_AT_COPS_INIT));
 		break;
 
 	    case CMD_AT_CPIN:
-		if(!initialized)
+		if(!m_initialized)
 		{
 		    if(m_simstatus == 0)
 		        m_commandQueue.append(new ATCommand("AT+CIMI", CMD_AT_CIMI));
@@ -246,74 +246,74 @@ int CardDevice::at_response_ok()
 		break;
 
 	    case CMD_AT_CPIN_ENTER:
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CPIN?", CMD_AT_CPIN));
 		break;
 
 	    case CMD_AT_COPS_INIT:
 		Debug(DebugAll, "[%s] Operator select parameters set", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CREG=2", CMD_AT_CREG_INIT));
 		break;
 
 	    case CMD_AT_CREG_INIT:
 		Debug(DebugAll,  "[%s] registration info enabled", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CREG?", CMD_AT_CREG));
 		break;
 
 	    case CMD_AT_CREG:
 		Debug(DebugAll, "[%s] registration query sent", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM));
 		break;
 
 	    case CMD_AT_CNUM:
 		Debug(DebugAll, "[%s] Subscriber phone number query successed", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT^CVOICE?", CMD_AT_CVOICE));
 		break;
 
 	    case CMD_AT_CVOICE:
 		Debug(DebugAll, "[%s] Datacard has voice support", c_str());
-		has_voice = 1;
-		if(!initialized)
+		m_has_voice = 1;
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CLIP=1", CMD_AT_CLIP));
 		break;
 
 	    case CMD_AT_CLIP:
 		Debug(DebugAll, "[%s] Calling line indication enabled", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CSSN=1,1", CMD_AT_CSSN));
 		break;
 
 	    case CMD_AT_CSSN:
 		Debug(DebugAll, "[%s] Supplementary Service Notification enabled successful", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF));
 		break;
 
 	    case CMD_AT_CMGF:
 		Debug(DebugAll, "[%s] SMS PDU mode enabled", c_str());
-		use_ucs2_encoding = 1;
-		if(!initialized)
+		m_use_ucs2_encoding = 1;
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS));
 		break;
 
 	    case CMD_AT_CPMS:
 		Debug(DebugAll,  "[%s] SMS storage location is established", c_str());
-		if(!initialized)
+		if(!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CNMI=2,1,0,0,0", CMD_AT_CNMI));
 		break;
 
 	    case CMD_AT_CNMI:
 		Debug(DebugAll, "[%s] SMS new message indication enabled", c_str());
 		Debug(DebugAll, "[%s] Datacard has sms support", c_str());
-		has_sms = 1;
-		if(!initialized)
+		m_has_sms = 1;
+		if(!m_initialized)
 		{
 		    m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ));
-		    initialized = 1;
+		    m_initialized = 1;
 		}
 		break;
 	    /* end initilization stuff */
@@ -392,9 +392,9 @@ int CardDevice::at_response_ok()
 		break;
 
 	    case CMD_AT_CLVL:
-		if (volume_synchronized == 0)
+		if (m_volume_synchronized == 0)
 		{
-		    volume_synchronized = 1;
+		    m_volume_synchronized = 1;
 		    m_commandQueue.append(new ATCommand("AT+CLVL=5", CMD_AT_CLVL));
 		}
 		break;
@@ -475,7 +475,7 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CREG:
 		Debug(DebugAll, "[%s] Error getting registration info", c_str());
-		if (!initialized)
+		if (!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CNUM", CMD_AT_CNUM));
 		break;
 
@@ -486,8 +486,8 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CVOICE:
 		Debug(DebugAll, "[%s] Datacard has NO voice support", c_str());
-		has_voice = 0;
-		if (!initialized)
+		m_has_voice = 0;
+		if (!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CMGF=0", CMD_AT_CMGF));
 		break;
 
@@ -504,13 +504,13 @@ int CardDevice::at_response_error()
 	    case CMD_AT_CNMI:
 		Debug(DebugAll, "[%s] Command '%s' failed", c_str(), at_cmd2str (m_lastcmd->m_cmd));
 		Debug(DebugAll, "[%s] No SMS support", c_str());
-		has_sms = 0;
-		if (!initialized)
+		m_has_sms = 0;
+		if (!m_initialized)
 		{
-		    if (has_voice)
+		    if (m_has_voice)
 		    {
 			m_commandQueue.append(new ATCommand("AT+CSQ", CMD_AT_CSQ));
-			initialized = 1;
+			m_initialized = 1;
 			Debug(DebugAll, "Datacard %s initialized and ready", c_str());
 		    }
 		    goto e_return;
@@ -519,9 +519,9 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CSCS:
 		Debug(DebugAll, "[%s] No UCS-2 encoding support", c_str());
-		use_ucs2_encoding = 0;
+		m_use_ucs2_encoding = 0;
 		/* set SMS storage location */
-		if (!initialized)
+		if (!m_initialized)
 		    m_commandQueue.append(new ATCommand("AT+CPMS=\"ME\",\"ME\",\"ME\"", CMD_AT_CPMS));
 		break;
 	    /* end initilization stuff */
@@ -543,8 +543,8 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_D:
 		Debug(DebugAll, "[%s] Dial failed", c_str());
-		outgoing = 0;
-		needchup = 0;
+		m_outgoing = 0;
+		m_needchup = 0;
 		Hangup(DATACARD_CONGESTION);
 		break;
 
@@ -578,7 +578,7 @@ int CardDevice::at_response_error()
 
 	    case CMD_AT_CLVL:
 		Debug(DebugAll, "[%s] Error syncronizing audio level", c_str());
-		volume_synchronized = 0;
+		m_volume_synchronized = 0;
 		break;
 
 	    case CMD_AT_CUSD:
@@ -613,7 +613,7 @@ e_return:
 
 int CardDevice::at_response_rssi(char* str, size_t len)
 {
-    if ((rssi = at_parse_rssi(str, len)) == -1)
+    if ((m_rssi = at_parse_rssi(str, len)) == -1)
     {
 	return -1;
     }
@@ -622,7 +622,7 @@ int CardDevice::at_response_rssi(char* str, size_t len)
 
 int CardDevice::at_response_mode(char* str, size_t len)
 {
-    return at_parse_mode(str, len, &linkmode, &linksubmode);
+    return at_parse_mode(str, len, &m_linkmode, &m_linksubmode);
 }
 
 int CardDevice::at_response_orig(char* str, size_t len)
@@ -647,7 +647,7 @@ int CardDevice::at_response_orig(char* str, size_t len)
 	m_conn->onProgress();
 
     m_commandQueue.append(new ATCommand("AT+CLVL=1", CMD_AT_CLVL));
-    volume_synchronized = 0;
+    m_volume_synchronized = 0;
     return 0;
 }
 
@@ -675,7 +675,7 @@ int CardDevice::at_response_cend(char* str, size_t len)
 
     Debug(DebugAll, "[%s] Line disconnected", c_str());
 	
-    needchup = 0;
+    m_needchup = 0;
 //TODO:
 
     if(m_conn)
@@ -690,9 +690,9 @@ int CardDevice::at_response_cend(char* str, size_t len)
 	    return -1;
 	}
     }
-    incoming = 0;
-    outgoing = 0;
-    needring = 0;
+    m_incoming = 0;
+    m_outgoing = 0;
+    m_needring = 0;
     
     return 0;
 }
@@ -711,7 +711,7 @@ int CardDevice::at_response_conn(char* str, size_t len)
     Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
     Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
 
-    if(outgoing)
+    if(m_outgoing)
     {
 	Debug(DebugAll, "[%s] Remote end answered", c_str());
 	//FIXME: Clear audio bufer
@@ -724,9 +724,9 @@ int CardDevice::at_response_conn(char* str, size_t len)
 
 int CardDevice::at_response_clip(char* str, size_t len)
 {
-    if (initialized && needring == 0)
+    if (m_initialized && m_needring == 0)
     {
-	incoming = 1;
+	m_incoming = 1;
 	String clip = at_parse_clip(str, len);
 	if (clip.null())
 	    Debug(DebugAll, "[%s] Error parsing CLIP: %s", c_str(), str);
@@ -736,23 +736,23 @@ int CardDevice::at_response_clip(char* str, size_t len)
 	    m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
 	    return -1;
 	}
-	needchup = 1;
-	needring = 1;
+	m_needchup = 1;
+	m_needring = 1;
     }
     return 0;
 }
 
 int CardDevice::at_response_ring()
 {
-    if(initialized)
+    if(m_initialized)
     {
 	/* We only want to syncronize volume on the first ring */
-	if(!incoming)
+	if(!m_incoming)
 	{
 	    m_commandQueue.append(new ATCommand("AT+CLVL=1", CMD_AT_CLVL));
-	    volume_synchronized = 0;
+	    m_volume_synchronized = 0;
 	}
-	incoming = 1;
+	m_incoming = 1;
     }
 
     return 0;
@@ -823,7 +823,7 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 	return 0;
     }
 
-    if((dcs == 0 || dcs == 15) && !cusd_use_ucs2_decoding)
+    if((dcs == 0 || dcs == 15) && !m_cusd_use_ucs2_decoding)
     {
 	res = hexstr_7bit_to_char(cusd.safe(), cusd.length(), cusd_utf8_str, sizeof (cusd_utf8_str));
 	if (res > 0)
@@ -856,7 +856,7 @@ int CardDevice::at_response_cusd(char* str, size_t len)
 
 int CardDevice::at_response_busy()
 {
-    needchup = 1;
+    m_needchup = 1;
     Hangup(DATACARD_BUSY);
     return 0;
 }
@@ -864,7 +864,7 @@ int CardDevice::at_response_busy()
 int CardDevice::at_response_no_dialtone()
 {
     Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
-    needchup = 1;
+    m_needchup = 1;
     Hangup(DATACARD_CONGESTION);
     return 0;
 }
@@ -872,7 +872,7 @@ int CardDevice::at_response_no_dialtone()
 int CardDevice::at_response_no_carrier()
 {
     Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
-    needchup = 1;
+    m_needchup = 1;
     Hangup(DATACARD_CONGESTION);
     return 0;
 }
@@ -891,7 +891,7 @@ int CardDevice::at_response_smmemfull()
 
 int CardDevice::at_response_csq(char* str, size_t len)
 {
-    return at_parse_csq(str, len, &rssi);
+    return at_parse_csq(str, len, &m_rssi);
 }
 
 int CardDevice::at_response_cnum(char* str, size_t len)
@@ -926,16 +926,16 @@ int CardDevice::at_response_creg(char* str, size_t len)
 
     m_commandQueue.append(new ATCommand("AT+COPS?", CMD_AT_COPS));
     
-    if(at_parse_creg(str, len, &d, &gsm_reg_status, &lac, &ci))
+    if(at_parse_creg(str, len, &d, &m_gsm_reg_status, &lac, &ci))
     {
 	Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'", c_str(), (int) len, str);
 	return 0;
     }
 
     if(d)
-	gsm_registered = 1;
+	m_gsm_registered = 1;
     else
-	gsm_registered = 0;
+	m_gsm_registered = 0;
 
     if(lac)
 	m_location_area_code = lac;
@@ -956,8 +956,8 @@ int CardDevice::at_response_cgmm(char* str, size_t len)
     m_model.assign(str,len);
     if(m_model == "E1550"|| m_model == "E1750" || m_model == "E160X" || m_model == "E173")
     {
-	cusd_use_7bit_encoding = 1;
-	cusd_use_ucs2_decoding = 0;
+	m_cusd_use_7bit_encoding = 1;
+	m_cusd_use_ucs2_decoding = 0;
     }
     return 0;
 }

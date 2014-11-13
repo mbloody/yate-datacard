@@ -236,7 +236,7 @@ public:
 	{ return m_consumer; }
 	
     inline bool isBusy()
-	{ Lock lock(m_mutex); return (!initialized || incoming || outgoing); }
+	{ Lock lock(m_mutex); return (!m_initialized || m_incoming || m_outgoing); }
 
 
 private:
@@ -265,15 +265,15 @@ public:
 	{ return m_number; }
 
 private:
-    unsigned int has_sms:1;
-    unsigned int has_voice:1;
-    unsigned int use_ucs2_encoding:1;
-    unsigned int cusd_use_7bit_encoding:1;
-    unsigned int cusd_use_ucs2_decoding:1;
-    int gsm_reg_status;
-    int rssi;
-    int linkmode;
-    int linksubmode;
+    unsigned int m_has_sms:1;
+    unsigned int m_has_voice:1;
+    unsigned int m_use_ucs2_encoding:1;
+    unsigned int m_cusd_use_7bit_encoding:1;
+    unsigned int m_cusd_use_ucs2_decoding:1;
+    int m_gsm_reg_status;
+    int m_rssi;
+    int m_linkmode;
+    int m_linksubmode;
     String m_provider_name;
     String m_manufacturer;
     String m_model;
@@ -292,13 +292,13 @@ private:
 public:
     /* flags */
     bool m_connected;			/* do we have an connection to a device */
-    unsigned int initialized:1;			/* whether a service level connection exists or not */
-    unsigned int gsm_registered:1;		/* do we have an registration to a GSM */
-    unsigned int outgoing:1;			/* outgoing call */
-    unsigned int incoming:1;			/* incoming call */
-    unsigned int needchup:1;			/* we need to send a CHUP */
-    unsigned int needring:1;			/* we need to send a RING */
-    unsigned int volume_synchronized:1;		/* we have synchronized the volume */
+    unsigned int m_initialized:1;			/* whether a service level connection exists or not */
+    unsigned int m_gsm_registered:1;		/* do we have an registration to a GSM */
+    unsigned int m_outgoing:1;			/* outgoing call */
+    unsigned int m_incoming:1;			/* incoming call */
+    unsigned int m_needchup:1;			/* we need to send a CHUP */
+    unsigned int m_needring:1;			/* we need to send a RING */
+    unsigned int m_volume_synchronized:1;		/* we have synchronized the volume */
 	
 private:
     // TODO: Running flag. Do we need to stop every MonitorThread or set one 
@@ -321,9 +321,9 @@ public:
     bool m_disablesms;
 
 private:		
-    blt_state_t state;
-    char rd_buff[RDBUFF_MAX];
-    int rd_buff_pos;
+    blt_state_t m_state;
+    char m_rd_buff[RDBUFF_MAX];
+    int m_rd_buff_pos;
 
     // AT command methods.
 public:

@@ -219,10 +219,10 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_audio_fd = -1;
     m_incoming_pdu = false;
 
-    state = BLT_STATE_WANT_CONTROL;
+    m_state = BLT_STATE_WANT_CONTROL;
     
-    cusd_use_ucs2_decoding = 1;
-    gsm_reg_status = -1;
+    m_cusd_use_ucs2_decoding = 1;
+    m_gsm_reg_status = -1;
 
     m_manufacturer.clear();
     m_model.clear();
@@ -237,13 +237,13 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_u2diag = -1;
     m_callingpres = -1;
         
-    initialized = 0;
-    gsm_registered = 0;
+    m_initialized = 0;
+    m_gsm_registered = 0;
     
-    incoming = 0;
-    outgoing = 0;
-    needring = 0;
-    needchup = 0;
+    m_incoming = 0;
+    m_outgoing = 0;
+    m_needring = 0;
+    m_needchup = 0;
     
     m_simstatus = -1;
     m_pincount = 0;
@@ -299,7 +299,7 @@ bool CardDevice::disconnect()
     if(m_conn)
     {
     	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner", c_str());
-	needchup = 0;
+	m_needchup = 0;
 	Hangup(DATACARD_FAILURE);
     }
 
@@ -310,15 +310,15 @@ bool CardDevice::disconnect()
     m_audio_fd = -1;
 
     m_connected	= false;
-    initialized = 0;
-    gsm_registered = 0;
+    m_initialized = 0;
+    m_gsm_registered = 0;
 
-    incoming = 0;
-    outgoing = 0;
-    needring = 0;
-    needchup = 0;
+    m_incoming = 0;
+    m_outgoing = 0;
+    m_needring = 0;
+    m_needchup = 0;
 	
-    gsm_reg_status = -1;
+    m_gsm_reg_status = -1;
 
     m_manufacturer.clear();
     m_model.clear();
@@ -336,7 +336,7 @@ bool CardDevice::disconnect()
     m_commandQueue.clear();
     m_lastcmd = 0;
     
-    initialized = 0;
+    m_initialized = 0;
 
     Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
     return m_connected;
@@ -375,7 +375,7 @@ bool CardDevice::getParams(NamedList* list)
     list->addParam("device",c_str());
     
     String reg_status = "unknown";
-    switch(gsm_reg_status)
+    switch(m_gsm_reg_status)
     {
 	case 0:
 	    reg_status = "not registered, not searching";
@@ -398,7 +398,7 @@ bool CardDevice::getParams(NamedList* list)
     }
     
     list->addParam("gsm_reg_status",reg_status);
-    list->addParam("rssi", String(rssi));
+    list->addParam("rssi", String(m_rssi));
     list->addParam("providername", m_provider_name);
     list->addParam("manufacturer", m_manufacturer);
     list->addParam("model", m_model);
@@ -418,7 +418,7 @@ String CardDevice::getStatus()
     m_mutex.lock();
     String ret = c_str();
     ret << "|";
-    switch(gsm_reg_status)
+    switch(m_gsm_reg_status)
     {
 	case 0:
 	    ret << "not registered - not searching";
@@ -448,31 +448,17 @@ String CardDevice::getStatus()
 //		);
 //    list->addParam("has_voice", has_voice?"true":"false");
 //    list->addParam("has_sms", has_sms?"true":"false");
-    ret << String(rssi) <<"|";
-//    list->addParam("rssi", String(rssi));
+    ret << String(m_rssi) <<"|";
 //    list->addParam("linkmode", String(linkmode));
 //    list->addParam("linksubmode", String(linksubmode));
 
     ret << m_provider_name <<"|";
-//    list->addParam("providername", m_provider_name);
-
     ret << m_manufacturer <<"|";
-//    list->addParam("manufacturer", m_manufacturer);
-
     ret << m_model <<"|";
-//    list->addParam("model", m_model);
-
     ret << m_firmware <<"|";
-//    list->addParam("firmware", m_firmware);
-
     ret << m_imei <<"|";
-//    list->addParam("imei", m_imei);
-
     ret << m_imsi <<"|";
-//    list->addParam("imsi", m_imsi);
-
     ret << m_number;
-//    list->addParam("number", m_number);
 
 //    ast_cli (a->fd, "  Default CallingPres     : %s\n", pvt->callingpres < 0 ? "<Not set>" : ast_describe_caller_presentation (pvt->callingpres));
 //    ast_cli (a->fd, "  Use UCS-2 encoding      : %s\n", pvt->use_ucs2_encoding ? "Yes" : "No");
@@ -497,9 +483,9 @@ bool CardDevice::sendSMS(const String &called, const String &sms)
     // TODO: Check called & sms
     // Check if msg will be desrtoyed
     
-    if (m_connected && initialized && gsm_registered)
+    if (m_connected && m_initialized && m_gsm_registered)
     {
-        if(has_sms)
+        if(m_has_sms)
         {
             PDU pdu;
             pdu.setMessage(sms.safe());
@@ -539,7 +525,7 @@ bool CardDevice::sendUSSD(const String &ussd)
 
     Lock lock(m_mutex);
     
-    if (m_connected && initialized && gsm_registered)
+    if (m_connected && m_initialized && m_gsm_registered)
     {
         String ussdenc;
         if(!encodeUSSD(ussd, ussdenc))
@@ -584,10 +570,10 @@ bool CardDevice::Hangup(int reason)
     }
     m_conn = 0;
 //TODO: Review this!!!
-    if(needchup)
+    if(m_needchup)
     {
 	m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
-	needchup = 0;
+	m_needchup = 0;
     }
     lock.drop();
     return tmp->onHangup(reason);
@@ -625,8 +611,8 @@ bool CardDevice::newCall(const String &called)
 
     m_audio_buf.clear();
 
-    outgoing = 1;
-    needchup = 1;
+    m_outgoing = 1;
+    m_needchup = 1;
     return true;
 }
 
@@ -783,7 +769,7 @@ bool CardDevice::encodeUSSD(const String& code, String& ret)
     ssize_t res;
     char buf[512];
 
-    if(cusd_use_7bit_encoding)
+    if(m_cusd_use_7bit_encoding)
     {
 	res = char_to_hexstr_7bit(code.safe(), code.length(), buf, sizeof(buf));
 	if (res <= 0)
@@ -792,7 +778,7 @@ bool CardDevice::encodeUSSD(const String& code, String& ret)
 	    return false;
 	}
     }
-    else if(use_ucs2_encoding)
+    else if(m_use_ucs2_encoding)
     {
 	res = utf8_to_hexstr_ucs2(code.safe(), code.length(), buf, sizeof(buf));
 	if (res <= 0)
@@ -999,7 +985,7 @@ bool Connection::sendAnswer()
 {
 
     m_dev->m_mutex.lock();
-    if (m_dev->incoming)
+    if (m_dev->m_incoming)
 	m_dev->m_commandQueue.append(new ATCommand("ATA", CMD_AT_A));
     m_dev->m_mutex.unlock();
 
@@ -1023,14 +1009,14 @@ bool Connection::sendHangup()
     m_dev = NULL;
 
 
-    if (tmp->needchup)
+    if (tmp->m_needchup)
     {
 	tmp->m_commandQueue.append(new ATCommand("AT+CHUP", CMD_AT_CHUP));
-	tmp->needchup = 0;
+	tmp->m_needchup = 0;
     }
 
     tmp->m_conn = NULL;
-    tmp->needring = 0;
+    tmp->m_needring = 0;
 
     tmp->m_mutex.unlock();
 
