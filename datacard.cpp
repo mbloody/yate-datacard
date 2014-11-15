@@ -62,6 +62,12 @@ public:
 	m->addParam("text",ussd);
 	dev->getParams(m);
 	Engine::enqueue(m);
+
+	Message* mu = new Message("module.update");
+	mu->addParam("from",*dev + "/USSD");
+	mu->addParam("text",ussd);
+	Engine::enqueue(mu);
+
     }
     virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
     {
