@@ -438,7 +438,7 @@ void DatacardDriver::initialize()
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
 
-    s_inband_dtmf = s_cfg.getIntValue("general","inband_dtmf",false);    
+    s_inband_dtmf = s_cfg.getBoolValue("general","inband_dtmf",false);    
     if(first)
 	m_endpoint = new YDevEndPoint(discovery_interval);
     else
