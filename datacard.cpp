@@ -48,6 +48,9 @@ static TokenDict dict_errors[] = {
 
 static Configuration s_cfg;
 
+//TODO: make configurable for devices
+static bool s_inband_dtmf = false;
+
 class YDevEndPoint : public DevicesEndPoint
 {
 public:
@@ -214,6 +217,8 @@ bool DatacardChannel::msgAnswered(Message& msg)
 
 bool DatacardChannel::msgTone(Message& msg, const char* tone)
 {
+    if(s_inband_dtmf)
+	return dtmfInband(tone);
     return sendDTMF(*tone);               
 }
 
@@ -432,6 +437,8 @@ void DatacardDriver::initialize()
     
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
+
+    s_inband_dtmf = s_cfg.getIntValue("general","inband_dtmf",false);    
     if(first)
 	m_endpoint = new YDevEndPoint(discovery_interval);
     else

@@ -8,6 +8,9 @@
 ; discovery-interval: int: 
 ;discovery-interval=60
 
+;inband_dtmf:bool
+;inband_dtmf=no
+
 ; Example of device
 [datacard0]
 
