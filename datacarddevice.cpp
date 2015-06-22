@@ -920,7 +920,7 @@ void DevicesEndPoint::cleanDevices()
     {
 	GenObject* obj = devicesIter->get();
 	devicesIter = devicesIter->next();
-	if (!obj) continue;	
+	if (!obj) continue;
 	dev = static_cast<CardDevice*>(obj);
 	dev->disconnect();
 	m_devices.remove(obj, true); // Remove from list and delete object

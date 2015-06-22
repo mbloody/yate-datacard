@@ -226,7 +226,7 @@ public:
 
     bool getParams(NamedList* list);
     String getStatus();
-    
+
     void setConnection(Connection* conn)
 	{ m_conn = conn; }
 
@@ -283,7 +283,7 @@ private:
     String m_number;
     String m_location_area_code;
     String m_cell_id;
-    
+
     unsigned char m_pincount;
     int m_simstatus;
 
@@ -331,7 +331,7 @@ public:
     /**
      * Read and handle data
      * @return 0 on success or -1 on error
-     */    
+     */
     int handle_rd_data();
 
     /**

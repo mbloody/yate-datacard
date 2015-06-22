@@ -156,16 +156,16 @@ void CardDevice::processATEvents()
 	}
 	if((fds.revents & POLLIN))
 	{
-    	    //incoming data
-    	    m_mutex.lock();
+	    //incoming data
+	    m_mutex.lock();
 	    if (handle_rd_data())
 	    {
-        	disconnect();
-        	m_mutex.unlock();
-        	return;
+		disconnect();
+		m_mutex.unlock();
+		return;
 	    }
-    	    m_mutex.unlock();
-	}	
+	    m_mutex.unlock();
+	}
 	else if (fds.revents & POLLOUT)
 	{
 	    m_mutex.lock();

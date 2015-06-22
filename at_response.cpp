@@ -331,7 +331,7 @@ int CardDevice::at_response_ok()
 		{
 		    String* number = static_cast<String*>(m_lastcmd->get());
 		    m_commandQueue.append(new ATCommand("ATD" + *number  + ";", CMD_AT_D));
-		}		
+		}
 		break;
 
 	    case CMD_AT_D:

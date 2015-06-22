@@ -83,7 +83,7 @@ public:
 	dev->getParams(m);
 	Engine::enqueue(m);
     }
-    
+
     virtual bool onIncamingCall(CardDevice* dev, const String &caller);
 };
 
@@ -115,7 +115,7 @@ public:
     virtual void initialize();
     virtual bool msgExecute(Message& msg, String& dest);
     virtual bool received(Message& msg, int id);
-    
+
     bool doCommand(String& line, String& rval);
     void doComplete(const String& partLine, const String& partWord, String& rval);
 private:
@@ -132,7 +132,7 @@ public:
       Channel(__plugin, 0, (msg != 0)), Connection(dev)
     {
 	m_address = 0;
-	Message* s = message("chan.startup",msg);	
+	Message* s = message("chan.startup",msg);
 	if (msg)
 	    s->copyParams(*msg,"caller,callername,called,billid,callto,username");
 	Engine::enqueue(s);
@@ -141,10 +141,10 @@ public:
 	setConsumer(dev->consumer());
     };
     ~DatacardChannel();
-    
+
     virtual bool msgAnswered(Message& msg);
     virtual bool msgTone(Message& msg, const char* tone);
-    
+
     virtual void disconnected(bool final, const char *reason);
     inline void setTargetid(const char* targetid)
 	{ m_targetid = targetid; }
@@ -152,7 +152,7 @@ public:
     virtual bool onIncoming(const String &caller);
     virtual bool onProgress();
     virtual bool onAnswered();
-    virtual bool onHangup(int reason);    
+    virtual bool onHangup(int reason);
 };
 
 
@@ -219,13 +219,13 @@ bool DatacardChannel::msgTone(Message& msg, const char* tone)
 {
     if(s_inband_dtmf)
 	return dtmfInband(tone);
-    return sendDTMF(*tone);               
+    return sendDTMF(*tone);
 }
 
 bool DatacardChannel::onIncoming(const String &caller)
 {
     Debug(this,DebugAll,"DatacardChannel::onIncoming(%s)", caller.c_str());
-    
+
     Message *m = message("call.preroute",false,true);
     m->setParam("callername", caller);
     m->setParam("caller", caller);
@@ -261,26 +261,26 @@ bool DatacardChannel::onHangup(int reason)
 	disconnect();
     else
 	disconnect(lookup(reason,dict_errors));
-    return true;    
+    return true;
 }
 
 bool DatacardDriver::msgExecute(Message& msg, String& dest)
 {
     if (dest.null())
         return false;
-    if (!msg.userData()) 
+    if (!msg.userData())
     {
 	Debug(this,DebugWarn,"Call found but no data channel!");
         return false;
     }
-    
+
     CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
     if (!dev)
     {
 	Debug(this,DebugWarn,"Device not found");
         return false;
     }
-    
+
     if(dev->isBusy())
     {
 	Debug(this,DebugWarn,"Device is busy");
@@ -290,7 +290,7 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     DatacardChannel* chan = new DatacardChannel(dev, &msg);
     dev->setConnection(chan);
     chan->initChan();
-    
+
     CallEndpoint* ch = static_cast<CallEndpoint*>(msg.userData());
     if (ch && chan->connect(ch,msg.getValue(YSTRING("reason"))) && dev->newCall(dest))
     {
@@ -301,7 +301,7 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
         return true;
     }
     chan->destruct();
-    return false;    
+    return false;
 }
 
 
@@ -392,8 +392,8 @@ bool DatacardDriver::received(Message& msg, int id)
         if (!line.startSkip("datacard"))
             return false;
         if(!doCommand(line, msg.retValue()))
-    	    msg.retValue() = "Datacard operation failed: " + line + "\r\n";
-        return true;                                                    
+	    msg.retValue() = "Datacard operation failed: " + line + "\r\n";
+        return true;
     }
     else if (id == Halt)
     {
@@ -426,19 +426,19 @@ void DatacardDriver::initialize()
     bool first = true;
     if(m_endpoint)
     {
-//        Output("DatacardChannel already initialized");
-//        return;
-        first = false;
+        Output("DatacardChannel already initialized");
+        return;
+//        first = false;
     }
 
     Output("Initializing module Datacard Revision %s", SVN_REV);
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
-    
+
     int discovery_interval = s_cfg.getIntValue("general","discovery-interval",DEF_DISCOVERY_INT);
     Output("Discovery Interval %d", discovery_interval);
 
-    s_inband_dtmf = s_cfg.getBoolValue("general","inband_dtmf",false);    
+    s_inband_dtmf = s_cfg.getBoolValue("general","inband_dtmf",false);
     if(first)
 	m_endpoint = new YDevEndPoint(discovery_interval);
     else
