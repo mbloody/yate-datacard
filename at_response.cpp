@@ -169,7 +169,7 @@ int CardDevice::at_response_ok()
 		if(!m_initialized)
 		{
 		    if(m_reset_datacard)
-		    	m_commandQueue.append(new ATCommand("ATZ", CMD_AT_Z));
+			m_commandQueue.append(new ATCommand("ATZ", CMD_AT_Z));
 		    else
 			m_commandQueue.append(new ATCommand("ATE0", CMD_AT_E));
 		}
@@ -241,7 +241,7 @@ int CardDevice::at_response_ok()
 			m_lastcmd = 0;
 			return -1;
 		    }
-						
+
 		}
 		break;
 

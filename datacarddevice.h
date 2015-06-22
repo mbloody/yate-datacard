@@ -123,25 +123,25 @@ class ATCommand : public GenObject
 public:
     ATCommand(String command, at_cmd_t cmd, GenObject* obj = 0, at_res_t res = RES_OK):m_command(command),m_cmd(cmd),m_res(res),m_obj(obj)
     {
-    	if(m_obj)
-    	{
-    	    String* data = static_cast<String*>(m_obj);
-    	    Debug(DebugAll, "ATCommand %s ", data->safe());
-    	}
+	if(m_obj)
+	{
+	    String* data = static_cast<String*>(m_obj);
+	    Debug(DebugAll, "ATCommand %s ", data->safe());
+	}
     }
-    
+
     ~ATCommand()
     {
 	if(m_obj)
 	    m_obj->destruct();
     }
-    
+
     GenObject* get()
     {
 	return m_obj;
     }
 
-    void onTimeout()    
+    void onTimeout()
     {
 	Debug(DebugAll, "Timeout for AT command %s ignoring ", m_command.safe());
     }
@@ -150,7 +150,7 @@ public:
     String m_command;
     at_cmd_t m_cmd;
     at_res_t m_res;
-    
+
     GenObject* m_obj;
 };
 
@@ -218,7 +218,7 @@ public:
     ~CardDevice();
     bool tryConnect();
     bool disconnect();
-    
+
     int dataStatus()
 	{ return devStatus(m_data_fd);}
     int audioStatus()
