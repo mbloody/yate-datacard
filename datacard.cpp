@@ -431,7 +431,7 @@ void DatacardDriver::initialize()
 //        first = false;
     }
 
-    Output("Initializing module Datacard Revision %s", SVN_REV);
+    Output("Initializing module Datacard Revision %s", DTC_VER);
     s_cfg = Engine::configFile("datacard");
     s_cfg.load();
 
