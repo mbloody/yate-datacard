@@ -815,7 +815,7 @@ public:
      * @param sms - SMS body
      * @return
      */
-    virtual void onReceiveSMS(CardDevice* dev, String caller, String sms);
+    virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms);
 
     /**
      * Send SMS message.

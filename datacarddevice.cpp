@@ -515,7 +515,8 @@ bool CardDevice::receiveSMS(const char* pdustr, size_t len)
     PDU pdu(pdustr);
     if (!pdu.parse())
         return false;
-    m_endpoint->onReceiveSMS(this, String(pdu.getNumber()), String(pdu.getMessage()));
+
+    m_endpoint->onReceiveSMS(this, String(pdu.getNumber()), String(pdu.getUDHData()), String(pdu.getMessage()));
     return true;
 }
 
@@ -850,13 +851,13 @@ void DevicesEndPoint::run()
 
 void DevicesEndPoint::cleanup()
 {
-}    
+}
 
 void DevicesEndPoint::onReceiveUSSD(CardDevice* dev, String ussd)
 {
 }
 
-void DevicesEndPoint::onReceiveSMS(CardDevice* dev, String caller, String sms)
+void DevicesEndPoint::onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms)
 {
 }
 

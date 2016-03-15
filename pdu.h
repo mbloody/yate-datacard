@@ -45,17 +45,17 @@ public:
     inline const char* getMessage() const { return m_message; }
     inline const char* getError() const { return m_err; }
     inline const int getMessageLen() const { return m_message_len; }
-    
+
     // Setters
     void setMessage(const char* message, const int message_len = -1);
     void setSMSC(const char* smsc);
     void setNumber(const char* number);
     void setAlphabet(const Alphabet alphabet);
 
-    // 
+    //
     bool parse();
     void generate();
-    
+
     // iconv
     int convert(const char *tocode, const char *fromcode);
 private:

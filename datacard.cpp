@@ -72,13 +72,16 @@ public:
 	Engine::enqueue(mu);
 
     }
-    virtual void onReceiveSMS(CardDevice* dev, String caller, String sms)
+
+    virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms)
     {
 	Debug(DebugAll, "onReceiveSMS Got SMS from %s: '%s'\n", caller.c_str(), sms.c_str());
 	Message* m = new Message("datacard.sms");
 	m->addParam("type","incoming");
 	m->addParam("module","datacard");
 	m->addParam("caller",caller);
+	if(!udh_data.null())
+	    m->addParam("udh_data", udh_data);
 	m->addParam("text",sms);
 	dev->getParams(m);
 	Engine::enqueue(m);
