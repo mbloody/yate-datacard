@@ -176,7 +176,7 @@ bool SMSHandler::received(Message &msg)
     String device(msg.getValue("device"));
     CardDevice* dev = m_ep->findDevice(device);
     if (!dev)
-	dev = m_endpoint->findDevice(msg);
+	dev = m_ep->findDevice(msg);
     if(!dev)
 	return false;
     String called(msg.getValue("called"));
@@ -193,7 +193,7 @@ bool USSDHandler::received(Message &msg)
     String device(msg.getValue("device"));
     CardDevice* dev = m_ep->findDevice(device);
     if (!dev)
-	dev = m_endpoint->findDevice(msg);
+	dev = m_ep->findDevice(msg);
 
     if(!dev)
 	return false;
