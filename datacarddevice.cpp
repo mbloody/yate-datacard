@@ -373,7 +373,7 @@ bool CardDevice::getParams(NamedList* list)
 {
     m_mutex.lock();
     list->addParam("device",c_str());
-    
+
     String reg_status = "unknown";
     switch(m_gsm_reg_status)
     {
@@ -821,7 +821,7 @@ DevicesEndPoint::DevicesEndPoint(int interval):Thread("DeviceEndPoint"),m_mutex(
 }
 
 DevicesEndPoint::~DevicesEndPoint()
-{    
+{
     Debug(DebugAll, "Datacard devices: %d", m_devices.count());
 }
 
@@ -836,9 +836,9 @@ void DevicesEndPoint::run()
 	{
 		GenObject* obj = devicesIter->get();
 		devicesIter = devicesIter->next();
-		if (!obj) continue;	
-    		dev = static_cast<CardDevice*>(obj);
-    		dev->tryConnect();
+		if (!obj) continue;
+		dev = static_cast<CardDevice*>(obj);
+		dev->tryConnect();
 	}
 	m_mutex.unlock();
 	
@@ -885,11 +885,11 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
 {
     String audio_tty = data->getValue("audio");
     String data_tty = data->getValue("data");
-    
+
     CardDevice* dev = new CardDevice(name, this);
     dev->m_data_tty = data_tty;
     dev->m_audio_tty = audio_tty;
-    
+
     dev->m_sim_pin = data->getValue("pin");
 
     dev->m_auto_delete_sms = data->getBoolValue("autodeletesms",true);
@@ -898,8 +898,8 @@ CardDevice* DevicesEndPoint::appendDevice(String name, NamedList* data)
     if (dev->m_u2diag == 0)
 	dev->m_u2diag = -1;
     dev->m_callingpres = data->getIntValue("callingpres",-1);
-    dev->m_disablesms = data->getBoolValue("disablesms",false);  
-    
+    dev->m_disablesms = data->getBoolValue("disablesms",false);
+
     m_mutex.lock();
     m_devices.append(dev);
     m_mutex.unlock();
@@ -910,6 +910,23 @@ CardDevice* DevicesEndPoint::findDevice(const String &name)
 {
     Lock lock(m_mutex);
     return static_cast<CardDevice*>(m_devices[name]);
+}
+
+CardDevice* DevicesEndPoint::findDevice(const NamedList &list)
+{
+    Lock lock(m_mutex);
+
+    const ObjList *devicesIter = &m_devices;
+    while (devicesIter)
+    {
+	GenObject* obj = devicesIter->get();
+	devicesIter = devicesIter->next();
+	if (!obj) continue;
+	CardDevice* dev = static_cast<CardDevice*>(obj);
+	if((dev->getImei() == list["imei"]) || (dev->getImsi() == list["imsi"]))
+	    return dev;
+    }
+    return 0;
 }
 
 void DevicesEndPoint::cleanDevices()

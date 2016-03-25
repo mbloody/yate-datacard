@@ -278,6 +278,12 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     }
 
     CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
+
+    if (!dev)
+    {
+	dev = m_endpoint->findDevice(msg);
+    }
+
     if (!dev)
     {
 	Debug(this,DebugWarn,"Device not found");
@@ -341,9 +347,9 @@ bool DatacardDriver::doCommand(String& line, String& rval)
 	int q = line.find(' ');
 	if(q >= 0) 
 	{
-    	    String ussd = line.substr(q+1).trimBlanks();
+	    String ussd = line.substr(q+1).trimBlanks();
 	    line = line.substr(0,q).trimBlanks();
-	    
+
 	    CardDevice* dev = m_endpoint->findDevice(line);
             if(dev && m_endpoint->sendUSSD(dev, ussd))
 	        rval << "USSD send success!";

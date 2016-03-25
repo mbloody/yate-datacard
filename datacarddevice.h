@@ -264,6 +264,12 @@ public:
     String getNumber()
 	{ return m_number; }
 
+    String getImei()
+	{ return m_imei; }
+
+    String getImsi()
+	{ return m_imsi; }
+
 private:
     unsigned int m_has_sms:1;
     unsigned int m_has_voice:1;
@@ -320,7 +326,7 @@ public:
     bool m_reset_datacard;
     bool m_disablesms;
 
-private:		
+private:
     blt_state_t m_state;
     char m_rd_buff[RDBUFF_MAX];
     int m_rd_buff_pos;
@@ -337,7 +343,7 @@ public:
     /**
      * Process AT data
      * @return
-     */        
+     */
     void processATEvents();
 
 private:
@@ -703,7 +709,7 @@ private:
      * @param pdu -- SMS PDU
      */
     int at_send_sms_text(const char* pdu);
-        
+
 //private:
 
     ssize_t convert_string(const char* in, size_t in_length, char* out, size_t out_size, char* from, char* to);
@@ -730,11 +736,11 @@ public:
      * @param ussd - cusd
      * @return true on success or false on error
      */
-    bool sendUSSD(const String &ussd);   
+    bool sendUSSD(const String &ussd);
 
     void forwardAudio(char* data, int len);
     int sendAudio(char* data, int len);
-    
+
     /**
      * Create new call
      * @param called - called party number
@@ -742,14 +748,13 @@ public:
      * @return true on success or false on error
      */
     bool newCall(const String &called);
-    
+
 private:
     bool receiveSMS(const char* pdustr, size_t len);
     bool incomingCall(const String &caller);
     bool Hangup(int error);
     int getReason(int end_status, int cc_cause);
     bool m_incoming_pdu;
-    
 
     ATCommand* m_lastcmd;
 public:
@@ -770,12 +775,12 @@ public:
     virtual bool onProgress();
     virtual bool onAnswered();
     virtual bool onHangup(int reason);
-    
+
     bool sendAnswer();
     bool sendHangup();
 
     bool sendDTMF(char digit);
-        
+
 protected:
     CardDevice* m_dev;
 };
@@ -846,8 +851,15 @@ public:
      * Find device by name
      * @param name - device name
      * @return device pointer or NULL if not found
-     */        
+     */
     CardDevice* findDevice(const String &name);
+
+    /**
+     * Find device by params
+     * @param list - device params
+     * @return device pointer or NULL if not found
+     */
+    CardDevice* findDevice(const NamedList &list);
 
     /**
      * Remove all devices from endpoint
