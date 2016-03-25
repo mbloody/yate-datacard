@@ -56,6 +56,7 @@ class YDevEndPoint : public DevicesEndPoint
 public:
     YDevEndPoint(int interval):DevicesEndPoint(interval){}
     ~YDevEndPoint(){}
+
     virtual void onReceiveUSSD(CardDevice* dev, String ussd)
     {
 	Debug(DebugAll, "onReceiveUSSD Got USSD response: '%s'\n", ussd.c_str());
@@ -70,7 +71,6 @@ public:
 	mu->addParam("from",*dev + "/USSD");
 	mu->addParam("text",ussd);
 	Engine::enqueue(mu);
-
     }
 
     virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms)
@@ -239,7 +239,7 @@ bool DatacardChannel::onIncoming(const String &caller)
     m->setParam("caller", caller);
     m->setParam("called", m_dev->getNumber());
     m_dev->getParams(m);
- 
+
     if (startRouter(m))
 	return true;
     Debug(this,DebugWarn,"Error starting routing thread! [%p]",this);
@@ -275,11 +275,12 @@ bool DatacardChannel::onHangup(int reason)
 bool DatacardDriver::msgExecute(Message& msg, String& dest)
 {
     if (dest.null())
-        return false;
+	return false;
+
     if (!msg.userData())
     {
 	Debug(this,DebugWarn,"Call found but no data channel!");
-        return false;
+	return false;
     }
 
     CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
@@ -296,7 +297,7 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     if(dev->isBusy())
     {
 	Debug(this,DebugWarn,"Device is busy");
-        return false;
+	return false;
     }
 
     DatacardChannel* chan = new DatacardChannel(dev, &msg);
@@ -306,11 +307,11 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     CallEndpoint* ch = static_cast<CallEndpoint*>(msg.userData());
     if (ch && chan->connect(ch,msg.getValue(YSTRING("reason"))) && dev->newCall(dest))
     {
-        chan->callConnect(msg);
-        msg.setParam("peerid",chan->id());
-        msg.setParam("targetid",chan->id());
-        chan->deref();
-        return true;
+	chan->callConnect(msg);
+	msg.setParam("peerid",chan->id());
+	msg.setParam("targetid",chan->id());
+	chan->deref();
+	return true;
     }
     chan->destruct();
     return false;
@@ -371,7 +372,7 @@ bool DatacardDriver::doCommand(String& line, String& rval)
 bool DatacardDriver::received(Message& msg, int id)
 {
 //TODO: implement this
-    if (id == Status) 
+    if (id == Status)
     {
 	String target = msg.getValue("module");
 	if (!target || target == name() || target.startsWith(prefix()))
@@ -466,6 +467,7 @@ void DatacardDriver::initialize()
 	name  = *sect;
 	m_endpoint->appendDevice(name, sect);
     }
+
     if(first)
     {
 	m_endpoint->startup();

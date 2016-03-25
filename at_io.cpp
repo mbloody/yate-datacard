@@ -88,13 +88,13 @@ void CardDevice::processATEvents()
     struct pollfd fds;
 
     m_mutex.lock();
-                 
+
     //This may be unnecessary
     m_commandQueue.clear();
     m_lastcmd = 0;
     //--
     m_commandQueue.append(new ATCommand("AT", CMD_AT));
-    
+
     m_mutex.unlock();
 
     // Main loop
@@ -113,46 +113,46 @@ void CardDevice::processATEvents()
 	fds.fd = m_data_fd;
 	fds.events = POLLIN;
 	fds.revents = 0;
-	
+
 	if((m_commandQueue.count() > 0) && !m_lastcmd)
 	    fds.events |= POLLOUT;
-	    
+
 
 	int res = poll(&fds, 1, 1000);
 	if (res < 0) {
-    	    if (errno == EINTR)
-        	continue;
+	    if (errno == EINTR)
+		continue;
 	    m_mutex.lock();
 	    disconnect();
-            m_mutex.unlock();
+	    m_mutex.unlock();
 	    return;
 	}
 	else if(res == 0)
 	{
 	    m_mutex.lock();
-            if (!m_initialized)
-            {
-                Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
+	    if (!m_initialized)
+	    {
+		Debug(DebugAll, "[%s] timeout waiting for data, disconnecting", c_str());
 		if (m_lastcmd)
-                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+		    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
 
-                Debug(DebugAll, "Error initializing Datacard %s", c_str());
-                disconnect();
-                m_mutex.unlock();
-                return;
-            }
-            else
-            {
+		Debug(DebugAll, "Error initializing Datacard %s", c_str());
+		disconnect();
+		m_mutex.unlock();
+		return;
+	    }
+	    else
+	    {
 // TODO:
 		if (m_lastcmd)
 		{
-                    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
-                    m_lastcmd->onTimeout();
+		    Debug(DebugAll, "[%s] timeout while waiting '%s' in response to '%s'", c_str(), at_res2str(m_lastcmd->m_res), at_cmd2str(m_lastcmd->m_cmd));
+		    m_lastcmd->onTimeout();
 //                    disconnect();
                 }
-                m_mutex.unlock();
-                continue;
-            }
+		m_mutex.unlock();
+		continue;
+	    }
 	}
 	if((fds.revents & POLLIN))
 	{
@@ -171,9 +171,9 @@ void CardDevice::processATEvents()
 	    m_mutex.lock();
 	    if(!m_lastcmd)
 	    {
-	    
+
 		ATCommand* cmd = static_cast<ATCommand*>(m_commandQueue.get());
-	    
+
 		if(cmd)
 		{
 		    at_write_full((char*)cmd->m_command.safe(),cmd->m_command.length());
@@ -181,15 +181,15 @@ void CardDevice::processATEvents()
 		    m_lastcmd = cmd;
 		}
 	    }
-    	    m_mutex.unlock();
+	    m_mutex.unlock();
 	}
 	else if (fds.revents)// & (POLLRDHUP|POLLERR|POLLHUP|POLLNVAL|POLLPRI))
 	{
-    	    //exeption
-    	    m_mutex.lock();
+	    //exeption
+	    m_mutex.lock();
 	    disconnect();
-            m_mutex.unlock();
-    	    return;
+	    m_mutex.unlock();
+	    return;
 	}
     } // End of Main loop
 }
@@ -278,7 +278,7 @@ int CardDevice::at_write_full(char* buf, size_t count)
 	p += out_count;
     }
     write(m_data_fd, "\r", 1);
-    
+
     return 0;
 }
 

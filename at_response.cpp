@@ -236,7 +236,7 @@ int CardDevice::at_response_ok()
 		    }
 		    else
 		    {
-		    	Debug(DebugAll, "[%s] Wrong SIM State", c_str());
+			Debug(DebugAll, "[%s] Wrong SIM State", c_str());
 			m_lastcmd->destruct();
 			m_lastcmd = 0;
 			return -1;
@@ -317,7 +317,7 @@ int CardDevice::at_response_ok()
 		}
 		break;
 	    /* end initilization stuff */
-	    	
+
 	    case CMD_AT_A:
 		Debug(DebugAll,  "[%s] Answer sent successfully", c_str());
 		//FIXME: Clear audio bufer
@@ -538,7 +538,7 @@ int CardDevice::at_response_error()
 		{
 		    String* number = static_cast<String*>(m_lastcmd->get());
 		    m_commandQueue.append(new ATCommand("ATD" + *number + ";", CMD_AT_D));
-		}		
+		}
 		break;
 
 	    case CMD_AT_D:
@@ -607,7 +607,7 @@ int CardDevice::at_response_error()
 e_return:
     m_lastcmd->destruct();
     m_lastcmd = 0;
-	
+
     return -1;
 }
 
@@ -634,13 +634,13 @@ int CardDevice::at_response_orig(char* str, size_t len)
      * parse ORIG info in the following format:
      * ^ORIG:<call_index>,<call_type>
      */
-     
+ 
     if (!sscanf(str, "^ORIG:%d,%d", &call_index, &call_type))
     {
 	Debug(DebugAll, "[%s] Error parsing ORIG event '%s'", c_str(), str);
 	return -1;
     }
-    
+
     Debug(DebugAll, "[%s] Received call_index: %d", c_str(), call_index);
     Debug(DebugAll, "[%s] Received call_type:  %d", c_str(), call_type);
     if(m_conn)
@@ -663,9 +663,9 @@ int CardDevice::at_response_cend(char* str, size_t len)
      * ^CEND:<call_index>,<duration>,<end_status>[,<cc_cause>]
      */
 
-    if (!sscanf (str, "^CEND:%d,%d,%d,%d", &call_index, &duration, &end_status, &cc_cause))
+    if (!sscanf(str, "^CEND:%d,%d,%d,%d", &call_index, &duration, &end_status, &cc_cause))
     {
-    	Debug(DebugAll, "[%s] Could not parse all CEND parameters", c_str());
+	Debug(DebugAll, "[%s] Could not parse all CEND parameters", c_str());
     }
 
     Debug(DebugAll, "[%s] CEND: call_index: %d", c_str(), call_index);
@@ -674,16 +674,16 @@ int CardDevice::at_response_cend(char* str, size_t len)
     Debug(DebugAll, "[%s] CEND: cc_cause:   %d", c_str(), cc_cause);
 
     Debug(DebugAll, "[%s] Line disconnected", c_str());
-	
+
     m_needchup = 0;
 //TODO:
 
     if(m_conn)
     {
 	Debug(DebugAll, "[%s] hanging up owner", c_str());
-		
+
 	int reason = getReason(end_status, cc_cause);
-			
+
 	if(Hangup(reason) == false)
 	{
 	    Debug(DebugAll, "[%s] Error on hangup...", c_str());
@@ -693,7 +693,7 @@ int CardDevice::at_response_cend(char* str, size_t len)
     m_incoming = 0;
     m_outgoing = 0;
     m_needring = 0;
-    
+
     return 0;
 }
 
@@ -860,7 +860,7 @@ int CardDevice::at_response_busy()
     Hangup(DATACARD_BUSY);
     return 0;
 }
- 
+
 int CardDevice::at_response_no_dialtone()
 {
     Debug(DebugAll, "[%s] Datacard reports 'NO DIALTONE'", c_str());
@@ -925,7 +925,7 @@ int CardDevice::at_response_creg(char* str, size_t len)
     char* ci;
 
     m_commandQueue.append(new ATCommand("AT+COPS?", CMD_AT_COPS));
-    
+
     if(at_parse_creg(str, len, &d, &m_gsm_reg_status, &lac, &ci))
     {
 	Debug(DebugAll, "[%s] Error parsing CREG: '%.*s'", c_str(), (int) len, str);
@@ -989,7 +989,7 @@ int CardDevice::at_response_pdu(char* str, size_t len)
 	if(!receiveSMS(str, len))
 	{
 	    Debug(DebugAll, "[%s] Error parse SMS message", c_str());
-    	    return 1;
+	    return 1;
 	}
 	Debug(DebugAll, "[%s] Successfully parse SMS message", c_str());
     }

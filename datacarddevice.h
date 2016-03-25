@@ -255,11 +255,10 @@ public:
     Connection* m_conn;
 
 public:
-    int m_audio_fd;			/* audio descriptor */
-    int m_data_fd;			/* data  descriptor */
+    int m_audio_fd;	// audio descriptor
+    int m_data_fd;	//data  descriptor
 
     DataBlock m_audio_buf;
-
 
     String getNumber()
 	{ return m_number; }
@@ -370,7 +369,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cend(char* str, size_t len);
-    
+
     /**
      * Handle AT+CGMI response
      * @param str -- string containing response (null terminated)
@@ -378,7 +377,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cgmi(char* str, size_t len);
-    
+
     /**
      * Handle AT+CGMM response
      * @param str -- string containing response (null terminated)
@@ -386,7 +385,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cgmm(char* str, size_t len);
-    
+
     /**
      * Handle AT+CGMR response
      * @param str -- string containing response (null terminated)
@@ -394,7 +393,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cgmr(char* str, size_t len);
-    
+
     /**
      * Handle AT+CGSN response
      * @param str -- string containing response (null terminated)
@@ -402,7 +401,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cgsn(char* str, size_t len);
-    
+
     /**
      * Handle AT+CIMI response
      * @param str -- string containing response (null terminated)
@@ -410,7 +409,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cimi(char* str, size_t len);
-    
+
     /**
      * Handle +CLIP response
      * @param str -- string containing response (null terminated)
@@ -418,7 +417,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_clip(char* str, size_t len);
-    
+
     /**
      * Handle +CMGR response
      * @param str -- string containing response (null terminated)
@@ -426,7 +425,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cmgr(char* str, size_t len);
-    
+
     /**
      * Handle +CMTI response
      * @param str -- string containing response (null terminated)
@@ -434,7 +433,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cmti(char* str, size_t len);
-    
+
     /**
      * Handle +CNUM response Here we get our own phone number
      * @param str -- string containing response (null terminated)
@@ -442,7 +441,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cnum(char* str, size_t len);
-    
+
     /**
      * Handle ^CONN response
      * @param str -- string containing response (null terminated)
@@ -450,7 +449,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_conn(char* str, size_t len);
-    
+
     /**
      * Handle +COPS response Here we get the GSM provider name
      * @param str -- string containing response (null terminated)
@@ -458,7 +457,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cops(char* str, size_t len);
-    
+
     /**
      * Handle +CPIN response
      * @param str -- string containing response (null terminated)
@@ -466,7 +465,7 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cpin(char* str, size_t len);
-    
+
     /**
      * Handle +CREG response Here we get the GSM registration status
      * @param str -- string containing response (null terminated)
@@ -796,14 +795,14 @@ public:
 
     DevicesEndPoint(int interval);
     virtual ~DevicesEndPoint();
-    
+
     /**
      * Thread methods for device discovery.
      * @param
      * @return
      */
     virtual void run();
-    virtual void cleanup();    
+    virtual void cleanup();
 
     /**
      * Call when CUSD response received.
@@ -879,7 +878,7 @@ public:
      * Get status of all devices
      * @param
      * @return
-     */                
+     */
     String devicesStatus();
 
     /**

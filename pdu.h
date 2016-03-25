@@ -20,19 +20,19 @@ public:
         NF_INTERNATIONAL = 145,
         NF_INATIONAL = 161
     };
-    
+
     enum Alphabet {
         GSM = -1,
         ISO = 0,
         BINARY = 1,
         UCS2 = 2
     };
-    
+
     // Constructors/Destructor
     PDU();
     PDU(const char *pdu);
     virtual ~PDU();
-    
+
     // Getters
     inline const char* getPDU() const { return m_pdu; }
     inline const char* getSMSC() const { return m_smsc; }
@@ -82,7 +82,7 @@ private:
     int m_validity;
     int m_system_msg;
     int m_replace_msg;
-    
+
     void reset();
     bool parseSMSC();
     bool parseDeliver();
@@ -93,4 +93,3 @@ private:
 #endif
 
 /* vi: set ts=8 sw=4 sts=4 noet: */
-

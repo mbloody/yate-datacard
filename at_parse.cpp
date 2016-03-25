@@ -260,7 +260,7 @@ String CardDevice::at_parse_clip(char* str, size_t len)
      * parse clip info in the following format:
      * +CLIP: "123456789",128,...
      */
-	 
+
     String num;
     num.assign(str, len);
 
@@ -476,7 +476,7 @@ int CardDevice::at_parse_cmti(char* str, size_t len)
 
 	/*
 	 * parse cmti info in the following format:
-	 * +CMTI: <mem>,<index> 
+	 * +CMTI: <mem>,<index>
 	 */
 
 	if (!sscanf (str, "+CMTI: %*[^,],%d", &index))
@@ -493,7 +493,7 @@ int CardDevice::at_parse_cmgr(char* str, size_t len, int* stat, int* pdulen)
 
 	/*
 	 * parse cmgr info in the following format:
-	 * +CMGR: <stat>,[<reserved>],<length>	                                        
+	 * +CMGR: <stat>,[<reserved>],<length>
 	 * +CMGR: 0,,22
 	 */
 

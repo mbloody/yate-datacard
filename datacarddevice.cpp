@@ -33,52 +33,50 @@ using namespace TelEngine;
 
 static int opentty (char* dev)
 {
-	int		fd;
-	struct termios	term_attr;
+    int fd;
+    struct termios term_attr;
 // To open on non block mode
 //	fd = open(dev, O_RDWR | O_NOCTTY | O_NONBLOCK);
-	fd = open(dev, O_RDWR | O_NOCTTY);
+    fd = open(dev, O_RDWR | O_NOCTTY);
 
-	if (fd < 0)
-	{
-		Debug("opentty",DebugAll, "Unable to open '%s'", dev);
-		return -1;
-	}
+    if (fd < 0)
+    {
+	Debug("opentty",DebugAll, "Unable to open '%s'", dev);
+	return -1;
+    }
 
-	if (tcgetattr (fd, &term_attr) != 0)
-	{
-		Debug("opentty",DebugAll, "tcgetattr() failed '%s'", dev);
-		return -1;
-	}
-	
-	cfsetospeed(&term_attr, (speed_t)B115200);
-	cfsetispeed(&term_attr, (speed_t)B115200);
-	term_attr.c_cflag = (term_attr.c_cflag & ~CSIZE) | CS8;
+    if (tcgetattr (fd, &term_attr) != 0)
+    {
+	Debug("opentty",DebugAll, "tcgetattr() failed '%s'", dev);
+	return -1;
+    }
 
-	term_attr.c_cflag |= CLOCAL | CREAD;
+    cfsetospeed(&term_attr, (speed_t)B115200);
+    cfsetispeed(&term_attr, (speed_t)B115200);
+    term_attr.c_cflag = (term_attr.c_cflag & ~CSIZE) | CS8;
 
-	term_attr.c_cflag |= CRTSCTS;
+    term_attr.c_cflag |= CLOCAL | CREAD;
 
-//	term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
+    term_attr.c_cflag |= CRTSCTS;
 
-	
-	term_attr.c_iflag =  IGNBRK;
-//	term_attr.c_iflag = 0;
-	term_attr.c_lflag = 0;
-	term_attr.c_oflag = 0;
-	term_attr.c_cc[VMIN] = 1;
-//	term_attr.c_cc[VTIME] = 5;
-	term_attr.c_cc[VTIME] = 0;
-	              
-	       
+//    term_attr.c_cflag = B115200 | CS8 | CREAD | CRTSCTS;
 
-//	if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
-	if (tcsetattr (fd, TCSANOW, &term_attr) != 0)
-	{
-		Debug("opentty",DebugAll,"tcsetattr() failed '%s'", dev);
-	}
 
-	return fd;
+    term_attr.c_iflag =  IGNBRK;
+//    term_attr.c_iflag = 0;
+    term_attr.c_lflag = 0;
+    term_attr.c_oflag = 0;
+    term_attr.c_cc[VMIN] = 1;
+//    term_attr.c_cc[VTIME] = 5;
+    term_attr.c_cc[VTIME] = 0;
+
+//    if (tcsetattr (fd, TCSAFLUSH, &term_attr) != 0)
+    if (tcsetattr (fd, TCSANOW, &term_attr) != 0)
+    {
+	Debug("opentty",DebugAll,"tcsetattr() failed '%s'", dev);
+    }
+
+    return fd;
 }
 
 MonitorThread::MonitorThread(CardDevice* dev):m_device(dev) {}
@@ -87,7 +85,7 @@ MonitorThread::~MonitorThread() {}
 
 void MonitorThread::run()
 {
-    if (m_device) 
+    if (m_device)
 	m_device->processATEvents();
 }
 
@@ -106,10 +104,10 @@ void MediaThread::run()
     char silence_frame[FRAME_SIZE];
 
     ssize_t res;
-    
+
     memset(silence_frame, 0, sizeof(silence_frame));
-    
-    if (!m_device) 
+
+    if (!m_device)
         return;
 
     m_device->m_audio_buf.clear();
@@ -117,12 +115,12 @@ void MediaThread::run()
     // Main loop
     while (m_device->isRunning())
     {
-        m_device->m_mutex.lock();
+	m_device->m_mutex.lock();
 
 	pfd.fd = m_device->m_audio_fd;
 	pfd.events = POLLIN;
 
-        m_device->m_mutex.unlock();
+	m_device->m_mutex.unlock();
 
 	res = poll(&pfd, 1, 1000);
 
@@ -136,48 +134,47 @@ void MediaThread::run()
 	}
 
 	if (res == 0)
-    	    continue;
+	    continue;
 
 	if(pfd.revents & POLLIN) 
 	{
 	    m_device->m_mutex.lock();
 
 	    len = read(pfd.fd, buf, FRAME_SIZE);
-	    if(len) 
+	    if(len)
 		m_device->forwardAudio(buf, len);
 
 //TODO: Write full data
-	    
 	    unsigned int avail = m_device->m_audio_buf.length();	
 	    if(avail >= FRAME_SIZE)
 	    {
 		char* data = (char*)m_device->m_audio_buf.data();
-	    	write(pfd.fd, data, FRAME_SIZE);
+		write(pfd.fd, data, FRAME_SIZE);
 		m_device->m_audio_buf.cut(-FRAME_SIZE);
 	    }
 	    else if(avail > 0)
 	    {
 		Debug(DebugAll, "[%s] write truncated frame", m_device->c_str());
 		char* data = (char*)m_device->m_audio_buf.data();
-	    	write(pfd.fd, data, avail);
+		write(pfd.fd, data, avail);
 		m_device->m_audio_buf.cut(-avail);
 	    }
 	    else
 	    {
 		Debug(DebugAll, "[%s] write silence", m_device->c_str());
 		write(pfd.fd, silence_frame, FRAME_SIZE);
-	    }	    
+	    }
 	    m_device->m_mutex.unlock();
-	} 
-	else if(pfd.revents) 
+	}
+	else if(pfd.revents)
 	{
 	    Debug(DebugAll, "MediaThread poll exception datacard [%s]", m_device->c_str());
 	    m_device->m_mutex.lock();
 	    m_device->disconnect();
 	    m_device->m_mutex.unlock();
 	    return;
-	} 
-	else 
+	}
+	else
 	{
 	    Debug(DebugAll, "MediaThread Unhandled poll output datacard [%s]", m_device->c_str());
 	}
@@ -200,12 +197,11 @@ unsigned long DatacardConsumer::Consume(const DataBlock& data, unsigned long tSt
     if (!m_device)
 	return invalidStamp();
     m_device->sendAudio((char*)data.data(), data.length());
-	
     return 0;
 }
 
 DatacardSource::DatacardSource(CardDevice* dev, const char* format):DataSource(format), m_device(dev)
-{ 
+{
 }
 
 DatacardSource::~DatacardSource()
@@ -220,7 +216,7 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_incoming_pdu = false;
 
     m_state = BLT_STATE_WANT_CONTROL;
-    
+
     m_cusd_use_ucs2_decoding = 1;
     m_gsm_reg_status = -1;
 
@@ -236,20 +232,20 @@ CardDevice::CardDevice(String name, DevicesEndPoint* ep):String(name), m_endpoin
     m_reset_datacard = true;
     m_u2diag = -1;
     m_callingpres = -1;
-        
+
     m_initialized = 0;
     m_gsm_registered = 0;
-    
+
     m_incoming = 0;
     m_outgoing = 0;
     m_needring = 0;
     m_needchup = 0;
-    
+
     m_simstatus = -1;
     m_pincount = 0;
     m_commandQueue.clear();
     m_lastcmd = 0;
-    
+
     m_source = new DatacardSource(this,"slin");
     m_consumer = new DatacardConsumer(this,"slin");
 }
@@ -259,10 +255,9 @@ CardDevice::~CardDevice()
     TelEngine::destruct(m_source);
     TelEngine::destruct(m_consumer);
 }
-    
 
 bool CardDevice::startMonitor() 
-{ 
+{
     m_running = true;
     m_media = new MediaThread(this);
     m_monitor = new MonitorThread(this);
@@ -290,15 +285,15 @@ bool CardDevice::disconnect()
 {
     if(!m_connected)
     {
-    	Debug("disconnect",DebugAll,"[%s] Datacard not connected", safe());	
-    	return m_connected;
+	Debug("disconnect",DebugAll,"[%s] Datacard not connected", safe());	
+	return m_connected;
     }
-    
+
     stopRunning();
 
     if(m_conn)
     {
-    	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner", c_str());
+	Debug("disconnect",DebugAll,"[%s] Datacard disconnected, hanging up owner", c_str());
 	m_needchup = 0;
 	Hangup(DATACARD_FAILURE);
     }
@@ -317,7 +312,7 @@ bool CardDevice::disconnect()
     m_outgoing = 0;
     m_needring = 0;
     m_needchup = 0;
-	
+
     m_gsm_reg_status = -1;
 
     m_manufacturer.clear();
@@ -332,10 +327,10 @@ bool CardDevice::disconnect()
 
     m_simstatus = -1;
     m_pincount = 0;
-    
+
     m_commandQueue.clear();
     m_lastcmd = 0;
-    
+
     m_initialized = 0;
 
     Debug("disconnect",DebugAll,"Datacard %s has disconnected", c_str());
@@ -354,26 +349,23 @@ int CardDevice::devStatus(int fd)
 bool CardDevice::isRunning() const
 {
     bool running;
-    
+
     // m_mutex.lock();
     running = m_running;
     // m_mutex.unlock();
-    
+
     return running;
 }
 
 void CardDevice::stopRunning()
 {
-    // m_mutex.lock();    
+    // m_mutex.lock();
     m_running = false;
     // m_mutex.unlock();
 }
 
-bool CardDevice::getParams(NamedList* list)
+static String decodeRegStatus(int status)
 {
-    m_mutex.lock();
-    list->addParam("device",c_str());
-
     String reg_status = "unknown";
     switch(m_gsm_reg_status)
     {
@@ -396,7 +388,16 @@ bool CardDevice::getParams(NamedList* list)
 	    reg_status = "unknown";
 	    break;
     }
-    
+    return reg_status;
+}
+
+bool CardDevice::getParams(NamedList* list)
+{
+    m_mutex.lock();
+    list->addParam("device",c_str());
+
+    String reg_status = decodeRegStatus(m_gsm_reg_status);
+
     list->addParam("gsm_reg_status",reg_status);
     list->addParam("rssi", String(m_rssi));
     list->addParam("providername", m_provider_name);
@@ -418,27 +419,7 @@ String CardDevice::getStatus()
     m_mutex.lock();
     String ret = c_str();
     ret << "|";
-    switch(m_gsm_reg_status)
-    {
-	case 0:
-	    ret << "not registered - not searching";
-	    break;
-	case 1:
-	    ret << "registered - home network";
-	    break;
-	case 2:
-	    ret << "not registered - but searching";
-	    break;
-	case 3:
-	    ret << "registration denied";
-	    break;
-	case 5:
-	    ret << "registered - roaming";
-	    break;
-	default:
-	    ret << "unknown";
-	    break;
-    }
+    ret << decodeRegStatus(m_gsm_reg_status);
     ret << "|";
 //		ast_cli (a->fd, "  State                   : %s\n",
 //			(!pvt->connected) ? "Not connected" :
@@ -477,35 +458,35 @@ String CardDevice::getStatus()
 bool CardDevice::sendSMS(const String &called, const String &sms)
 {
     Debug(DebugAll, "[%s] sendSMS: %s", c_str(), sms.c_str());
-    
+
     Lock lock(m_mutex);
-    
+
     // TODO: Check called & sms
     // Check if msg will be desrtoyed
-    
+
     if (m_connected && m_initialized && m_gsm_registered)
     {
-        if(m_has_sms)
-        {
-            PDU pdu;
-            pdu.setMessage(sms.safe());
-            pdu.setNumber(called.safe());
-            pdu.setAlphabet(PDU::UCS2);
-            pdu.generate();
-            
-            const char* pdutext = pdu.getPDU();
-            m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, new String(pdutext)));
+	if(m_has_sms)
+	{
+	    PDU pdu;
+	    pdu.setMessage(sms.safe());
+	    pdu.setNumber(called.safe());
+	    pdu.setAlphabet(PDU::UCS2);
+	    pdu.generate();
+
+	    const char* pdutext = pdu.getPDU();
+	    m_commandQueue.append(new ATCommand("AT+CMGS=" + String(pdu.getMessageLen()), CMD_AT_CMGS, new String(pdutext)));
 	}
-        else
-        {
-            Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent", c_str());
-            return false;
-        }
+	else
+	{
+	    Debug(DebugAll, "Datacard %s doesn't handle SMS -- SMS will not be sent", c_str());
+	    return false;
+	}
     }
     else
     {
-        Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
-        return false;
+	Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
+	return false;
     }
     return true;
 }
@@ -514,7 +495,7 @@ bool CardDevice::receiveSMS(const char* pdustr, size_t len)
 {
     PDU pdu(pdustr);
     if (!pdu.parse())
-        return false;
+	return false;
 
     m_endpoint->onReceiveSMS(this, String(pdu.getNumber()), String(pdu.getUDHData()), String(pdu.getMessage()));
     return true;
@@ -525,33 +506,32 @@ bool CardDevice::sendUSSD(const String &ussd)
     Debug(DebugAll, "[%s] sendUSSD: %s", c_str(), ussd.c_str());
 
     Lock lock(m_mutex);
-    
+
     if (m_connected && m_initialized && m_gsm_registered)
     {
-        String ussdenc;
-        if(!encodeUSSD(ussd, ussdenc))
-    	    return false;
-        m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD));
+	String ussdenc;
+	if(!encodeUSSD(ussd, ussdenc))
+	    return false;
+	m_commandQueue.append(new ATCommand("AT+CUSD=1,\"" + ussdenc + "\",15", CMD_AT_CUSD));
     }
     else
     {
-        Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
-        return false;
+	Debug(DebugAll, "Device %s not connected / initialized / registered", c_str());
+	return false;
     }
     return true;
 }
-
 
 bool CardDevice::incomingCall(const String &caller)
 {
     if(!m_endpoint->onIncamingCall(this, caller))
     {
-        Debug(DebugAll, "CardDevice::incomingCall error: onIncamingCall");
+	Debug(DebugAll, "CardDevice::incomingCall error: onIncamingCall");
 	return false;
     }
     if(!m_conn)
     {
-        Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
+	Debug(DebugAll, "CardDevice::incomingCall error: m_conn is NULL");
 	return false;
     }
     m_mutex.lock();
@@ -566,7 +546,7 @@ bool CardDevice::Hangup(int reason)
     Connection* tmp = m_conn;
     if(!tmp)
     {
-        Debug(DebugAll, "CardDevice::Hangup error: m_conn is NULL");
+	Debug(DebugAll, "CardDevice::Hangup error: m_conn is NULL");
 	return false;
     }
     m_conn = 0;
@@ -622,7 +602,6 @@ int CardDevice::getReason(int end_status, int cc_cause)
     //TODO: review this!!!!!!!!!!!!!!
     switch(end_status)
     {
-    
 	case CM_CALL_END_OFFLINE:
 	case CM_CALL_END_NO_SRV:
 	case CM_CALL_END_INTERCEPT:
@@ -642,8 +621,8 @@ int CardDevice::getReason(int end_status, int cc_cause)
 	case CM_CALL_END_SETUP_REJ:
 	case CM_CALL_END_NO_FUNDS:
 	    return DATACARD_REJECTED;
-	    
-	case CM_CALL_END_REL_NORMAL:	
+
+	case CM_CALL_END_REL_NORMAL:
 	case CM_CALL_END_CLIENT_END:
 	case CM_CALL_END_FADE:
 	    return DATACARD_NORMAL;
@@ -653,22 +632,22 @@ int CardDevice::getReason(int end_status, int cc_cause)
 	default:
 	    switch(cc_cause)
 	    {
-	    
+
 		case NORMAL_CALL_CLEARING:
-		case NORMAL_UNSPECIFIED:		
+		case NORMAL_UNSPECIFIED:
 		    return DATACARD_NORMAL;
-		    
+
 		case NO_ROUTE_TO_DEST:
 		case DESTINATION_OUT_OF_ORDER:
 		    return DATACARD_NOROUTE;
-		    
-		case USER_BUSY:		    
+
+		case USER_BUSY:
 		    return DATACARD_BUSY;
-		    
+
 		case NO_USER_RESPONDING:
 		case USER_ALERTING_NO_ANSWER:
 		    return DATACARD_NOANSWER;
-		    
+
 		case CALL_REJECTED:
 		case FACILITY_REJECTED:
 		case REJ_UNSPECIFIED:
@@ -686,10 +665,10 @@ int CardDevice::getReason(int end_status, int cc_cause)
 		case MM_REJ_WRONG_STATE:
 		case MM_REJ_ACCESS_CLASS_BLOCKED:
 		case CNM_REJ_TIMER_T303_EXP:
-		case CNM_REJ_NO_RESOURCES:		    
+		case CNM_REJ_NO_RESOURCES:
 		    return DATACARD_REJECTED;
 
-		case CHANNEL_UNACCEPTABLE:		    
+		case CHANNEL_UNACCEPTABLE:
 		case NETWORK_OUT_OF_ORDER:
 		case NO_CIRCUIT_CHANNEL_AVAILABLE:
 		case REQUESTED_CIRCUIT_CHANNEL_NOT_AVAILABLE:
@@ -730,8 +709,8 @@ int CardDevice::getReason(int end_status, int cc_cause)
 		case MESSAGE_TYPE_NOT_COMPATIBLE_WITH_PROT_STATE:
 		case CONDITIONAL_IE_ERROR:
 		case MESSAGE_NOT_COMPATIBLE_WITH_PROTOCOL_STATE:
-		case RECOVERY_ON_TIMER_EXPIRY:		
-		case PROTOCOL_ERROR_UNSPECIFIED:		
+		case RECOVERY_ON_TIMER_EXPIRY:
+		case PROTOCOL_ERROR_UNSPECIFIED:
 		case CNM_INVALID_USER_DATA:
 		case BEARER_SERVICE_NOT_IMPLEMENTED:
 		case SERVICE_OR_OPTION_NOT_IMPLEMENTED:
@@ -962,7 +941,7 @@ String DevicesEndPoint::devicesStatus()
     {
 	GenObject* obj = devicesIter->get();
 	devicesIter = devicesIter->next();
-	if (!obj) continue;	
+	if (!obj) continue;
 	dev = static_cast<CardDevice*>(obj);
 	ret << dev->getStatus() <<";";
     }
@@ -998,7 +977,7 @@ bool Connection::onHangup(int reason)
 {
     return true;
 }
-    
+
 bool Connection::sendAnswer()
 {
 
@@ -1017,9 +996,9 @@ bool Connection::sendHangup()
 	Debug(DebugAll, "Asked to hangup channel not connected");
 	return false;
     }
-    
+
     CardDevice* tmp = m_dev;
-     
+ 
     Debug(DebugAll, "[%s] Hanging up device", tmp->c_str());
 
     tmp->m_mutex.lock();

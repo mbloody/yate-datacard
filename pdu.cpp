@@ -452,8 +452,8 @@ int pdu2binary(const char* pdu, char* binary, int *data_length,
                     result = -2;
                 break;
             }
-            udh[octetcounter *3 +2] = ' '; 
-            udh[octetcounter *3 +3] = 0; 
+            udh[octetcounter *3 +2] = ' ';
+            udh[octetcounter *3 +3] = 0;
         }
 
         if (i)
