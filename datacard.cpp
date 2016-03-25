@@ -175,6 +175,8 @@ bool SMSHandler::received(Message &msg)
 	return false;
     String device(msg.getValue("device"));
     CardDevice* dev = m_ep->findDevice(device);
+    if (!dev)
+	dev = m_endpoint->findDevice(msg);
     if(!dev)
 	return false;
     String called(msg.getValue("called"));
@@ -190,6 +192,9 @@ bool USSDHandler::received(Message &msg)
 	return false;
     String device(msg.getValue("device"));
     CardDevice* dev = m_ep->findDevice(device);
+    if (!dev)
+	dev = m_endpoint->findDevice(msg);
+
     if(!dev)
 	return false;
     String text(msg.getValue("text"));
@@ -280,14 +285,12 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
     CardDevice* dev = m_endpoint->findDevice(msg.getValue("device"));
 
     if (!dev)
-    {
 	dev = m_endpoint->findDevice(msg);
-    }
 
     if (!dev)
     {
 	Debug(this,DebugWarn,"Device not found");
-        return false;
+	return false;
     }
 
     if(dev->isBusy())
@@ -380,7 +383,7 @@ bool DatacardDriver::received(Message& msg, int id)
 	String detail;
 	if(target == "devices")
 	{
-	    detail = m_endpoint->devicesStatus();	
+	    detail = m_endpoint->devicesStatus();
 	}
 	msg.retValue().clear();
 	msg.retValue() << "module=" << name();
@@ -437,7 +440,6 @@ void DatacardDriver::initialize()
     {
         Output("DatacardChannel already initialized");
         return;
-//        first = false;
     }
 
     Output("Initializing module Datacard Revision %s", DTC_VER);
