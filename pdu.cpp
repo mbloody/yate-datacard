@@ -618,32 +618,32 @@ PDU::~PDU()
 {
     if (m_pdu)
         free(m_pdu);
-    
+
     if (m_number)
         free(m_number);
-    
+
     if (m_number_type)
         free(m_number_type);
-    
+
     if (m_smsc)
         free(m_smsc);
-    
+
     if (m_message)
         free(m_message);
     m_message = 0;
-    
+
     if (m_date)
         free(m_date);
-    
+
     if (m_time)
         free(m_time);
 
     if (m_udh_type)
         free(m_udh_type);
-    
+
     if (m_udh_data)
         free(m_udh_data);
-    
+
     if (m_err)
         free(m_err);
 }
@@ -860,7 +860,7 @@ bool PDU::parseSMSC()
     m_pdu_ptr += 2;
     strncpy(m_smsc, m_pdu_ptr, (size_t)length);
     m_smsc[length] = '\0';
-    swapchars(m_smsc); 
+    swapchars(m_smsc);
     
     // Does any SMSC use alphanumeric number?
     if ((addr_type & 112) == 80)
@@ -1117,7 +1117,7 @@ bool PDU::parseDeliver()
     char udh_type[max_udh_type]; udh_type[0] = 0;
     int errorpos = 0;
     int bin_udh = 1;    // UDH binary format flag
-    
+
     if (m_alphabet <= 0)
     {
         if ((result = pdu2text(m_pdu_ptr, message, &message_length, 
@@ -1156,198 +1156,197 @@ bool PDU::parseDeliver()
 
 bool PDU::parseStatusReport()
 {
-	// There should be at least message-id, address-length and address-type:
-	if (strlen(m_pdu_ptr) < 6)
-	{
+    // There should be at least message-id, address-length and address-type:
+    if (strlen(m_pdu_ptr) < 6)
+    {
         sprintf(m_err, "Reading message id, address length and address type: PDU is too short");
         return false;
     }
-    
+
     int messageid;
     if ((messageid = octet2bin_check(m_pdu_ptr)) < 0)
+    {
+	sprintf(m_err, "Invalid message id");
+	return false;
+    }
+
+    // get recipient address
+    m_pdu_ptr += 2;
+    int length = octet2bin_check(m_pdu_ptr);
+    if (length < 1 || length > max_number)
+    {
+	sprintf(m_err, "Invalid recipient address length");
+	return false;
+    }
+    int padding = length % 2;
+    m_pdu_ptr += 2;
+
+    int addr_type = explainAddressType(m_pdu_ptr, 0);
+    if (addr_type < 0)
+    {
+	sprintf(m_err, "Invalid recipient address type");
+	return false;
+    }
+    if (addr_type < 0x80)
+    {
+	sprintf(m_err, "Missing bit 7 in recipient address type");
+	return false;
+    }
+
+    m_pdu_ptr += 2;
+    if ((addr_type & 112) == 80) // Sender is alphanumeric
+    {
+	if (strlen(m_pdu_ptr) < (size_t)(length + padding))
 	{
-		sprintf(m_err, "Invalid message id");
-		return false;
+	    sprintf(m_err, "Reading sender address (alphanumeric): PDU is too short");
+	    return false;
+	}
+	char tmpsender[100];
+	char sender[100];
+	snprintf(tmpsender, length + padding + 3, "%02X%s", length * 4 / 7, m_pdu_ptr);
+	if (pdu2text0(tmpsender, sender) < 0)
+	{
+	    sprintf(m_err, "Reading alphanumeric sender address: Invalid character(s)");
+	    return false;
+	}
+	    strcpy(m_number, sender);
+    }
+    else // Sender is numeric
+    {
+	strncpy(m_number, m_pdu_ptr, length + padding);
+	m_number[length + padding] = '\0';
+	swapchars(m_number);
+
+	int end = length + padding - 1;
+	if (padding)
+	{
+	    if (m_number[end] != 'F')
+		sprintf(m_err, "Length of numeric sender address is odd, but not terminated with 'F'.\n");
+	    else
+		m_number[end] = '\0';
+	}
+	else
+	{
+	    if (m_number[end] == 'F')
+	    {
+		sprintf(m_err, "Length of numeric sender address is even, but still was terminated with 'F'.\n");
+		m_number[end] = '\0';
+	    }
 	}
 
-	// get recipient address
-	m_pdu_ptr += 2;
-	int length = octet2bin_check(m_pdu_ptr);
-	if (length < 1 || length > max_number)
+	for (size_t i = 0; i < strlen(m_number); i++)
 	{
-		sprintf(m_err, "Invalid recipient address length");
-		return false;
+	    if (!isdigit(m_number[i]))
+	    {
+		sprintf(m_err, "Invalid character(s) in sender address.\n");
+		break;
+	    }
 	}
-	int padding = length % 2;
-	m_pdu_ptr += 2;
-	
-	int addr_type = explainAddressType(m_pdu_ptr, 0);
-	if (addr_type < 0)
-	{
-		sprintf(m_err, "Invalid recipient address type");
-		return false;
-	}
-	if (addr_type < 0x80)
-	{
-		sprintf(m_err, "Missing bit 7 in recipient address type");
-		return false;
-	}
-	
-	m_pdu_ptr += 2;
-	if ((addr_type & 112) == 80) // Sender is alphanumeric
-	{
-		if (strlen(m_pdu_ptr) < (size_t)(length + padding))
-		{
-			sprintf(m_err, "Reading sender address (alphanumeric): PDU is too short");
-			return false;
-		}
-		char tmpsender[100];
-		char sender[100];
-		snprintf(tmpsender, length + padding + 3, "%02X%s", length * 4 / 7, m_pdu_ptr);
-		if (pdu2text0(tmpsender, sender) < 0)
-		{
-			sprintf(m_err, "Reading alphanumeric sender address: Invalid character(s)");
-			return false;
-		}
-		strcpy(m_number, sender);
-	}
-	else // Sender is numeric
-	{
-		strncpy(m_number, m_pdu_ptr, length + padding);
-		m_number[length + padding] = '\0';
-		swapchars(m_number);
-           
-		int end = length + padding - 1;
-		if (padding)
-		{
-			if (m_number[end] != 'F')
-				sprintf(m_err, "Length of numeric sender address is odd, but not terminated with 'F'.\n");
-			else
-				m_number[end] = '\0';
-		}
-		else
-		{
-			if (m_number[end] == 'F')
-			{
-				sprintf(m_err, "Length of numeric sender address is even, but still was terminated with 'F'.\n");
-				m_number[end] = '\0';
-			}
-		}
-            
-		for (size_t i = 0; i < strlen(m_number); i++)
-		{
-			if (!isdigit(m_number[i]))
-			{
-				sprintf(m_err, "Invalid character(s) in sender address.\n");
-				break;
-			}
-		}
-	}
+    }
 
     m_pdu_ptr += length + padding;
-	if (strlen(m_pdu_ptr) < 14)
-	{
-		sprintf(m_err, "While trying to read SMSC Timestamp: PDU is too short");
-		return false;
-	}
-	// get SMSC timestamp
-	char str_buf[100];
-	sprintf(str_buf, "%c%c-%c%c-%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
-			m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
-	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
-		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
-	{
-		sprintf(m_err, "Invalid character(s) in date of SMSC Timestamp");
-		return false;
-	}
-	else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31)
-	{
-		sprintf(m_err, "Invalid value(s) in date of SMSC Timestamp.");
-	}
-	sprintf(m_date, "%s", str_buf);
-	
-	m_pdu_ptr += 6;
-	sprintf(str_buf, "%c%c:%c%c:%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
-			m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
-	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
-		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
-	{
-		sprintf(m_err, "Invalid character(s) in time of SMSC Timestamp");
-		return false;
-	}
-	else if (atoi(str_buf) > 23 || atoi(str_buf + 3) > 59 || atoi(str_buf + 6) > 59)
-	{
-		sprintf(m_err, "Invalid value(s) in time of SMSC Timestamp.");
-	}
-	sprintf(m_time, "%s", str_buf);
+    if (strlen(m_pdu_ptr) < 14)
+    {
+	sprintf(m_err, "While trying to read SMSC Timestamp: PDU is too short");
+	return false;
+    }
+    // get SMSC timestamp
+    char str_buf[100];
+    sprintf(str_buf, "%c%c-%c%c-%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
+		m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
+    if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+	!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
+    {
+	sprintf(m_err, "Invalid character(s) in date of SMSC Timestamp");
+	return false;
+    }
+    else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31)
+    {
+	sprintf(m_err, "Invalid value(s) in date of SMSC Timestamp.");
+    }
+    sprintf(m_date, "%s", str_buf);
 
-	m_pdu_ptr += 6;
-	// Time zone is not used but bytes are checked:
-	if (octet2bin_check(m_pdu_ptr) < 0)
-	{
-		sprintf(m_err, "Invalid character(s) in Time Zone of SMSC Time Stamp");
-		return false;
-	}
-	m_pdu_ptr += 2;
+    m_pdu_ptr += 6;
+    sprintf(str_buf, "%c%c:%c%c:%c%c", m_pdu_ptr[1], m_pdu_ptr[0], m_pdu_ptr[3],
+	m_pdu_ptr[2], m_pdu_ptr[5], m_pdu_ptr[4]);
+    if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+	!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]))
+    {
+	sprintf(m_err, "Invalid character(s) in time of SMSC Timestamp");
+	return false;
+    }
+    else if (atoi(str_buf) > 23 || atoi(str_buf + 3) > 59 || atoi(str_buf + 6) > 59)
+    {
+	sprintf(m_err, "Invalid value(s) in time of SMSC Timestamp.");
+    }
+    sprintf(m_time, "%s", str_buf);
 
+    m_pdu_ptr += 6;
+    // Time zone is not used but bytes are checked:
+    if (octet2bin_check(m_pdu_ptr) < 0)
+    {
+	sprintf(m_err, "Invalid character(s) in Time Zone of SMSC Time Stamp");
+	return false;
+    }
+    m_pdu_ptr += 2;
 
-	if (strlen(m_pdu_ptr) < 14)
-	{
-		sprintf(m_err, "While trying to read Discharge Timestamp: PDU is too short");
-		return false;
-	}
+    if (strlen(m_pdu_ptr) < 14)
+    {
+	sprintf(m_err, "While trying to read Discharge Timestamp: PDU is too short");
+	return false;
+    }
 
-	// get Discharge timestamp
-	sprintf(str_buf, "%c%c-%c%c-%c%c %c%c:%c%c:%c%c", m_pdu_ptr[1], 
-			m_pdu_ptr[0], m_pdu_ptr[3], m_pdu_ptr[2], m_pdu_ptr[5], 
-			m_pdu_ptr[4], m_pdu_ptr[7], m_pdu_ptr[6], m_pdu_ptr[9], 
-			m_pdu_ptr[8], m_pdu_ptr[11], m_pdu_ptr[10]);
-	if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
-		!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]) || 
-		!isdigit(str_buf[9]) || !isdigit(str_buf[10]) || 
-		!isdigit(str_buf[12]) || !isdigit(str_buf[13]) || 
-		!isdigit(str_buf[15]) || !isdigit(str_buf[16]))
-	{
-		sprintf(m_err, "Invalid character(s) in Discharge Timestamp");
-		return false;
-	}
-	else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31 || 
-			 atoi(str_buf + 9) > 24 || atoi(str_buf + 12) > 59 || 
-			 atoi(str_buf + 16) > 59)
-	{
-		sprintf(m_err, "Invalid values(s) in Discharge Timestamp.");
-	}
+    // get Discharge timestamp
+    sprintf(str_buf, "%c%c-%c%c-%c%c %c%c:%c%c:%c%c", m_pdu_ptr[1], 
+		m_pdu_ptr[0], m_pdu_ptr[3], m_pdu_ptr[2], m_pdu_ptr[5], 
+		m_pdu_ptr[4], m_pdu_ptr[7], m_pdu_ptr[6], m_pdu_ptr[9], 
+		m_pdu_ptr[8], m_pdu_ptr[11], m_pdu_ptr[10]);
+    if (!isdigit(str_buf[0]) || !isdigit(str_buf[1]) || !isdigit(str_buf[3]) || 
+	!isdigit(str_buf[4]) || !isdigit(str_buf[6]) || !isdigit(str_buf[7]) || 
+	!isdigit(str_buf[9]) || !isdigit(str_buf[10]) || 
+	!isdigit(str_buf[12]) || !isdigit(str_buf[13]) || 
+	!isdigit(str_buf[15]) || !isdigit(str_buf[16]))
+    {
+	sprintf(m_err, "Invalid character(s) in Discharge Timestamp");
+	return false;
+    }
+    else if (atoi(str_buf + 3) > 12 || atoi(str_buf + 6) > 31 ||
+		atoi(str_buf + 9) > 24 || atoi(str_buf + 12) > 59 ||
+		atoi(str_buf + 16) > 59)
+    {
+	sprintf(m_err, "Invalid values(s) in Discharge Timestamp.");
+    }
 
-	m_pdu_ptr += 12;
-	// Time zone is not used but bytes are checked:
-	if (octet2bin_check(m_pdu_ptr) < 0)
-	{
-		sprintf(m_err, "Invalid character(s) in Time Zone of Discharge Time Stamp");
-		return false;
-	}
-	m_pdu_ptr += 2;
-	
-	char discharge_timestamp[128];
-	sprintf(discharge_timestamp, "%s", str_buf);
-	
-	if (strlen(m_pdu_ptr) < 2)
-	{
-		sprintf(m_err, "While trying to read Status octet: PDU is too short");
-		return false;
-	}
-	
-	int status;
-	if ((status = octet2bin_check(m_pdu_ptr)) < 0)
-	{
-		sprintf(m_err, "Invalid Status octet");
-		return false;
-	}
+    m_pdu_ptr += 12;
+    // Time zone is not used but bytes are checked:
+    if (octet2bin_check(m_pdu_ptr) < 0)
+    {
+	sprintf(m_err, "Invalid character(s) in Time Zone of Discharge Time Stamp");
+	return false;
+    }
+    m_pdu_ptr += 2;
 
-	explain_status(str_buf, sizeof(str_buf), status);
-	
-	sprintf(m_message, "Discharge timestamp: %s\nMessage ID: %d\nStatus: %s",
-			discharge_timestamp, messageid, str_buf);
-	
+    char discharge_timestamp[128];
+    sprintf(discharge_timestamp, "%s", str_buf);
+
+    if (strlen(m_pdu_ptr) < 2)
+    {
+	sprintf(m_err, "While trying to read Status octet: PDU is too short");
+	return false;
+    }
+
+    int status;
+    if ((status = octet2bin_check(m_pdu_ptr)) < 0)
+    {
+	sprintf(m_err, "Invalid Status octet");
+	return false;
+    }
+
+    explain_status(str_buf, sizeof(str_buf), status);
+
+    sprintf(m_message, "Discharge timestamp: %s\nMessage ID: %d\nStatus: %s",
+		discharge_timestamp, messageid, str_buf);
+
     return true;
 }
 
@@ -1363,10 +1362,10 @@ void PDU::generate()
     char *p;
     int l;
     char tmp_smsc[max_smsc];
-    
+
     if (m_alphabet == 2)
 	convert("UTF16BE", "UTF8");
-    
+
 
     if (m_number[0] == 's')  // Is number starts with s, then send it without number format indicator
     {
