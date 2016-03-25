@@ -367,7 +367,7 @@ void CardDevice::stopRunning()
 static String decodeRegStatus(int status)
 {
     String reg_status = "unknown";
-    switch(m_gsm_reg_status)
+    switch(status)
     {
 	case 0:
 	    reg_status = "not registered, not searching";
