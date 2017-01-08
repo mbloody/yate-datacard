@@ -693,6 +693,13 @@ private:
      */
     int at_parse_rssi(char* str, size_t len);
 
+    /** Parse +CPMS Response
+     * @param str -- string to parse
+     * @param len -- string length
+     * @return count of offline received messages or -1 on error
+     */
+    int at_parse_cpms(char* str, size_t len);
+
     /**
      * Write to data socket
      * This function will write count characters from buf. It will always write
