@@ -621,6 +621,23 @@ int CardDevice::at_parse_rssi(char* str, size_t len)
 	return rssi;
 }
 
+int CardDevice::at_parse_cpms(char* str, size_t len)
+{
+  /* 
+   * Format of the information response of the +CPMS AT command
+   * +CPMS: used_space1, max_space1, used_space2, max_space2, used_space3, max_space3
+   * we need only used_space1 param
+   */
+  int inbox = -1;
+
+  if (!sscanf (str, "+CPMS: %d,", &inbox))
+    {
+      Debug(DebugAll, "[%s] Error parsing +CPMS response '%s'\n", c_str(), str);
+      return -1;
+    }
+  return inbox;
+}
+
 int CardDevice::at_parse_mode(char* str, size_t len, int* mode, int* submode)
 {
 	/*
