@@ -95,6 +95,7 @@ typedef enum {
 	RES_CONN,
 	RES_COPS,
 	RES_CPIN,
+	RES_CPMS,
 	RES_CREG,
 	RES_CSQ,
 	RES_CSSI,
@@ -277,6 +278,7 @@ private:
     unsigned int m_cusd_use_ucs2_decoding:1;
     int m_gsm_reg_status;
     int m_rssi;
+    int m_cpms;
     int m_linkmode;
     int m_linksubmode;
     String m_provider_name;
@@ -489,6 +491,14 @@ private:
      * @return 0 success or -1 parse error
      */
     int at_response_cusd(char* str, size_t len);
+    
+    /**
+     * Handle CPMS response
+     * @param str -- string containing response (null terminated)
+     * @param len -- string length
+     * @return 0 success or -1 parse error
+     */
+    int at_response_cpms(char* str, size_t len);
     
     /**
      * Handle ERROR response
