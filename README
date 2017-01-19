@@ -11,9 +11,8 @@ balance when you call or send/receive SMS messages via modem.
 Building Modules
 ---------------------
 To build and install module the quick way is:
-  ./autogen.sh
-  ./configure
-  make debug
+  cmake .
+  make
   make install
 
 Yate must be already installed.

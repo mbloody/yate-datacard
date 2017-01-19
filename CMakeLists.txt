@@ -1,17 +1,19 @@
 cmake_minimum_required(VERSION 2.8)
-project(yate_datacard)
+project(yate_datacard CXX)
 
-#find yate
-find_package(PkgConfig)
-pkg_check_modules(PC_YATE QUIET yate)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+find_package(Yate REQUIRED)
 
-find_path(YATE_INCLUDE_DIR yatengine.h
-          HINTS ${PC_YATE_INCLUDEDIR} ${PC_YATE_INCLUDE_DIRS}
-          PATH_SUFFIXES yate)
+INCLUDE_DIRECTORIES(${YATE_INCLUDE_DIRS})
 
-set(YATE_INCLUDE_DIRS ${YATE_INCLUDE_DIR} )
+#SET(GCC_COVERAGE_COMPILE_FLAGS "-O3 -Wno-overloaded-virtual -fno-exceptions -fPIC -DHAVE_GCC_FORMAT_CHECK -DHAVE_BLOCK_RETURN")
 
-include_directories(${YATE_INCLUDE_DIRS})
+add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
+
+#SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+
+
+
 
 #set version from git (as old autotools script)
 #FIXME
@@ -23,23 +25,24 @@ if(GIT_FOUND)
             OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-O3 -Wno-overloaded-virtual -fno-exceptions -fPIC -DHAVE_GCC_FORMAT_CHECK -DHAVE_BLOCK_RETURN")
-SET(GCC_COVERAGE_LINK_FLAGS    "-rdynamic -shared")
-
-add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})
-
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
-SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}" )
-
 add_definitions(-DDTC_VER="${GIT_HASH}")
+ADD_LIBRARY(datacard SHARED
+		     at_io.cpp
+		     at_parse.cpp
+		     at_response.cpp
+		     char_conv.cpp
+		     datacard.cpp
+		     datacarddevice.cpp
+		     pdu.cpp
+		     )
+TARGET_LINK_LIBRARIES(datacard ${YATE_LIBRARIES})
+SET_TARGET_PROPERTIES(datacard PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(datacard PROPERTIES SUFFIX .yate)
 
-add_executable(datacard.yate
-  at_io.cpp
-  at_parse.cpp
-  at_response.cpp
-  char_conv.cpp
-  datacard.cpp
-  datacarddevice.cpp
-  pdu.cpp
-)
-TARGET_LINK_LIBRARIES(datacard.yate yate pthread dl)
+INSTALL(TARGETS datacard
+		DESTINATION ${YATE_MODULES_DIR}
+		RENAME datacard.yate
+		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+INSTALL(FILES datacard.conf.sample
+	      DESTINATION /etc/yate)
