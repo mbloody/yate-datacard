@@ -4,7 +4,7 @@ project(yate_datacard CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 find_package(Yate REQUIRED)
 
-INCLUDE_DIRECTORIES(${YATE_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${YATE_INCLUDE_DIR})
 
 #SET(GCC_COVERAGE_COMPILE_FLAGS "-O3 -Wno-overloaded-virtual -fno-exceptions -fPIC -DHAVE_GCC_FORMAT_CHECK -DHAVE_BLOCK_RETURN")
 
@@ -26,7 +26,7 @@ if(GIT_FOUND)
 endif()
 
 add_definitions(-DDTC_VER="${GIT_HASH}")
-ADD_LIBRARY(datacard SHARED
+ADD_LIBRARY(datacard MODULE
 		     at_io.cpp
 		     at_parse.cpp
 		     at_response.cpp
@@ -45,4 +45,5 @@ INSTALL(TARGETS datacard
 		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 INSTALL(FILES datacard.conf.sample
-	      DESTINATION /etc/yate)
+		DESTINATION ${YATE_CONFIG_DIR}
+		RENAME datacard.conf)
