@@ -254,6 +254,8 @@ at_res_t CardDevice::at_read_result_classification (char* command)
 	return RES_SMS_PROMPT;
     else if (memcmp(command,"+CUSD:", 6) == 0)
 	return RES_CUSD;
+    else if (memcmp(command,"+CPMS:", 6) == 0)
+      return RES_CPMS;
 
     return RES_UNKNOWN;
 }
