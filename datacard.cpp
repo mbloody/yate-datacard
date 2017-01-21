@@ -87,6 +87,15 @@ public:
 	Engine::enqueue(m);
     }
 
+	virtual void onUpdateNetworkStatus(CardDevice* dev)
+	{
+		Debug(DebugAll, "Network status updated");
+		Message* m = new Message("datacard.monitor");
+		m->addParam("module", "datacard");
+		dev->getNetworkStatus(m);
+		Engine::enqueue(m);
+	}
+
     virtual bool onIncamingCall(CardDevice* dev, const String &caller);
 };
 

@@ -95,6 +95,7 @@ typedef enum {
 	RES_CONN,
 	RES_COPS,
 	RES_CPIN,
+	RES_CPMS,
 	RES_CREG,
 	RES_CSQ,
 	RES_CSSI,
@@ -227,6 +228,11 @@ public:
     bool getParams(NamedList* list);
     String getStatus();
 
+	//TODO: monitor cellular network parameters
+	//maybe using getStatus more correct?
+
+	bool getNetworkStatus(NamedList *list);
+
     void setConnection(Connection* conn)
 	{ m_conn = conn; }
 
@@ -277,6 +283,7 @@ private:
     unsigned int m_cusd_use_ucs2_decoding:1;
     int m_gsm_reg_status;
     int m_rssi;
+    int m_cpms;
     int m_linkmode;
     int m_linksubmode;
     String m_provider_name;
@@ -491,6 +498,14 @@ private:
     int at_response_cusd(char* str, size_t len);
     
     /**
+     * Handle CPMS response
+     * @param str -- string containing response (null terminated)
+     * @param len -- string length
+     * @return 0 success or -1 parse error
+     */
+    int at_response_cpms(char* str, size_t len);
+    
+    /**
      * Handle ERROR response
      * @return 0 success or -1 parse error
      */
@@ -693,6 +708,13 @@ private:
      */
     int at_parse_rssi(char* str, size_t len);
 
+    /** Parse +CPMS Response
+     * @param str -- string to parse
+     * @param len -- string length
+     * @return count of offline received messages or -1 on error
+     */
+    int at_parse_cpms(char* str, size_t len);
+
     /**
      * Write to data socket
      * This function will write count characters from buf. It will always write
@@ -820,6 +842,13 @@ public:
      * @return
      */
     virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms);
+
+	/**
+	 * Call when network status (rssi, lac, etc) changed. 
+	 * @param dev - pointer to current dev
+	 * @return
+	 */
+	virtual void onUpdateNetworkStatus(CardDevice* dev);
 
     /**
      * Send SMS message.

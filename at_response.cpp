@@ -117,6 +117,9 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 	    at_response_cnum(str, len);
 	    return 0;
 
+    case RES_CPMS:
+      return at_response_cpms(str, len);
+
 	case RES_PARSE_ERROR:
 	    Debug(DebugAll, "[%s] Error parsing result", c_str());
 	    return -1;
@@ -611,12 +614,23 @@ e_return:
     return -1;
 }
 
+int CardDevice::at_response_cpms(char* str, size_t len)
+{
+  if ((m_cpms = at_parse_cpms(str, len)) == -1)
+    {
+      return -1;
+    }
+  Debug(DebugAll, "[%s] We have %d offline messages", c_str(), m_cpms);
+  return 0;
+}
+
 int CardDevice::at_response_rssi(char* str, size_t len)
 {
     if ((m_rssi = at_parse_rssi(str, len)) == -1)
     {
 	return -1;
     }
+	m_endpoint->onUpdateNetworkStatus(this);
     return 0;
 }
 
@@ -941,7 +955,7 @@ int CardDevice::at_response_creg(char* str, size_t len)
 	m_location_area_code = lac;
     if(ci)
 	m_cell_id = ci;
-
+	m_endpoint->onUpdateNetworkStatus(this);
     return 0;
 }
 
