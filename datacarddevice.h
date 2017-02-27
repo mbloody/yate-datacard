@@ -228,6 +228,11 @@ public:
     bool getParams(NamedList* list);
     String getStatus();
 
+	//TODO: monitor cellular network parameters
+	//maybe using getStatus more correct?
+
+	bool getNetworkStatus(NamedList *list);
+
     void setConnection(Connection* conn)
 	{ m_conn = conn; }
 
@@ -837,6 +842,13 @@ public:
      * @return
      */
     virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms);
+
+	/**
+	 * Call when network status (rssi, lac, etc) changed. 
+	 * @param dev - pointer to current dev
+	 * @return
+	 */
+	virtual void onUpdateNetworkStatus(CardDevice* dev);
 
     /**
      * Send SMS message.

@@ -630,6 +630,7 @@ int CardDevice::at_response_rssi(char* str, size_t len)
     {
 	return -1;
     }
+	m_endpoint->onUpdateNetworkStatus(this);
     return 0;
 }
 
@@ -954,7 +955,7 @@ int CardDevice::at_response_creg(char* str, size_t len)
 	m_location_area_code = lac;
     if(ci)
 	m_cell_id = ci;
-
+	m_endpoint->onUpdateNetworkStatus(this);
     return 0;
 }
 
