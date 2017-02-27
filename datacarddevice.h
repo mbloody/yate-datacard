@@ -843,12 +843,12 @@ public:
      */
     virtual void onReceiveSMS(CardDevice* dev, const String& caller, const String& udh_data, const String& sms);
 
-	/**
-	 * Call when network status (rssi, lac, etc) changed. 
-	 * @param dev - pointer to current dev
-	 * @return
-	 */
-	virtual void onUpdateNetworkStatus(CardDevice* dev);
+    /**
+     * Call when network status (rssi, lac, etc) changed. 
+     * @param dev - pointer to current dev
+     * @return
+     */
+    virtual void onUpdateNetworkStatus(CardDevice* dev);
 
     /**
      * Send SMS message.

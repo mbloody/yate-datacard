@@ -953,9 +953,11 @@ int CardDevice::at_response_creg(char* str, size_t len)
 
     if(lac)
 	m_location_area_code = lac;
+
     if(ci)
 	m_cell_id = ci;
-	m_endpoint->onUpdateNetworkStatus(this);
+
+    m_endpoint->onUpdateNetworkStatus(this);
     return 0;
 }
 

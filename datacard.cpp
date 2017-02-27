@@ -50,6 +50,8 @@ static Configuration s_cfg;
 
 //TODO: make configurable for devices
 static bool s_inband_dtmf = false;
+static bool s_device_monitor = false;
+
 
 class YDevEndPoint : public DevicesEndPoint
 {
@@ -87,14 +89,16 @@ public:
 	Engine::enqueue(m);
     }
 
-	virtual void onUpdateNetworkStatus(CardDevice* dev)
-	{
-		Debug(DebugAll, "Network status updated");
-		Message* m = new Message("datacard.monitor");
-		m->addParam("module", "datacard");
-		dev->getNetworkStatus(m);
-		Engine::enqueue(m);
-	}
+    virtual void onUpdateNetworkStatus(CardDevice* dev)
+    {
+	if(!s_device_monitor)
+	    return;
+	Debug(DebugAll, "Network status updated");
+	Message* m = new Message("datacard.monitor");
+	m->addParam("module", "datacard");
+	dev->getNetworkStatus(m);
+	Engine::enqueue(m);
+    }
 
     virtual bool onIncamingCall(CardDevice* dev, const String &caller);
 };
@@ -460,6 +464,8 @@ void DatacardDriver::initialize()
     Output("Discovery Interval %d", discovery_interval);
 
     s_inband_dtmf = s_cfg.getBoolValue("general","inband_dtmf",false);
+    s_device_monitor = s_cfg.getBoolValue("general","device_monitor",false);
+    
     if(first)
 	m_endpoint = new YDevEndPoint(discovery_interval);
     else

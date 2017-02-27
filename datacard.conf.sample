@@ -11,6 +11,10 @@
 ;inband_dtmf:bool
 ;inband_dtmf=no
 
+;device_monitor:bool
+;device_monitor=no
+
+
 ; Example of device
 [datacard0]
 
