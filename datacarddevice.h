@@ -768,7 +768,7 @@ public:
      * @param usrData - additional user data
      * @return true on success or false on error
      */
-    bool newCall(const String &called);
+    bool newCall(const String &called, int callingpres);
 
 private:
     bool receiveSMS(const char* pdustr, size_t len);

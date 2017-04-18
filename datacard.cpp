@@ -313,12 +313,14 @@ bool DatacardDriver::msgExecute(Message& msg, String& dest)
 	return false;
     }
 
+    int callingpres = msg.getIntValue("callingpres", -1);
+
     DatacardChannel* chan = new DatacardChannel(dev, &msg);
     dev->setConnection(chan);
     chan->initChan();
 
     CallEndpoint* ch = static_cast<CallEndpoint*>(msg.userData());
-    if (ch && chan->connect(ch,msg.getValue(YSTRING("reason"))) && dev->newCall(dest))
+    if (ch && chan->connect(ch,msg.getValue(YSTRING("reason"))) && dev->newCall(dest, callingpres))
     {
 	chan->callConnect(msg);
 	msg.setParam("peerid",chan->id());

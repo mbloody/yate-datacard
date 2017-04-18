@@ -578,7 +578,7 @@ bool CardDevice::Hangup(int reason)
 }
 
 
-bool CardDevice::newCall(const String &called)
+bool CardDevice::newCall(const String &called, int callingpres)
 {
 //    isE164
 //1 2 3 4 5 6 7 8 9 0 * # + A B C
@@ -602,8 +602,13 @@ bool CardDevice::newCall(const String &called)
 //  1: CLIR invocation (hide)
 //  2: CLIR suppression (show)
 //  Other values not valid, Do not use callingpres
-    if((m_callingpres >= 0) && (m_callingpres <= 2))
-	m_commandQueue.append(new ATCommand("AT+CLIR=" + String(m_callingpres), CMD_AT_CLIR, new String(called)));
+    int pres_tmp = m_callingpres;
+
+    if((callingpres >= 0) && (callingpres <= 2))
+	pres_tmp = callingpres;
+
+    if((pres_tmp >= 0) && (pres_tmp <= 2))
+	m_commandQueue.append(new ATCommand("AT+CLIR=" + String(pres_tmp), CMD_AT_CLIR, new String(called)));
     else
         m_commandQueue.append(new ATCommand("ATD" + called + ";", CMD_AT_D));
 
