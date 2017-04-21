@@ -201,6 +201,9 @@ const char* CardDevice::at_res2str(at_res_t res)
 		case RES_BOOT:
 			return "^BOOT";
 
+		case RES_STIN:
+			return "^STIN";
+
 		case RES_CLIP:
 			return "+CLIP";
 

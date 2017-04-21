@@ -35,6 +35,8 @@ int CardDevice::at_response(char* str, at_res_t at_res)
 
     switch(at_res)
     {
+
+	case RES_STIN:
 	case RES_BOOT:
 	case RES_CONF:
 	case RES_CSSI:
@@ -885,6 +887,13 @@ int CardDevice::at_response_no_dialtone()
 
 int CardDevice::at_response_no_carrier()
 {
+
+    if(m_lastcmd && m_lastcmd->m_cmd == CMD_AT_A)
+    {	
+	m_lastcmd->destruct();
+	m_lastcmd = 0;
+    }
+
     Debug(DebugAll, "[%s] Datacard reports 'NO CARRIER'", c_str());
     m_needchup = 1;
     Hangup(DATACARD_CONGESTION);

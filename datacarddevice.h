@@ -83,6 +83,7 @@ typedef enum {
 typedef enum {
 	RES_PARSE_ERROR = -1,
 	RES_UNKNOWN = 0,
+	RES_STIN,
 	RES_BOOT,
 	RES_BUSY,
 	RES_CEND,
@@ -131,7 +132,7 @@ public:
 	}
     }
 
-    ~ATCommand()
+    virtual ~ATCommand()
     {
 	if(m_obj)
 	    m_obj->destruct();
@@ -142,7 +143,7 @@ public:
 	return m_obj;
     }
 
-    void onTimeout()
+    virtual void onTimeout()
     {
 	Debug(DebugAll, "Timeout for AT command %s ignoring ", m_command.safe());
     }

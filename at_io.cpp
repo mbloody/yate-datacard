@@ -196,7 +196,9 @@ void CardDevice::processATEvents()
 
 at_res_t CardDevice::at_read_result_classification (char* command)
 {
-    if(memcmp(command,"^BOOT:", 6) == 0)		// 5115
+    if(memcmp(command,"^STIN:", 6) == 0)		// 5115
+	return RES_STIN;
+    else if(memcmp(command,"^BOOT:", 6) == 0)		// 5115
 	return RES_BOOT;
     else if((memcmp(command,"+CNUM:", 6) == 0) || (memcmp(command,"ERROR+CNUM:", 11) == 0))
 	return RES_CNUM;
